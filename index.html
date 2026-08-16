@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="mai">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>मैथिली समाचार</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<header class="header">
+  <div class="container">
+    <h1>मैथिली समाचार</h1>
+    <p>मैथिली भाषामे समाचारक अपन मंच</p>
+  </div>
+</header>
+
+<nav class="nav">
+  <div class="container">
+    <a href="/">मुख्य पृष्ठ</a>
+    <a href="#latest">ताजा समाचार</a>
+    <a href="#categories">श्रेणी</a>
+    <a href="/admin.html">Admin</a>
+  </div>
+</nav>
+
+<main class="container">
+
+  <section class="hero">
+    <h2>स्वागत अछि</h2>
+    <p>
+      मिथिला आ देश-दुनियाक समाचार मैथिली भाषामे।
+    </p>
+  </section>
+
+  <section id="latest">
+    <h2>ताजा समाचार</h2>
+
+    <div id="newsList" class="news-grid">
+      <p>समाचार लोड भ' रहल अछि...</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    © 2026 मैथिली समाचार
+  </div>
+</footer>
+
+<script>
+async function loadNews() {
+
+  const box = document.getElementById("newsList");
+
+  try {
+
+    const response = await fetch("/api/news");
+
+    const data = await response.json();
+
+    if (!data.success || !data.news.length) {
+      box.innerHTML = "<p>एखन कोनो समाचार उपलब्ध नहि अछि।</p>";
+      return;
+    }
+
+    box.innerHTML = data.news.map(item => `
+      <article class="news-card">
+
+        ${
+          item.image_url
+            ? `<img src="${item.image_url}" alt="${escapeHtml(item.title)}">`
+            : ""
+        }
+
+        <div class="news-content">
+
+          <small>${escapeHtml(item.category_name || "")}</small>
+
+          <h3>${escapeHtml(item.title)}</h3>
+
+          <p>${escapeHtml(item.summary || "")}</p>
+
+          <a href="/?news=${item.id}">
+            पूरा समाचार पढ़ू →
+          </a>
+
+        </div>
+
+      </article>
+    `).join("");
+
+  } catch (error) {
+
+    box.innerHTML =
+      "<p>समाचार लोड नहि भ' सकल।</p>";
+
+    console.error(error);
+  }
+}
+
+function escapeHtml(value) {
+
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+loadNews();
+</script>
+
+</body>
+</html>
