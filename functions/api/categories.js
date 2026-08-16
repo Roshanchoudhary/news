@@ -1,707 +1,1040 @@
 // functions/api/categories.js
 
-// ============================================================
-// CATEGORY API
-// ============================================================
-
-
-// ============================================================
-// GET CATEGORIES
-// ============================================================
-
-export async function onRequestGet(context) {
-
-  const { env } = context;
-
-  try {
-
-    const result = await env.DB
-      .prepare(`
-        SELECT
-          id,
-          name,
-          slug,
-          description,
-          menu_visible,
-          menu_order,
-          status,
-          created_at
-        FROM categories
-        ORDER BY menu_order ASC, id ASC
-      `)
-      .all();
-
-    return Response.json({
-      success: true,
-      categories: result.results || []
-    });
-
-  } catch (error) {
-
-    console.error(
-      "GET CATEGORIES ERROR:",
-      error
-    );
-
-    return Response.json({
-      success: false,
-      error: error.message
-    }, { status: 500 });
-  }
-}
-
-
-// ============================================================
-// ADD CATEGORY
-// ============================================================
-
-export async function onRequestPost(context) {
+export async function onRequest(context) {
 
   const { request, env } = context;
 
   try {
 
-    const user =
-      await requireAdmin(
+    const method =
+      request.method.toUpperCase();
+
+
+    if (method === "GET") {
+      return await getCategories(
         request,
         env
       );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, { status: 401 });
-
     }
 
 
-    const body =
-      await request.json();
-
-
-    const name =
-      String(
-        body.name || ""
-      ).trim();
-
-
-    const slug =
-      String(
-        body.slug || ""
-      ).trim()
-      .toLowerCase();
-
-
-    const description =
-      String(
-        body.description || ""
-      ).trim();
-
-
-    const menuVisible =
-      body.menu_visible === false
-        ? 0
-        : 1;
-
-
-    const menuOrder =
-      Number(
-        body.menu_order || 0
+    if (method === "POST") {
+      return await createCategory(
+        request,
+        env
       );
-
-
-    const status =
-      body.status === "inactive"
-        ? "inactive"
-        : "active";
-
-
-    // -------------------------------
-    // VALIDATION
-    // -------------------------------
-
-    if (!name) {
-
-      return Response.json({
-        success: false,
-        error:
-          "श्रेणी नाम जरूरी अछि"
-      }, { status: 400 });
-
     }
 
-
-    if (!slug) {
-
-      return Response.json({
-        success: false,
-        error:
-          "English URL slug जरूरी अछि"
-      }, { status: 400 });
-
-    }
-
-
-    // -------------------------------
-    // SLUG FORMAT
-    // -------------------------------
 
     if (
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+      method === "PUT" ||
+      method === "PATCH"
     ) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Slug केवल English अक्षर, number आ hyphen में होयबाक चाही। उदाहरण: mithila-news"
-      }, { status: 400 });
-
+      return await updateCategory(
+        request,
+        env
+      );
     }
 
 
-    // -------------------------------
-    // DUPLICATE SLUG
-    // -------------------------------
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT id
-          FROM categories
-          WHERE slug = ?
-          LIMIT 1
-        `)
-        .bind(slug)
-        .first();
-
-
-    if (existing) {
-
-      return Response.json({
-        success: false,
-        error:
-          "ई URL slug पहिले सँ मौजूद अछि"
-      }, { status: 409 });
-
+    if (method === "DELETE") {
+      return await deleteCategory(
+        request,
+        env
+      );
     }
 
 
-    // -------------------------------
-    // INSERT
-    // -------------------------------
+    return json({
+      success: false,
+      error: "Method not allowed"
+    }, 405);
 
-    const result =
-      await env.DB
-        .prepare(`
-          INSERT INTO categories (
-            name,
-            slug,
-            description,
-            menu_visible,
-            menu_order,
-            status
-          )
-          VALUES (?, ?, ?, ?, ?, ?)
-        `)
-        .bind(
-          name,
-          slug,
-          description || null,
-          menuVisible,
-          menuOrder,
-          status
-        )
-        .run();
-
-
-    return Response.json({
-      success: true,
-      message:
-        "श्रेणी सफलतापूर्वक जोड़ल गेल",
-      id:
-        result.meta.last_row_id
-    });
 
   } catch (error) {
 
     console.error(
-      "ADD CATEGORY ERROR:",
+      "CATEGORY API ERROR:",
       error
     );
 
-    return Response.json({
+
+    return json({
       success: false,
       error:
         error.message ||
-        "श्रेणी जोड़ल नहि जा सकल"
-    }, { status: 500 });
+        "श्रेणी API में त्रुटि भेल"
+    }, 500);
+
   }
+
 }
 
 
-// ============================================================
-// UPDATE CATEGORY
-// ============================================================
+// ======================================================
+// GET CATEGORIES
+// ======================================================
 
-export async function onRequestPut(context) {
+async function getCategories(
+  request,
+  env
+) {
 
-  const { request, env } = context;
-
-  try {
-
-    const user =
-      await requireAdmin(
-        request,
-        env
-      );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, { status: 401 });
-
-    }
+  const url =
+    new URL(request.url);
 
 
-    const url =
-      new URL(request.url);
+  const id =
+    url.searchParams.get("id");
 
 
-    const id =
-      url.searchParams.get("id");
+  const slug =
+    url.searchParams.get("slug");
 
 
-    if (!id) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Category ID जरूरी अछि"
-      }, { status: 400 });
-
-    }
+  const menu =
+    url.searchParams.get("menu");
 
 
-    const body =
-      await request.json();
+  const status =
+    url.searchParams.get("status");
 
 
-    const name =
-      String(
-        body.name || ""
-      ).trim();
+  // --------------------------------------------------
+  // Single category
+  // --------------------------------------------------
+
+  if (id || slug) {
+
+    let category;
 
 
-    const slug =
-      String(
-        body.slug || ""
-      ).trim()
-      .toLowerCase();
+    if (slug) {
 
+      category =
+        await env.DB
+          .prepare(`
+            SELECT
+              *
+            FROM categories
+            WHERE slug = ?
+            LIMIT 1
+          `)
+          .bind(slug)
+          .first();
 
-    const description =
-      String(
-        body.description || ""
-      ).trim();
+    } else {
 
-
-    const menuVisible =
-      body.menu_visible === false
-        ? 0
-        : 1;
-
-
-    const menuOrder =
-      Number(
-        body.menu_order || 0
-      );
-
-
-    const status =
-      body.status === "inactive"
-        ? "inactive"
-        : "active";
-
-
-    if (!name || !slug) {
-
-      return Response.json({
-        success: false,
-        error:
-          "श्रेणी नाम आ English URL slug जरूरी अछि"
-      }, { status: 400 });
+      category =
+        await env.DB
+          .prepare(`
+            SELECT
+              *
+            FROM categories
+            WHERE id = ?
+            LIMIT 1
+          `)
+          .bind(id)
+          .first();
 
     }
 
 
-    if (
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
-    ) {
+    if (!category) {
 
-      return Response.json({
-        success: false,
-        error:
-          "Slug सही English format में लिखू"
-      }, { status: 400 });
-
-    }
-
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT id
-          FROM categories
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-
-    if (!existing) {
-
-      return Response.json({
+      return json({
         success: false,
         error:
           "श्रेणी नहि भेटल"
-      }, { status: 404 });
+      }, 404);
 
     }
 
 
-    const duplicate =
-      await env.DB
-        .prepare(`
-          SELECT id
-          FROM categories
-          WHERE slug = ?
-          AND id != ?
-          LIMIT 1
-        `)
-        .bind(
-          slug,
-          id
-        )
-        .first();
+    return json({
+      success: true,
+      category: normalizeCategory(
+        category
+      )
+    });
+
+  }
 
 
-    if (duplicate) {
+  // --------------------------------------------------
+  // Category list
+  // --------------------------------------------------
 
-      return Response.json({
-        success: false,
-        error:
-          "ई URL slug पहिले सँ मौजूद अछि"
-      }, { status: 409 });
-
-    }
+  let where = [];
+  let bindings = [];
 
 
+  if (
+    status &&
+    status !== "all"
+  ) {
+
+    where.push(
+      "status = ?"
+    );
+
+    bindings.push(
+      status
+    );
+
+  }
+
+
+  if (
+    menu === "1" ||
+    menu === "true"
+  ) {
+
+    where.push(`
+      COALESCE(menu_visible, 1) = 1
+    `);
+
+  }
+
+
+  const whereSQL =
+    where.length
+      ? "WHERE " +
+        where.join(" AND ")
+      : "";
+
+
+  const result =
     await env.DB
       .prepare(`
-        UPDATE categories
-        SET
-          name = ?,
-          slug = ?,
-          description = ?,
-          menu_visible = ?,
-          menu_order = ?,
-          status = ?
-        WHERE id = ?
+        SELECT
+          *
+        FROM categories
+
+        ${whereSQL}
+
+        ORDER BY
+          COALESCE(menu_order, 0) ASC,
+          name COLLATE NOCASE ASC,
+          id ASC
+      `)
+      .bind(...bindings)
+      .all();
+
+
+  const categories =
+    (
+      result.results || []
+    ).map(
+      normalizeCategory
+    );
+
+
+  return json({
+    success: true,
+    categories
+  });
+
+}
+
+
+// ======================================================
+// CREATE CATEGORY
+// ======================================================
+
+async function createCategory(
+  request,
+  env
+) {
+
+  const user =
+    await requireAdmin(
+      request,
+      env
+    );
+
+
+  if (!user) {
+
+    return json({
+      success: false,
+      error: "Unauthorized"
+    }, 401);
+
+  }
+
+
+  const body =
+    await request.json();
+
+
+  const name =
+    cleanString(
+      body.name
+    );
+
+
+  let slug =
+    cleanString(
+      body.slug
+    )
+    .toLowerCase();
+
+
+  const description =
+    cleanString(
+      body.description
+    );
+
+
+  const status =
+    normalizeStatus(
+      body.status
+    );
+
+
+  const menuVisible =
+    normalizeBoolean(
+      body.menu_visible ??
+      body.show_in_menu ??
+      body.menu
+    );
+
+
+  const menuOrder =
+    normalizeNumber(
+      body.menu_order
+    );
+
+
+  if (!name) {
+
+    return json({
+      success: false,
+      error:
+        "श्रेणी नाम जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  // Automatically create English slug
+  if (!slug) {
+
+    slug =
+      makeSlug(name);
+
+  }
+
+
+  if (!slug) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!validSlug(slug)) {
+
+    return json({
+      success: false,
+      error:
+        "URL slug केवल English अक्षर, number आ hyphen में होयबाक चाही"
+    }, 400);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate name
+  // --------------------------------------------------
+
+  const existingName =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM categories
+        WHERE LOWER(name) = LOWER(?)
+        LIMIT 1
+      `)
+      .bind(name)
+      .first();
+
+
+  if (existingName) {
+
+    return json({
+      success: false,
+      error:
+        "ई श्रेणी पहिले सँ मौजूद अछि"
+    }, 409);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate slug
+  // --------------------------------------------------
+
+  const existingSlug =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM categories
+        WHERE slug = ?
+        LIMIT 1
+      `)
+      .bind(slug)
+      .first();
+
+
+  if (existingSlug) {
+
+    return json({
+      success: false,
+      error:
+        "ई English URL slug पहिले सँ मौजूद अछि"
+    }, 409);
+
+  }
+
+
+  // --------------------------------------------------
+  // Insert
+  // --------------------------------------------------
+
+  const result =
+    await env.DB
+      .prepare(`
+        INSERT INTO categories (
+          name,
+          slug,
+          description,
+          status,
+          menu_visible,
+          menu_order
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?
+        )
       `)
       .bind(
         name,
         slug,
         description || null,
-        menuVisible,
-        menuOrder,
         status,
-        id
+        menuVisible,
+        menuOrder
       )
       .run();
 
 
-    return Response.json({
-      success: true,
-      message:
-        "श्रेणी अपडेट भ' गेल"
-    });
+  return json({
+    success: true,
 
-  } catch (error) {
+    message:
+      "श्रेणी सफलतापूर्वक जोड़ल गेल",
 
-    console.error(
-      "UPDATE CATEGORY ERROR:",
-      error
-    );
+    category: {
+      id:
+        result.meta.last_row_id,
 
-    return Response.json({
-      success: false,
-      error:
-        error.message ||
-        "श्रेणी अपडेट नहि भ' सकल"
-    }, { status: 500 });
-  }
+      name,
+      slug,
+      description:
+        description || null,
+
+      status,
+
+      menu_visible:
+        menuVisible,
+
+      menu_order:
+        menuOrder,
+
+      url:
+        `/category/${slug}`
+    }
+
+  });
+
 }
 
 
-// ============================================================
+// ======================================================
+// UPDATE CATEGORY
+// ======================================================
+
+async function updateCategory(
+  request,
+  env
+) {
+
+  const user =
+    await requireAdmin(
+      request,
+      env
+    );
+
+
+  if (!user) {
+
+    return json({
+      success: false,
+      error: "Unauthorized"
+    }, 401);
+
+  }
+
+
+  const url =
+    new URL(request.url);
+
+
+  const id =
+    url.searchParams.get("id");
+
+
+  const body =
+    await request.json();
+
+
+  const categoryId =
+    id ||
+    body.id;
+
+
+  if (!categoryId) {
+
+    return json({
+      success: false,
+      error:
+        "Category ID जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  const oldCategory =
+    await env.DB
+      .prepare(`
+        SELECT *
+        FROM categories
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(categoryId)
+      .first();
+
+
+  if (!oldCategory) {
+
+    return json({
+      success: false,
+      error:
+        "श्रेणी नहि भेटल"
+    }, 404);
+
+  }
+
+
+  const name =
+    body.name !== undefined
+      ? cleanString(body.name)
+      : oldCategory.name;
+
+
+  let slug =
+    body.slug !== undefined
+      ? cleanString(body.slug)
+          .toLowerCase()
+      : oldCategory.slug;
+
+
+  const description =
+    body.description !== undefined
+      ? cleanString(
+          body.description
+        )
+      : oldCategory.description;
+
+
+  const status =
+    body.status !== undefined
+      ? normalizeStatus(
+          body.status
+        )
+      : normalizeStatus(
+          oldCategory.status
+        );
+
+
+  const menuVisible =
+    body.menu_visible !== undefined
+      ? normalizeBoolean(
+          body.menu_visible
+        )
+      : body.show_in_menu !== undefined
+        ? normalizeBoolean(
+            body.show_in_menu
+          )
+        : Number(
+            oldCategory.menu_visible ??
+            1
+          );
+
+
+  const menuOrder =
+    body.menu_order !== undefined
+      ? normalizeNumber(
+          body.menu_order
+        )
+      : Number(
+          oldCategory.menu_order ||
+          0
+        );
+
+
+  if (!name) {
+
+    return json({
+      success: false,
+      error:
+        "श्रेणी नाम जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!slug) {
+
+    slug =
+      makeSlug(name);
+
+  }
+
+
+  if (!validSlug(slug)) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug सही नहि अछि"
+    }, 400);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate slug
+  // --------------------------------------------------
+
+  const duplicateSlug =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM categories
+        WHERE slug = ?
+          AND id != ?
+        LIMIT 1
+      `)
+      .bind(
+        slug,
+        categoryId
+      )
+      .first();
+
+
+  if (duplicateSlug) {
+
+    return json({
+      success: false,
+      error:
+        "ई English URL slug दोसर श्रेणी में उपयोग भ' रहल अछि"
+    }, 409);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate name
+  // --------------------------------------------------
+
+  const duplicateName =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM categories
+        WHERE LOWER(name) = LOWER(?)
+          AND id != ?
+        LIMIT 1
+      `)
+      .bind(
+        name,
+        categoryId
+      )
+      .first();
+
+
+  if (duplicateName) {
+
+    return json({
+      success: false,
+      error:
+        "ई श्रेणी नाम दोसर श्रेणी में मौजूद अछि"
+    }, 409);
+
+  }
+
+
+  // --------------------------------------------------
+  // Update
+  // --------------------------------------------------
+
+  await env.DB
+    .prepare(`
+      UPDATE categories
+
+      SET
+        name = ?,
+        slug = ?,
+        description = ?,
+        status = ?,
+        menu_visible = ?,
+        menu_order = ?,
+        updated_at =
+          CURRENT_TIMESTAMP
+
+      WHERE id = ?
+    `)
+    .bind(
+      name,
+      slug,
+      description || null,
+      status,
+      menuVisible,
+      menuOrder,
+      categoryId
+    )
+    .run();
+
+
+  return json({
+    success: true,
+
+    message:
+      "श्रेणी सफलतापूर्वक update भ' गेल",
+
+    category: {
+      id:
+        Number(categoryId),
+
+      name,
+      slug,
+
+      description:
+        description || null,
+
+      status,
+
+      menu_visible:
+        menuVisible,
+
+      menu_order:
+        menuOrder,
+
+      url:
+        `/category/${slug}`
+    }
+
+  });
+
+}
+
+
+// ======================================================
 // DELETE CATEGORY
-// ============================================================
+// ======================================================
 
-export async function onRequestDelete(context) {
+async function deleteCategory(
+  request,
+  env
+) {
 
-  const { request, env } = context;
-
-  try {
-
-    const user =
-      await requireAdmin(
-        request,
-        env
-      );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, { status: 401 });
-
-    }
-
-
-    const url =
-      new URL(request.url);
-
-
-    const id =
-      url.searchParams.get("id");
-
-
-    if (!id) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Category ID जरूरी अछि"
-      }, { status: 400 });
-
-    }
-
-
-    // Check whether news uses this category
-
-    const used =
-      await env.DB
-        .prepare(`
-          SELECT COUNT(*) AS total
-          FROM news
-          WHERE category_id = ?
-        `)
-        .bind(id)
-        .first();
-
-
-    if (
-      Number(used?.total || 0) > 0
-    ) {
-
-      return Response.json({
-        success: false,
-        error:
-          "ई श्रेणी समाचार में उपयोग भ' रहल अछि। पहिले समाचारक श्रेणी बदलू।"
-      }, { status: 409 });
-
-    }
-
-
-    const result =
-      await env.DB
-        .prepare(`
-          DELETE FROM categories
-          WHERE id = ?
-        `)
-        .bind(id)
-        .run();
-
-
-    if (
-      !result.meta ||
-      !result.meta.changes
-    ) {
-
-      return Response.json({
-        success: false,
-        error:
-          "श्रेणी नहि भेटल"
-      }, { status: 404 });
-
-    }
-
-
-    return Response.json({
-      success: true,
-      message:
-        "श्रेणी delete भ' गेल"
-    });
-
-  } catch (error) {
-
-    console.error(
-      "DELETE CATEGORY ERROR:",
-      error
+  const user =
+    await requireAdmin(
+      request,
+      env
     );
 
-    return Response.json({
+
+  if (!user) {
+
+    return json({
+      success: false,
+      error: "Unauthorized"
+    }, 401);
+
+  }
+
+
+  const url =
+    new URL(request.url);
+
+
+  const id =
+    url.searchParams.get("id");
+
+
+  if (!id) {
+
+    return json({
       success: false,
       error:
-        error.message ||
-        "श्रेणी delete नहि भ' सकल"
-    }, { status: 500 });
+        "Category ID जरूरी अछि"
+    }, 400);
+
   }
+
+
+  const category =
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          name,
+          slug
+        FROM categories
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(id)
+      .first();
+
+
+  if (!category) {
+
+    return json({
+      success: false,
+      error:
+        "श्रेणी नहि भेटल"
+    }, 404);
+
+  }
+
+
+  // --------------------------------------------------
+  // Do not delete category if news exists.
+  // Instead return a clear error.
+  // --------------------------------------------------
+
+  const news =
+    await env.DB
+      .prepare(`
+        SELECT
+          COUNT(*) AS total
+        FROM news
+        WHERE category_id = ?
+      `)
+      .bind(id)
+      .first();
+
+
+  const newsCount =
+    Number(
+      news?.total || 0
+    );
+
+
+  if (newsCount > 0) {
+
+    return json({
+      success: false,
+
+      error:
+        `एहि श्रेणी में ${newsCount} समाचार अछि। पहिले समाचारक श्रेणी बदलू, तकर बाद श्रेणी delete करू।`
+    }, 409);
+
+  }
+
+
+  await env.DB
+    .prepare(`
+      DELETE FROM categories
+      WHERE id = ?
+    `)
+    .bind(id)
+    .run();
+
+
+  return json({
+    success: true,
+
+    message:
+      "श्रेणी delete भ' गेल"
+  });
+
 }
 
 
-// ============================================================
+// ======================================================
+// NORMALIZE CATEGORY
+// ======================================================
+
+function normalizeCategory(
+  category
+) {
+
+  return {
+    ...category,
+
+    id:
+      Number(category.id),
+
+    menu_visible:
+      Number(
+        category.menu_visible ??
+        category.show_in_menu ??
+        1
+      ),
+
+    menu_order:
+      Number(
+        category.menu_order ||
+        0
+      ),
+
+    status:
+      category.status ||
+      "active",
+
+    url:
+      `/category/${category.slug}`
+  };
+
+}
+
+
+// ======================================================
 // ADMIN AUTH
-// ============================================================
+// ======================================================
 
 async function requireAdmin(
   request,
   env
 ) {
 
-  try {
-
-    if (!env.AUTH_SECRET) {
-      return null;
-    }
+  const secret =
+    env.AUTH_SECRET;
 
 
-    const cookies =
-      parseCookies(
-        request.headers.get(
-          "Cookie"
-        ) || ""
-      );
-
-
-    const token =
-      cookies.session;
-
-
-    if (!token) {
-      return null;
-    }
-
-
-    const session =
-      await verifySessionToken(
-        token,
-        env.AUTH_SECRET
-      );
-
-
-    if (
-      !session ||
-      !session.id
-    ) {
-      return null;
-    }
-
-
-    const user =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            name,
-            email,
-            role,
-            status
-          FROM users
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(
-          session.id
-        )
-        .first();
-
-
-    if (
-      !user ||
-      user.status !== "active" ||
-      user.role !== "admin"
-    ) {
-      return null;
-    }
-
-
-    return user;
-
-  } catch (error) {
+  if (!secret) {
 
     console.error(
-      "AUTH ERROR:",
-      error
+      "AUTH_SECRET missing"
     );
 
     return null;
+
   }
-}
 
 
-// ============================================================
-// COOKIE PARSER
-// ============================================================
+  const cookieHeader =
+    request.headers.get(
+      "Cookie"
+    ) || "";
 
-function parseCookies(
-  cookieString
-) {
 
-  const cookies = {};
-
-  cookieString
-    .split(";")
-    .forEach(
-      part => {
-
-        const index =
-          part.indexOf("=");
-
-        if (index === -1) {
-          return;
-        }
-
-        const key =
-          part
-            .slice(0, index)
-            .trim();
-
-        const value =
-          part
-            .slice(index + 1)
-            .trim();
-
-        cookies[key] =
-          value;
-      }
+  const cookies =
+    parseCookies(
+      cookieHeader
     );
 
-  return cookies;
+
+  const token =
+    cookies.session;
+
+
+  if (!token) {
+
+    return null;
+
+  }
+
+
+  const session =
+    await verifySession(
+      token,
+      secret
+    );
+
+
+  if (
+    !session ||
+    !session.id
+  ) {
+
+    return null;
+
+  }
+
+
+  const user =
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          name,
+          email,
+          role,
+          status
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(
+        session.id
+      )
+      .first();
+
+
+  if (
+    !user ||
+    user.status !== "active"
+  ) {
+
+    return null;
+
+  }
+
+
+  if (
+    user.role !== "admin"
+  ) {
+
+    return null;
+
+  }
+
+
+  return user;
+
 }
 
 
-// ============================================================
+// ======================================================
 // VERIFY SESSION
-// ============================================================
+// ======================================================
 
-async function verifySessionToken(
+async function verifySession(
   token,
   secret
 ) {
@@ -709,13 +1042,16 @@ async function verifySessionToken(
   try {
 
     const parts =
-      String(token).split(".");
+      String(token)
+        .split(".");
 
 
     if (
       parts.length !== 2
     ) {
+
       return null;
+
     }
 
 
@@ -727,55 +1063,62 @@ async function verifySessionToken(
 
 
     const expected =
-      await sign(
+      await hmacSign(
         payload,
         secret
       );
 
 
     if (
-      !timingSafeEqual(
+      !safeEqual(
         signature,
         expected
       )
     ) {
+
       return null;
+
     }
 
 
     const data =
       JSON.parse(
-        fromBase64url(
+        decodeBase64Url(
           payload
         )
       );
 
 
     if (
-      !data.exp ||
-      data.exp <
+      data.exp &&
+      Number(data.exp) <
         Math.floor(
           Date.now() / 1000
         )
     ) {
+
       return null;
+
     }
 
 
     return data;
 
+
   } catch {
 
     return null;
+
   }
+
 }
 
 
-// ============================================================
-// SIGN
-// ============================================================
+// ======================================================
+// HMAC
+// ======================================================
 
-async function sign(
+async function hmacSign(
   value,
   secret
 ) {
@@ -783,14 +1126,18 @@ async function sign(
   const key =
     await crypto.subtle.importKey(
       "raw",
+
       new TextEncoder().encode(
         secret
       ),
+
       {
         name: "HMAC",
         hash: "SHA-256"
       },
+
       false,
+
       ["sign"]
     );
 
@@ -798,30 +1145,280 @@ async function sign(
   const signature =
     await crypto.subtle.sign(
       "HMAC",
+
       key,
+
       new TextEncoder().encode(
         value
       )
     );
 
 
-  return base64url(
+  return base64Url(
     new Uint8Array(
       signature
     )
   );
+
 }
 
 
-// ============================================================
-// BASE64 URL ENCODE
-// ============================================================
+// ======================================================
+// COOKIES
+// ======================================================
 
-function base64url(
+function parseCookies(
+  header
+) {
+
+  const result = {};
+
+
+  header
+    .split(";")
+    .forEach(
+      part => {
+
+        const index =
+          part.indexOf("=");
+
+
+        if (
+          index === -1
+        ) {
+
+          return;
+
+        }
+
+
+        const key =
+          part
+            .slice(
+              0,
+              index
+            )
+            .trim();
+
+
+        const value =
+          part
+            .slice(
+              index + 1
+            )
+            .trim();
+
+
+        result[key] =
+          value;
+
+      }
+    );
+
+
+  return result;
+
+}
+
+
+// ======================================================
+// SLUG
+// ======================================================
+
+function makeSlug(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+    .toLowerCase()
+    .trim()
+    .replace(
+      /[^a-z0-9]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+
+}
+
+
+// ======================================================
+// VALID SLUG
+// ======================================================
+
+function validSlug(
+  slug
+) {
+
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+    slug
+  );
+
+}
+
+
+// ======================================================
+// STATUS
+// ======================================================
+
+function normalizeStatus(
+  value
+) {
+
+  const status =
+    String(
+      value || "active"
+    )
+      .toLowerCase();
+
+
+  return [
+    "active",
+    "inactive"
+  ].includes(status)
+
+    ? status
+
+    : "active";
+
+}
+
+
+// ======================================================
+// BOOLEAN
+// ======================================================
+
+function normalizeBoolean(
+  value
+) {
+
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+
+    return 1;
+
+  }
+
+
+  if (
+    value === true ||
+    value === 1 ||
+    value === "1" ||
+    value === "true" ||
+    value === "on" ||
+    value === "yes"
+  ) {
+
+    return 1;
+
+  }
+
+
+  return 0;
+
+}
+
+
+// ======================================================
+// NUMBER
+// ======================================================
+
+function normalizeNumber(
+  value
+) {
+
+  const number =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(number) ||
+    number < 0
+  ) {
+
+    return 0;
+
+  }
+
+
+  return Math.floor(
+    number
+  );
+
+}
+
+
+// ======================================================
+// STRING
+// ======================================================
+
+function cleanString(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return "";
+
+  }
+
+
+  return String(
+    value
+  ).trim();
+
+}
+
+
+// ======================================================
+// JSON
+// ======================================================
+
+function json(
+  data,
+  status = 200
+) {
+
+  return new Response(
+    JSON.stringify(
+      data
+    ),
+
+    {
+      status,
+
+      headers: {
+        "Content-Type":
+          "application/json; charset=UTF-8",
+
+        "Cache-Control":
+          "no-store"
+      }
+    }
+  );
+
+}
+
+
+// ======================================================
+// BASE64 URL
+// ======================================================
+
+function base64Url(
   bytes
 ) {
 
   let binary = "";
+
 
   for (
     const byte of bytes
@@ -834,25 +1431,43 @@ function base64url(
 
   }
 
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+
+  return btoa(
+    binary
+  )
+    .replace(
+      /\+/g,
+      "-"
+    )
+    .replace(
+      /\//g,
+      "_"
+    )
+    .replace(
+      /=/g,
+      "");
+
 }
 
 
-// ============================================================
+// ======================================================
 // BASE64 URL DECODE
-// ============================================================
+// ======================================================
 
-function fromBase64url(
+function decodeBase64Url(
   value
 ) {
 
   let base64 =
     String(value)
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
 
 
   while (
@@ -887,23 +1502,30 @@ function fromBase64url(
 
 
   return new TextDecoder()
-    .decode(bytes);
+    .decode(
+      bytes
+    );
+
 }
 
 
-// ============================================================
-// TIMING SAFE
-// ============================================================
+// ======================================================
+// SAFE EQUAL
+// ======================================================
 
-function timingSafeEqual(
+function safeEqual(
   a,
   b
 ) {
 
   if (
+    !a ||
+    !b ||
     a.length !== b.length
   ) {
+
     return false;
+
   }
 
 
@@ -924,4 +1546,5 @@ function timingSafeEqual(
 
 
   return result === 0;
+
 }
