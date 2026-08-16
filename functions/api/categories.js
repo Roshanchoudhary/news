@@ -1,584 +1,723 @@
-// functions/api/news.js
+// functions/api/categories.js
 
-// ============================================
-// GET NEWS
-// /api/news
-// /api/news?id=123
-// /api/news?status=published
-// ============================================
+// ============================================================
+// CATEGORIES API
+// GET    /api/categories
+// POST   /api/categories
+// PUT    /api/categories?id=1
+// DELETE /api/categories?id=1
+// ============================================================
+
+
+// ============================================================
+// GET CATEGORIES
+// ============================================================
 
 export async function onRequestGet(context) {
-  const { request, env } = context;
+
+  const { env } = context;
 
   try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get("id");
-    const status = url.searchParams.get("status");
-
-    // ----------------------------------------
-    // SINGLE NEWS
-    // ----------------------------------------
-    if (id) {
-      const news = await env.DB
-        .prepare(`
-          SELECT
-            n.*,
-            c.name AS category_name,
-            u.name AS author_name
-          FROM news n
-          LEFT JOIN categories c
-            ON n.category_id = c.id
-          LEFT JOIN users u
-            ON n.author_id = u.id
-          WHERE n.id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-      if (!news) {
-        return Response.json(
-          {
-            success: false,
-            error: "समाचार नहि भेटल"
-          },
-          { status: 404 }
-        );
-      }
-
-      // Public view count
-      if (news.status === "published") {
-        await env.DB
-          .prepare(`
-            UPDATE news
-            SET views = views + 1
-            WHERE id = ?
-          `)
-          .bind(id)
-          .run();
-
-        news.views = Number(news.views || 0) + 1;
-      }
-
-      return Response.json({
-        success: true,
-        news
-      });
-    }
-
-    // ----------------------------------------
-    // NEWS LIST
-    // ----------------------------------------
-
-    let query = `
-      SELECT
-        n.id,
-        n.title,
-        n.slug,
-        n.summary,
-        n.image_url,
-        n.category_id,
-        n.author_id,
-        n.status,
-        n.featured,
-        n.views,
-        n.seo_title,
-        n.seo_description,
-        n.published_at,
-        n.created_at,
-        n.updated_at,
-        c.name AS category_name,
-        u.name AS author_name
-      FROM news n
-      LEFT JOIN categories c
-        ON n.category_id = c.id
-      LEFT JOIN users u
-        ON n.author_id = u.id
-    `;
-
-    const params = [];
-
-    // Public website पर default केवल published
-    if (!status) {
-      query += `
-        WHERE n.status = 'published'
-        ORDER BY
-          COALESCE(n.published_at, n.created_at) DESC
-        LIMIT 100
-      `;
-    }
-
-    // Admin dashboard status अनुसार
-    else if (
-      status === "draft" ||
-      status === "published"
-    ) {
-      query += `
-        WHERE n.status = ?
-        ORDER BY n.created_at DESC
-        LIMIT 100
-      `;
-
-      params.push(status);
-    }
-
-    // Admin dashboard के लेल all
-    else if (status === "all") {
-      query += `
-        ORDER BY n.created_at DESC
-        LIMIT 100
-      `;
-    }
-
-    else {
-      return Response.json(
-        {
-          success: false,
-          error: "Invalid status"
-        },
-        { status: 400 }
-      );
-    }
-
-    const result = await env.DB
-      .prepare(query)
-      .bind(...params)
-      .all();
-
-    return Response.json({
-      success: true,
-      news: result.results || []
-    });
-
-  } catch (error) {
-
-    console.error("GET NEWS ERROR:", error);
-
-    return Response.json(
-      {
-        success: false,
-        error: "समाचार लोड नहि भ' सकल"
-      },
-      { status: 500 }
-    );
-  }
-}
-
-
-// ============================================
-// CREATE NEWS
-// POST /api/news
-// ============================================
-
-export async function onRequestPost(context) {
-  const { request, env } = context;
-
-  try {
-
-    // Admin authentication
-    const user = await requireAdmin(request, env);
-
-    if (!user) {
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-
-    const title =
-      String(body.title || "").trim();
-
-    const summary =
-      String(body.summary || "").trim();
-
-    const content =
-      String(body.content || "").trim();
-
-    const imageUrl =
-      String(body.image_url || "").trim();
-
-    const categoryId =
-      body.category_id
-        ? Number(body.category_id)
-        : null;
-
-    const status =
-      body.status === "published"
-        ? "published"
-        : "draft";
-
-    const featured =
-      body.featured ? 1 : 0;
-
-    const seoTitle =
-      String(body.seo_title || "").trim();
-
-    const seoDescription =
-      String(body.seo_description || "").trim();
-
-    if (!title || !content) {
-      return Response.json(
-        {
-          success: false,
-          error: "शीर्षक आ समाचार जरूरी अछि"
-        },
-        { status: 400 }
-      );
-    }
-
-    const slug =
-      await createUniqueSlug(
-        title,
-        env
-      );
-
-    const publishedAt =
-      status === "published"
-        ? new Date().toISOString()
-        : null;
 
     const result = await env.DB
       .prepare(`
-        INSERT INTO news (
-          title,
+        SELECT
+          id,
+          name,
           slug,
-          summary,
-          content,
-          image_url,
-          category_id,
-          author_id,
-          status,
-          featured,
-          views,
-          seo_title,
-          seo_description,
-          published_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+          description,
+          created_at
+        FROM categories
+        ORDER BY id ASC
       `)
-      .bind(
-        title,
-        slug,
-        summary,
-        content,
-        imageUrl || null,
-        categoryId,
-        user.id,
-        status,
-        featured,
-        seoTitle || title,
-        seoDescription || summary,
-        publishedAt
-      )
-      .run();
+      .all();
+
 
     return Response.json({
+
       success: true,
-      message: "समाचार सफलतापूर्वक जोड़ल गेल",
-      id: result.meta.last_row_id,
-      slug
+
+      categories:
+        result.results || []
+
     });
+
 
   } catch (error) {
 
-    console.error("CREATE NEWS ERROR:", error);
+    console.error(
+      "GET CATEGORIES ERROR:",
+      error
+    );
+
 
     return Response.json(
       {
         success: false,
-        error: error.message
+        error:
+          "श्रेणी लोड नहि भ' सकल"
       },
-      { status: 500 }
+      {
+        status: 500
+      }
     );
+
   }
+
 }
 
 
-// ============================================
-// UPDATE NEWS
-// PUT /api/news?id=123
-// ============================================
+// ============================================================
+// CREATE CATEGORY
+// POST /api/categories
+// ============================================================
 
-export async function onRequestPut(context) {
+export async function onRequestPost(context) {
+
   const { request, env } = context;
 
   try {
 
+    // --------------------------------------------------------
+    // ADMIN CHECK
+    // --------------------------------------------------------
+
     const user =
-      await requireAdmin(request, env);
+      await requireAdmin(
+        request,
+        env
+      );
+
 
     if (!user) {
+
       return Response.json(
         {
           success: false,
           error: "Unauthorized"
         },
-        { status: 401 }
-      );
-    }
-
-    const url =
-      new URL(request.url);
-
-    const id =
-      url.searchParams.get("id");
-
-    if (!id) {
-      return Response.json(
         {
-          success: false,
-          error: "News ID जरूरी अछि"
-        },
-        { status: 400 }
+          status: 401
+        }
       );
+
     }
 
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT id, title, status
-          FROM news
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
 
-    if (!existing) {
-      return Response.json(
-        {
-          success: false,
-          error: "समाचार नहि भेटल"
-        },
-        { status: 404 }
-      );
-    }
+    // --------------------------------------------------------
+    // READ JSON
+    // --------------------------------------------------------
 
     const body =
       await request.json();
 
-    const title =
+
+    const name =
       String(
-        body.title ?? existing.title
+        body.name || ""
       ).trim();
 
-    const summary =
+
+    const description =
       String(
-        body.summary ?? ""
+        body.description || ""
       ).trim();
 
-    const content =
-      String(
-        body.content ?? ""
-      ).trim();
 
-    const imageUrl =
-      String(
-        body.image_url ?? ""
-      ).trim();
+    // --------------------------------------------------------
+    // VALIDATE CATEGORY NAME
+    // --------------------------------------------------------
 
-    const categoryId =
-      body.category_id
-        ? Number(body.category_id)
-        : null;
+    if (!name) {
 
-    const status =
-      body.status === "published"
-        ? "published"
-        : "draft";
-
-    const featured =
-      body.featured ? 1 : 0;
-
-    const seoTitle =
-      String(
-        body.seo_title ?? ""
-      ).trim();
-
-    const seoDescription =
-      String(
-        body.seo_description ?? ""
-      ).trim();
-
-    if (!title || !content) {
       return Response.json(
         {
           success: false,
-          error: "शीर्षक आ समाचार जरूरी अछि"
+          error:
+            "श्रेणी नाम जरूरी अछि"
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
-    }
-
-    // Publish time only when first published
-    let publishedAt = null;
-
-    if (status === "published") {
-
-      const old =
-        await env.DB
-          .prepare(`
-            SELECT published_at
-            FROM news
-            WHERE id = ?
-          `)
-          .bind(id)
-          .first();
-
-      publishedAt =
-        old?.published_at ||
-        new Date().toISOString();
 
     }
 
-    await env.DB
-      .prepare(`
-        UPDATE news
-        SET
-          title = ?,
-          summary = ?,
-          content = ?,
-          image_url = ?,
-          category_id = ?,
-          status = ?,
-          featured = ?,
-          seo_title = ?,
-          seo_description = ?,
-          published_at = ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `)
-      .bind(
-        title,
-        summary,
-        content,
-        imageUrl || null,
-        categoryId,
-        status,
-        featured,
-        seoTitle || title,
-        seoDescription || summary,
-        publishedAt,
-        id
-      )
-      .run();
+
+    // --------------------------------------------------------
+    // CHECK DUPLICATE NAME
+    // --------------------------------------------------------
+
+    const existingName =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            name,
+            slug
+          FROM categories
+          WHERE LOWER(name) = LOWER(?)
+          LIMIT 1
+        `)
+        .bind(name)
+        .first();
+
+
+    if (existingName) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "ई श्रेणी पहिले सँ मौजूद अछि"
+        },
+        {
+          status: 409
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // CREATE UNIQUE SLUG
+    // --------------------------------------------------------
+
+    const slug =
+      await createUniqueSlug(
+        name,
+        env
+      );
+
+
+    // --------------------------------------------------------
+    // INSERT CATEGORY
+    // --------------------------------------------------------
+
+    const result =
+      await env.DB
+        .prepare(`
+          INSERT INTO categories
+          (
+            name,
+            slug,
+            description
+          )
+          VALUES (?, ?, ?)
+        `)
+        .bind(
+          name,
+          slug,
+          description || null
+        )
+        .run();
+
+
+    // --------------------------------------------------------
+    // RETURN RESULT
+    // --------------------------------------------------------
 
     return Response.json({
+
       success: true,
-      message: "समाचार अपडेट भ' गेल"
+
+      message:
+        "श्रेणी सफलतापूर्वक जोड़ल गेल",
+
+      id:
+        result.meta.last_row_id,
+
+      slug:
+        slug
+
     });
+
 
   } catch (error) {
 
-    console.error("UPDATE NEWS ERROR:", error);
+    console.error(
+      "CREATE CATEGORY ERROR:",
+      error
+    );
+
 
     return Response.json(
       {
         success: false,
-        error: error.message
+        error:
+          error.message ||
+          "श्रेणी जोड़ल नहि जा सकल"
       },
-      { status: 500 }
+      {
+        status: 500
+      }
     );
+
   }
+
 }
 
 
-// ============================================
-// DELETE NEWS
-// DELETE /api/news?id=123
-// ============================================
+// ============================================================
+// UPDATE CATEGORY
+// PUT /api/categories?id=1
+// ============================================================
 
-export async function onRequestDelete(context) {
+export async function onRequestPut(context) {
+
   const { request, env } = context;
 
   try {
 
+    // --------------------------------------------------------
+    // ADMIN CHECK
+    // --------------------------------------------------------
+
     const user =
-      await requireAdmin(request, env);
+      await requireAdmin(
+        request,
+        env
+      );
+
 
     if (!user) {
+
       return Response.json(
         {
           success: false,
           error: "Unauthorized"
         },
-        { status: 401 }
+        {
+          status: 401
+        }
       );
+
     }
 
+
+    // --------------------------------------------------------
+    // GET ID
+    // --------------------------------------------------------
+
     const url =
-      new URL(request.url);
+      new URL(
+        request.url
+      );
+
 
     const id =
-      url.searchParams.get("id");
+      url.searchParams.get(
+        "id"
+      );
+
 
     if (!id) {
+
       return Response.json(
         {
           success: false,
-          error: "News ID जरूरी अछि"
+          error:
+            "Category ID जरूरी अछि"
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
+
     }
+
+
+    // --------------------------------------------------------
+    // READ BODY
+    // --------------------------------------------------------
+
+    const body =
+      await request.json();
+
+
+    const name =
+      String(
+        body.name || ""
+      ).trim();
+
+
+    const description =
+      String(
+        body.description || ""
+      ).trim();
+
+
+    if (!name) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "श्रेणी नाम जरूरी अछि"
+        },
+        {
+          status: 400
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // CHECK CATEGORY EXISTS
+    // --------------------------------------------------------
 
     const existing =
       await env.DB
         .prepare(`
-          SELECT id
-          FROM news
+          SELECT
+            id,
+            name,
+            slug
+          FROM categories
           WHERE id = ?
           LIMIT 1
         `)
         .bind(id)
         .first();
 
+
     if (!existing) {
+
       return Response.json(
         {
           success: false,
-          error: "समाचार नहि भेटल"
+          error:
+            "श्रेणी नहि भेटल"
         },
-        { status: 404 }
+        {
+          status: 404
+        }
       );
+
     }
+
+
+    // --------------------------------------------------------
+    // CHECK DUPLICATE NAME
+    // --------------------------------------------------------
+
+    const duplicate =
+      await env.DB
+        .prepare(`
+          SELECT
+            id
+          FROM categories
+          WHERE LOWER(name) = LOWER(?)
+          AND id != ?
+          LIMIT 1
+        `)
+        .bind(
+          name,
+          id
+        )
+        .first();
+
+
+    if (duplicate) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "ई नामक श्रेणी पहिले सँ मौजूद अछि"
+        },
+        {
+          status: 409
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // KEEP EXISTING SLUG
+    // --------------------------------------------------------
+
+    const slug =
+      existing.slug ||
+      await createUniqueSlug(
+        name,
+        env
+      );
+
+
+    // --------------------------------------------------------
+    // UPDATE
+    // --------------------------------------------------------
 
     await env.DB
       .prepare(`
-        DELETE FROM news
+        UPDATE categories
+        SET
+          name = ?,
+          slug = ?,
+          description = ?
         WHERE id = ?
       `)
-      .bind(id)
+      .bind(
+        name,
+        slug,
+        description || null,
+        id
+      )
       .run();
 
+
     return Response.json({
+
       success: true,
-      message: "समाचार delete भ' गेल"
+
+      message:
+        "श्रेणी अपडेट भ' गेल"
+
     });
+
 
   } catch (error) {
 
-    console.error("DELETE NEWS ERROR:", error);
+    console.error(
+      "UPDATE CATEGORY ERROR:",
+      error
+    );
+
 
     return Response.json(
       {
         success: false,
-        error: error.message
+        error:
+          error.message ||
+          "श्रेणी अपडेट नहि भ' सकल"
       },
-      { status: 500 }
+      {
+        status: 500
+      }
     );
+
   }
+
 }
 
 
-// ============================================
+// ============================================================
+// DELETE CATEGORY
+// DELETE /api/categories?id=1
+// ============================================================
+
+export async function onRequestDelete(context) {
+
+  const { request, env } = context;
+
+  try {
+
+    // --------------------------------------------------------
+    // ADMIN CHECK
+    // --------------------------------------------------------
+
+    const user =
+      await requireAdmin(
+        request,
+        env
+      );
+
+
+    if (!user) {
+
+      return Response.json(
+        {
+          success: false,
+          error: "Unauthorized"
+        },
+        {
+          status: 401
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // GET ID
+    // --------------------------------------------------------
+
+    const url =
+      new URL(
+        request.url
+      );
+
+
+    const id =
+      url.searchParams.get(
+        "id"
+      );
+
+
+    if (!id) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "Category ID जरूरी अछि"
+        },
+        {
+          status: 400
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // CHECK CATEGORY
+    // --------------------------------------------------------
+
+    const existing =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            name
+          FROM categories
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(id)
+        .first();
+
+
+    if (!existing) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "श्रेणी नहि भेटल"
+        },
+        {
+          status: 404
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // CHECK NEWS USING CATEGORY
+    // --------------------------------------------------------
+
+    const used =
+      await env.DB
+        .prepare(`
+          SELECT
+            COUNT(*) AS total
+          FROM news
+          WHERE category_id = ?
+        `)
+        .bind(id)
+        .first();
+
+
+    const total =
+      Number(
+        used?.total || 0
+      );
+
+
+    if (total > 0) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "ई श्रेणी " +
+            total +
+            " टा समाचार में उपयोग भ' रहल अछि। पहिले समाचारक श्रेणी बदलू।"
+        },
+        {
+          status: 409
+        }
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // DELETE
+    // --------------------------------------------------------
+
+    const result =
+      await env.DB
+        .prepare(`
+          DELETE FROM categories
+          WHERE id = ?
+        `)
+        .bind(id)
+        .run();
+
+
+    if (
+      !result.meta ||
+      !result.meta.changes
+    ) {
+
+      return Response.json(
+        {
+          success: false,
+          error:
+            "श्रेणी delete नहि भ' सकल"
+        },
+        {
+          status: 404
+        }
+      );
+
+    }
+
+
+    return Response.json({
+
+      success: true,
+
+      message:
+        "श्रेणी delete भ' गेल"
+
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      "DELETE CATEGORY ERROR:",
+      error
+    );
+
+
+    return Response.json(
+      {
+        success: false,
+        error:
+          error.message ||
+          "श्रेणी delete नहि भ' सकल"
+      },
+      {
+        status: 500
+      }
+    );
+
+  }
+
+}
+
+
+// ============================================================
 // ADMIN AUTHENTICATION
-// ============================================
+// ============================================================
 
 async function requireAdmin(
   request,
@@ -587,21 +726,47 @@ async function requireAdmin(
 
   try {
 
+    // --------------------------------------------------------
+    // AUTH SECRET
+    // --------------------------------------------------------
+
     if (!env.AUTH_SECRET) {
+
+      console.error(
+        "AUTH_SECRET is missing"
+      );
+
       return null;
+
     }
+
+
+    // --------------------------------------------------------
+    // COOKIE
+    // --------------------------------------------------------
 
     const cookies =
       parseCookies(
-        request.headers.get("Cookie") || ""
+        request.headers.get(
+          "Cookie"
+        ) || ""
       );
+
 
     const token =
       cookies.session;
 
+
     if (!token) {
+
       return null;
+
     }
+
+
+    // --------------------------------------------------------
+    // VERIFY SESSION
+    // --------------------------------------------------------
 
     const session =
       await verifySessionToken(
@@ -609,9 +774,20 @@ async function requireAdmin(
         env.AUTH_SECRET
       );
 
-    if (!session || !session.id) {
+
+    if (
+      !session ||
+      !session.id
+    ) {
+
       return null;
+
     }
+
+
+    // --------------------------------------------------------
+    // GET USER
+    // --------------------------------------------------------
 
     const user =
       await env.DB
@@ -626,84 +802,140 @@ async function requireAdmin(
           WHERE id = ?
           LIMIT 1
         `)
-        .bind(session.id)
+        .bind(
+          session.id
+        )
         .first();
+
 
     if (
       !user ||
       user.status !== "active" ||
       user.role !== "admin"
     ) {
+
       return null;
+
     }
+
 
     return user;
 
-  } catch {
+
+  } catch (error) {
+
+    console.error(
+      "ADMIN AUTH ERROR:",
+      error
+    );
+
     return null;
+
   }
+
 }
 
 
-// ============================================
-// SLUG
-// ============================================
+// ============================================================
+// CREATE UNIQUE SLUG
+// ============================================================
 
 async function createUniqueSlug(
-  title,
+  name,
   env
 ) {
 
   let base =
-    slugify(title);
+    slugify(name);
+
+
+  // ----------------------------------------------------------
+  // EMPTY SLUG
+  // ----------------------------------------------------------
 
   if (!base) {
+
     base =
-      "news-" +
+      "category-" +
       Date.now();
+
   }
 
-  let slug = base;
-  let number = 2;
+
+  let slug =
+    base;
+
+
+  let number =
+    2;
+
+
+  // ----------------------------------------------------------
+  // CHECK EXISTING SLUG
+  // ----------------------------------------------------------
 
   while (true) {
 
     const existing =
       await env.DB
         .prepare(`
-          SELECT id
-          FROM news
+          SELECT
+            id
+          FROM categories
           WHERE slug = ?
           LIMIT 1
         `)
-        .bind(slug)
+        .bind(
+          slug
+        )
         .first();
 
+
     if (!existing) {
+
       return slug;
+
     }
+
 
     slug =
       `${base}-${number}`;
 
+
     number++;
+
   }
+
 }
 
 
-function slugify(value) {
+// ============================================================
+// SLUGIFY
+// ============================================================
 
-  return String(value)
+function slugify(
+  value
+) {
+
+  return String(
+    value || ""
+  )
     .toLowerCase()
     .trim()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(
+      /[^\p{L}\p{N}]+/gu,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+
 }
 
 
-// ============================================
-// COOKIE
-// ============================================
+// ============================================================
+// PARSE COOKIES
+// ============================================================
 
 function parseCookies(
   cookieString
@@ -711,32 +943,55 @@ function parseCookies(
 
   const cookies = {};
 
+
   cookieString
     .split(";")
-    .forEach(part => {
+    .forEach(
+      part => {
 
-      const index =
-        part.indexOf("=");
+        const index =
+          part.indexOf("=");
 
-      if (index === -1) return;
 
-      const key =
-        part.slice(0, index).trim();
+        if (
+          index === -1
+        ) {
+          return;
+        }
 
-      const value =
-        part.slice(index + 1).trim();
 
-      cookies[key] = value;
+        const key =
+          part
+            .slice(
+              0,
+              index
+            )
+            .trim();
 
-    });
+
+        const value =
+          part
+            .slice(
+              index + 1
+            )
+            .trim();
+
+
+        cookies[key] =
+          value;
+
+      }
+    );
+
 
   return cookies;
+
 }
 
 
-// ============================================
-// SESSION TOKEN
-// ============================================
+// ============================================================
+// VERIFY SESSION TOKEN
+// ============================================================
 
 async function verifySessionToken(
   token,
@@ -746,17 +1001,27 @@ async function verifySessionToken(
   try {
 
     const parts =
-      String(token).split(".");
+      String(
+        token
+      ).split(".");
 
-    if (parts.length !== 2) {
+
+    if (
+      parts.length !== 2
+    ) {
+
       return null;
+
     }
+
 
     const payload =
       parts[0];
 
+
     const signature =
       parts[1];
+
 
     const expected =
       await sign(
@@ -764,39 +1029,55 @@ async function verifySessionToken(
         secret
       );
 
+
     if (
       !timingSafeEqualString(
         signature,
         expected
       )
     ) {
+
       return null;
+
     }
+
 
     const data =
       JSON.parse(
-        fromBase64url(payload)
+        fromBase64url(
+          payload
+        )
       );
+
 
     if (
       !data.exp ||
       data.exp <
-        Math.floor(Date.now() / 1000)
+        Math.floor(
+          Date.now() / 1000
+        )
     ) {
+
       return null;
+
     }
+
 
     return data;
 
+
   } catch {
+
     return null;
+
   }
+
 }
 
 
-// ============================================
-// HMAC
-// ============================================
+// ============================================================
+// HMAC SHA-256
+// ============================================================
 
 async function sign(
   value,
@@ -806,7 +1087,9 @@ async function sign(
   const key =
     await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(secret),
+      new TextEncoder().encode(
+        secret
+      ),
       {
         name: "HMAC",
         hash: "SHA-256"
@@ -815,91 +1098,169 @@ async function sign(
       ["sign"]
     );
 
+
   const signature =
     await crypto.subtle.sign(
       "HMAC",
       key,
-      new TextEncoder().encode(value)
+      new TextEncoder().encode(
+        value
+      )
     );
 
+
   return base64urlBytes(
-    new Uint8Array(signature)
+    new Uint8Array(
+      signature
+    )
   );
+
 }
 
 
-// ============================================
-// ENCODING
-// ============================================
+// ============================================================
+// BASE64 URL ENCODE
+// ============================================================
 
-function base64urlBytes(bytes) {
+function base64urlBytes(
+  bytes
+) {
 
   let binary = "";
 
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+
+  for (
+    const byte of bytes
+  ) {
+
+    binary +=
+      String.fromCharCode(
+        byte
+      );
+
   }
 
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+
+  return btoa(
+    binary
+  )
+    .replace(
+      /\+/g,
+      "-"
+    )
+    .replace(
+      /\//g,
+      "_"
+    )
+    .replace(
+      /=/g,
+      ""
+    );
+
 }
 
 
-function fromBase64url(value) {
+// ============================================================
+// BASE64 URL DECODE
+// ============================================================
+
+function fromBase64url(
+  value
+) {
 
   let base64 =
-    value
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+    String(
+      value
+    )
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
 
-  while (base64.length % 4) {
+
+  while (
+    base64.length % 4
+  ) {
+
     base64 += "=";
+
   }
 
+
   const binary =
-    atob(base64);
+    atob(
+      base64
+    );
+
 
   const bytes =
     new Uint8Array(
       binary.length
     );
 
+
   for (
     let i = 0;
     i < binary.length;
     i++
   ) {
+
     bytes[i] =
-      binary.charCodeAt(i);
+      binary.charCodeAt(
+        i
+      );
+
   }
 
+
   return new TextDecoder()
-    .decode(bytes);
+    .decode(
+      bytes
+    );
+
 }
 
+
+// ============================================================
+// TIMING SAFE STRING COMPARE
+// ============================================================
 
 function timingSafeEqualString(
   a,
   b
 ) {
 
-  if (a.length !== b.length) {
+  if (
+    a.length !==
+    b.length
+  ) {
+
     return false;
+
   }
 
-  let result = 0;
+
+  let result =
+    0;
+
 
   for (
     let i = 0;
     i < a.length;
     i++
   ) {
+
     result |=
       a.charCodeAt(i) ^
       b.charCodeAt(i);
+
   }
 
+
   return result === 0;
+
 }
