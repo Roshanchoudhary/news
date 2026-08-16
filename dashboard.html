@@ -652,13 +652,13 @@
       <div>
 
         <button
-          type="button"
-          class="btn btn-primary"
-          onclick="addCategory()"
-        >
-          + श्रेणी जोड़ू
-        </button>
-
+  id="addCategoryButton"
+  type="button"
+  class="btn btn-primary"
+>
+  + श्रेणी जोड़ू
+</button>
+      
       </div>
 
     </div>
@@ -945,81 +945,73 @@ function renderCategories() {
 // ADD CATEGORY
 // ======================================================
 
-async function addCategory() {
+async function addCategory(event) {
+
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
 
   const name =
-    document
-      .getElementById(
-        "categoryName"
-      )
-      .value
-      .trim();
-
+    document.getElementById("categoryName").value.trim();
 
   const description =
-    document
-      .getElementById(
-        "categoryDescription"
-      )
-      .value
-      .trim();
-
+    document.getElementById("categoryDescription").value.trim();
 
   if (!name) {
-
     showCategoryMessage(
       "कृपया श्रेणी नाम लिखू।",
       "error"
     );
-
     return;
   }
 
-
   try {
 
-    const response =
-      await fetch(
-        "/api/categories",
-        {
-          method: "POST",
+    const response = await fetch("/api/categories", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: name,
+        description: description
+      })
+    });
 
-          credentials:
-            "same-origin",
+    const data = await response.json();
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-              name:
-                name,
-
-              description:
-                description
-            })
-        }
-      );
-
-
-    const data =
-      await response.json();
-
+    console.log("CATEGORY RESPONSE:", data);
 
     if (!data.success) {
-
       showCategoryMessage(
-        data.error ||
-        "श्रेणी जोड़ल नहि गेल।",
+        data.error || "श्रेणी जोड़ल नहि गेल।",
         "error"
       );
-
       return;
     }
 
+    document.getElementById("categoryName").value = "";
+    document.getElementById("categoryDescription").value = "";
 
+    showCategoryMessage(
+      "श्रेणी सफलतापूर्वक जोड़ल गेल।",
+      "success"
+    );
+
+    await loadCategories();
+
+  } catch (error) {
+
+    console.error("CATEGORY ERROR:", error);
+
+    showCategoryMessage(
+      "Server error: श्रेणी जोड़ल नहि जा सकल।",
+      "error"
+    );
+  }
+}
     document
       .getElementById(
         "categoryName"
@@ -2185,7 +2177,9 @@ function formatDate(
   }
 
 }
-
+document
+  .getElementById("addCategoryButton")
+  .addEventListener("click", addCategory);
 
 // ======================================================
 // START
