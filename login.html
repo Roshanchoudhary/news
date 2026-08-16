@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="mai">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Admin Login</title>
+
+  <meta
+    name="robots"
+    content="noindex,nofollow"
+  >
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    html,
+    body{
+      margin:0;
+      padding:0;
+      width:100%;
+      min-height:100%;
+      font-family:
+        Arial,
+        "Noto Sans",
+        sans-serif;
+      background:#f5f5f5;
+      color:#222;
+    }
+
+    body{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .login-wrapper{
+      width:100%;
+      max-width:390px;
+    }
+
+    .login-card{
+      background:#fff;
+      border:1px solid #e5e5e5;
+      border-radius:14px;
+      padding:30px 26px;
+      box-shadow:
+        0 10px 35px
+        rgba(0,0,0,.07);
+    }
+
+    .brand{
+      text-align:center;
+      margin-bottom:25px;
+    }
+
+    .brand-icon{
+      width:58px;
+      height:58px;
+      margin:0 auto 13px;
+      border-radius:14px;
+      background:#8b0000;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:27px;
+      font-weight:800;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:21px;
+      font-weight:800;
+    }
+
+    .brand p{
+      margin:7px 0 0;
+      color:#888;
+      font-size:11px;
+    }
+
+    .form-group{
+      margin-bottom:16px;
+    }
+
+    .form-group label{
+      display:block;
+      margin-bottom:7px;
+      font-size:11px;
+      font-weight:700;
+      color:#444;
+    }
+
+    .input-wrapper{
+      position:relative;
+    }
+
+    .input{
+      width:100%;
+      height:43px;
+      border:1px solid #d8d8d8;
+      border-radius:8px;
+      padding:0 12px;
+      font-size:13px;
+      outline:none;
+      background:#fff;
+      transition:.15s;
+    }
+
+    .input:focus{
+      border-color:#8b0000;
+      box-shadow:
+        0 0 0 3px
+        rgba(139,0,0,.07);
+    }
+
+    .password-input{
+      padding-right:45px;
+    }
+
+    .password-toggle{
+      position:absolute;
+      right:0;
+      top:0;
+      width:42px;
+      height:43px;
+      border:0;
+      background:transparent;
+      cursor:pointer;
+      color:#777;
+    }
+
+    .login-button{
+      width:100%;
+      height:43px;
+      margin-top:5px;
+      border:0;
+      border-radius:8px;
+      background:#8b0000;
+      color:#fff;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      transition:.15s;
+    }
+
+    .login-button:hover{
+      background:#720000;
+    }
+
+    .login-button:disabled{
+      opacity:.65;
+      cursor:not-allowed;
+    }
+
+    .error-box,
+    .success-box{
+      display:none;
+      padding:10px 11px;
+      border-radius:7px;
+      margin-bottom:15px;
+      font-size:10px;
+      line-height:1.5;
+    }
+
+    .error-box{
+      background:#fff0f0;
+      border:1px solid #f0cccc;
+      color:#a00000;
+    }
+
+    .success-box{
+      background:#edf9f0;
+      border:1px solid #c9e8d0;
+      color:#23733a;
+    }
+
+    .footer{
+      text-align:center;
+      margin-top:18px;
+      color:#999;
+      font-size:9px;
+    }
+
+    .back-home{
+      display:block;
+      margin-top:14px;
+      text-align:center;
+      color:#777;
+      text-decoration:none;
+      font-size:10px;
+    }
+
+    .back-home:hover{
+      color:#8b0000;
+    }
+
+    .loading-overlay{
+      display:none;
+      position:fixed;
+      inset:0;
+      background:
+        rgba(255,255,255,.78);
+      z-index:9999;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .loading-overlay.show{
+      display:flex;
+    }
+
+    .loader{
+      width:30px;
+      height:30px;
+      border:3px solid #ddd;
+      border-top-color:#8b0000;
+      border-radius:50%;
+      animation:
+        spin .7s linear infinite;
+    }
+
+    @keyframes spin{
+      to{
+        transform:rotate(360deg);
+      }
+    }
+
+    @media(max-width:480px){
+
+      body{
+        padding:14px;
+      }
+
+      .login-card{
+        padding:25px 20px;
+        border-radius:11px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+  <div
+    class="loading-overlay"
+    id="loadingOverlay"
+  >
+
+    <div class="loader"></div>
+
+  </div>
+
+
+  <main
+    class="login-wrapper"
+  >
+
+    <section
+      class="login-card"
+    >
+
+
+      <div class="brand">
+
+        <div
+          class="brand-icon"
+        >
+          M
+        </div>
+
+        <h1>
+          Admin Login
+        </h1>
+
+        <p>
+          समाचार व्यवस्थापन प्रणाली
+        </p>
+
+      </div>
+
+
+      <div
+        id="errorBox"
+        class="error-box"
+      ></div>
+
+
+      <div
+        id="successBox"
+        class="success-box"
+      ></div>
+
+
+      <form
+        id="loginForm"
+        autocomplete="on"
+      >
+
+
+        <div
+          class="form-group"
+        >
+
+          <label
+            for="email"
+          >
+            Email
+          </label>
+
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="input"
+            placeholder="admin@example.com"
+            autocomplete="username"
+            required
+          >
+
+        </div>
+
+
+        <div
+          class="form-group"
+        >
+
+          <label
+            for="password"
+          >
+            Password
+          </label>
+
+
+          <div
+            class="input-wrapper"
+          >
+
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="input password-input"
+              placeholder="Password"
+              autocomplete="current-password"
+              required
+            >
+
+
+            <button
+              type="button"
+              id="passwordToggle"
+              class="password-toggle"
+              aria-label="Show password"
+            >
+              👁
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <button
+          type="submit"
+          id="loginButton"
+          class="login-button"
+        >
+          Login
+        </button>
+
+
+      </form>
+
+
+      <a
+        href="/"
+        class="back-home"
+      >
+        ← Website पर वापस जाउ
+      </a>
+
+
+      <div
+        class="footer"
+      >
+        Admin access only
+      </div>
+
+
+    </section>
+
+  </main>
+
+
+<script>
+
+"use strict";
+
+
+/* =====================================================
+   CONFIG
+===================================================== */
+
+const API =
+  "/api";
+
+
+/* =====================================================
+   ELEMENTS
+===================================================== */
+
+const loginForm =
+  document.getElementById(
+    "loginForm"
+  );
+
+const emailInput =
+  document.getElementById(
+    "email"
+  );
+
+const passwordInput =
+  document.getElementById(
+    "password"
+  );
+
+const loginButton =
+  document.getElementById(
+    "loginButton"
+  );
+
+const errorBox =
+  document.getElementById(
+    "errorBox"
+  );
+
+const successBox =
+  document.getElementById(
+    "successBox"
+  );
+
+const loadingOverlay =
+  document.getElementById(
+    "loadingOverlay"
+  );
+
+const passwordToggle =
+  document.getElementById(
+    "passwordToggle"
+  );
+
+
+/* =====================================================
+   SHOW ERROR
+===================================================== */
+
+function showError(
+  message
+){
+
+  errorBox.textContent =
+    message || "Login fail भेल।";
+
+  errorBox.style.display =
+    "block";
+
+  successBox.style.display =
+    "none";
+
+}
+
+
+/* =====================================================
+   SHOW SUCCESS
+===================================================== */
+
+function showSuccess(
+  message
+){
+
+  successBox.textContent =
+    message;
+
+  successBox.style.display =
+    "block";
+
+  errorBox.style.display =
+    "none";
+
+}
+
+
+/* =====================================================
+   LOADING
+===================================================== */
+
+function setLoading(
+  loading
+){
+
+  if(loading){
+
+    loadingOverlay.classList.add(
+      "show"
+    );
+
+    loginButton.disabled =
+      true;
+
+    loginButton.textContent =
+      "Login भ' रहल अछि...";
+
+  }else{
+
+    loadingOverlay.classList.remove(
+      "show"
+    );
+
+    loginButton.disabled =
+      false;
+
+    loginButton.textContent =
+      "Login";
+
+  }
+
+}
+
+
+/* =====================================================
+   PASSWORD TOGGLE
+===================================================== */
+
+passwordToggle.addEventListener(
+  "click",
+  function(){
+
+    const isPassword =
+      passwordInput.type ===
+      "password";
+
+
+    passwordInput.type =
+      isPassword
+        ? "text"
+        : "password";
+
+
+    this.textContent =
+      isPassword
+        ? "🙈"
+        : "👁";
+
+  }
+);
+
+
+/* =====================================================
+   CHECK EXISTING SESSION
+===================================================== */
+
+async function checkExistingSession(){
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/login",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store"
+        }
+      );
+
+
+    if(!response.ok){
+
+      return;
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      data &&
+      data.success &&
+      data.user &&
+      data.user.role === "admin" &&
+      data.user.status === "active"
+    ){
+
+      /*
+       * Already logged in.
+       */
+
+      window.location.replace(
+        "/admin.html"
+      );
+
+    }
+
+  }catch(error){
+
+    console.log(
+      "No active session."
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+loginForm.addEventListener(
+  "submit",
+  async function(event){
+
+    event.preventDefault();
+
+
+    hideMessages();
+
+
+    const email =
+      emailInput.value
+        .trim();
+
+
+    const password =
+      passwordInput.value;
+
+
+    if(!email){
+
+      showError(
+        "Email लिखू।"
+      );
+
+      emailInput.focus();
+
+      return;
+
+    }
+
+
+    if(!password){
+
+      showError(
+        "Password लिखू।"
+      );
+
+      passwordInput.focus();
+
+      return;
+
+    }
+
+
+    setLoading(
+      true
+    );
+
+
+    try{
+
+      const response =
+        await fetch(
+          API + "/login",
+          {
+            method:"POST",
+
+            credentials:"include",
+
+            headers:{
+              "Content-Type":
+                "application/json",
+
+              "Accept":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+
+                email:
+                  email,
+
+                password:
+                  password
+
+              })
+
+          }
+        );
+
+
+      /*
+       * पहले text पढ़ैत छी।
+       * एहि सँ HTML error page आयला पर
+       * Unexpected token '<' नहि आयत।
+       */
+
+      const text =
+        await response.text();
+
+
+      let data;
+
+
+      try{
+
+        data =
+          JSON.parse(
+            text
+          );
+
+      }catch(parseError){
+
+        console.error(
+          "LOGIN RESPONSE:",
+          text
+        );
+
+
+        throw new Error(
+          "Server सँ सही JSON response नहि भेटल।"
+        );
+
+      }
+
+
+      if(
+        !response.ok ||
+        !data.success
+      ){
+
+        throw new Error(
+          data.error ||
+          data.message ||
+          "Email अथवा password गलत अछि।"
+        );
+
+      }
+
+
+      /*
+       * Server-side session successful.
+       */
+
+      if(
+        !data.user ||
+        data.user.role !==
+          "admin"
+      ){
+
+        throw new Error(
+          "अहाँकेँ Admin access नहि अछि।"
+        );
+
+      }
+
+
+      if(
+        data.user.status &&
+        data.user.status !==
+          "active"
+      ){
+
+        throw new Error(
+          "Admin account active नहि अछि।"
+        );
+
+      }
+
+
+      /*
+       * localStorage केवल display/cache लेल।
+       * Authentication cookie server सँ आयत।
+       */
+
+      try{
+
+        localStorage.setItem(
+          "admin",
+          JSON.stringify(
+            data.user
+          )
+        );
+
+      }catch(_){}
+
+
+      showSuccess(
+        "Login सफल। Dashboard खोलि रहल अछि..."
+      );
+
+
+      setTimeout(
+        function(){
+
+          window.location.replace(
+            "/admin.html"
+          );
+
+        },
+        300
+      );
+
+
+    }catch(error){
+
+      console.error(
+        "LOGIN ERROR:",
+        error
+      );
+
+
+      showError(
+        error.message ||
+        "Login fail भेल।"
+      );
+
+
+      setLoading(
+        false
+      );
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   HIDE MESSAGES
+===================================================== */
+
+function hideMessages(){
+
+  errorBox.style.display =
+    "none";
+
+  successBox.style.display =
+    "none";
+
+}
+
+
+/* =====================================================
+   INITIAL CHECK
+===================================================== */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function(){
+
+    checkExistingSession();
+
+    emailInput.focus();
+
+  }
+);
+
+</script>
+
+</body>
+
+</html>
