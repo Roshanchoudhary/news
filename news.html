@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="mai">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>समाचार - मैथिली समाचार</title>
+
+  <meta
+    name="description"
+    id="metaDescription"
+    content="मैथिली समाचार"
+  >
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      color: #222;
+      font-family:
+        Arial,
+        "Noto Sans Devanagari",
+        sans-serif;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .container {
+      width: min(1000px, 94%);
+      margin: auto;
+    }
+
+    /* HEADER */
+
+    header {
+      background: #8b0000;
+      color: white;
+    }
+
+    .header {
+      padding: 18px 0;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .logo {
+      font-size: 27px;
+      font-weight: 800;
+    }
+
+    .tagline {
+      margin-top: 4px;
+      font-size: 13px;
+      opacity: .9;
+    }
+
+    .home-btn {
+      background: white;
+      color: #8b0000;
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    /* ARTICLE */
+
+    main {
+      padding: 30px 0 60px;
+    }
+
+    .article {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow:
+        0 2px 12px rgba(0,0,0,.07);
+    }
+
+    .category {
+      display: inline-block;
+      color: #8b0000;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 38px;
+      line-height: 1.35;
+      margin: 0 0 15px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      color: #777;
+      font-size: 13px;
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .article-image {
+      width: 100%;
+      max-height: 550px;
+      object-fit: cover;
+      border-radius: 9px;
+      margin-bottom: 25px;
+      display: block;
+    }
+
+    .summary {
+      font-size: 19px;
+      line-height: 1.7;
+      font-weight: 600;
+      color: #444;
+      padding: 15px 18px;
+      border-left: 4px solid #8b0000;
+      background: #fafafa;
+      margin-bottom: 25px;
+    }
+
+    .content {
+      font-size: 18px;
+      line-height: 2;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .content p {
+      margin: 0 0 20px;
+    }
+
+    .back {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .back a {
+      display: inline-block;
+      background: #8b0000;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 7px;
+      font-weight: bold;
+    }
+
+    /* LOADING / ERROR */
+
+    .box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .error {
+      color: #a00000;
+    }
+
+    /* MOBILE */
+
+    @media (max-width: 650px) {
+
+      .header-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .article {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .content {
+        font-size: 17px;
+        line-height: 1.85;
+      }
+
+      .summary {
+        font-size: 17px;
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+
+<!-- =========================================
+     HEADER
+========================================== -->
+
+<header>
+
+  <div class="container header">
+
+    <div class="header-inner">
+
+      <div>
+
+        <div class="logo">
+          मैथिली समाचार
+        </div>
+
+        <div class="tagline">
+          मैथिली भाषामे नवीनतम समाचार
+        </div>
+
+      </div>
+
+      <a
+        href="/"
+        class="home-btn"
+      >
+        ← मुख्य पृष्ठ
+      </a>
+
+    </div>
+
+  </div>
+
+</header>
+
+
+<!-- =========================================
+     ARTICLE
+========================================== -->
+
+<main>
+
+  <div class="container">
+
+    <div
+      id="loading"
+      class="box"
+    >
+      समाचार लोड भ' रहल अछि...
+    </div>
+
+
+    <article
+      id="article"
+      class="article"
+      style="display:none"
+    >
+
+      <div
+        id="category"
+        class="category"
+      ></div>
+
+
+      <h1 id="title"></h1>
+
+
+      <div class="meta">
+
+        <span id="date"></span>
+
+        <span id="author"></span>
+
+        <span id="views"></span>
+
+      </div>
+
+
+      <img
+        id="articleImage"
+        class="article-image"
+        style="display:none"
+        alt=""
+      >
+
+
+      <div
+        id="summary"
+        class="summary"
+        style="display:none"
+      ></div>
+
+
+      <div
+        id="content"
+        class="content"
+      ></div>
+
+
+      <div class="back">
+
+        <a href="/">
+          ← सभ समाचार देखू
+        </a>
+
+      </div>
+
+    </article>
+
+
+    <div
+      id="error"
+      class="box error"
+      style="display:none"
+    >
+      समाचार नहि भेटल।
+    </div>
+
+  </div>
+
+</main>
+
+
+<script>
+
+
+// =====================================================
+// GET NEWS ID
+// =====================================================
+
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const newsId =
+  params.get("id");
+
+
+// =====================================================
+// START
+// =====================================================
+
+document.addEventListener(
+  "DOMContentLoaded",
+  loadNews
+);
+
+
+// =====================================================
+// LOAD SINGLE NEWS
+// =====================================================
+
+async function loadNews() {
+
+  if (!newsId) {
+
+    showError(
+      "समाचार ID नहि भेटल।"
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/news?id=" +
+        encodeURIComponent(
+          newsId
+        ),
+        {
+          cache: "no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      "SINGLE NEWS:",
+      data
+    );
+
+
+    if (
+      !response.ok ||
+      !data.success ||
+      !data.news
+    ) {
+
+      showError(
+        data.error ||
+        "समाचार नहि भेटल।"
+      );
+
+      return;
+
+    }
+
+
+    renderArticle(
+      data.news
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "NEWS DETAIL ERROR:",
+      error
+    );
+
+
+    showError(
+      "समाचार लोड नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+// =====================================================
+// RENDER ARTICLE
+// =====================================================
+
+function renderArticle(
+  news
+) {
+
+  document.title =
+    (
+      news.title ||
+      "समाचार"
+    ) +
+    " - मैथिली समाचार";
+
+
+  document
+    .getElementById(
+      "metaDescription"
+    )
+    .content =
+      news.seo_description ||
+      news.summary ||
+      "मैथिली समाचार";
+
+
+  // CATEGORY
+
+  document
+    .getElementById(
+      "category"
+    )
+    .textContent =
+      news.category_name ||
+      "समाचार";
+
+
+  // TITLE
+
+  document
+    .getElementById(
+      "title"
+    )
+    .textContent =
+      news.title ||
+      "";
+
+
+  // DATE
+
+  document
+    .getElementById(
+      "date"
+    )
+    .textContent =
+      formatDate(
+        news.published_at ||
+        news.created_at
+      );
+
+
+  // AUTHOR
+
+  const author =
+    document.getElementById(
+      "author"
+    );
+
+
+  if (news.author_name) {
+
+    author.textContent =
+      "✍ " +
+      news.author_name;
+
+  } else {
+
+    author.style.display =
+      "none";
+
+  }
+
+
+  // VIEWS
+
+  document
+    .getElementById(
+      "views"
+    )
+    .textContent =
+      "👁 " +
+      Number(
+        news.views || 0
+      );
+
+
+  // IMAGE
+
+  const image =
+    document.getElementById(
+      "articleImage"
+    );
+
+
+  if (news.image_url) {
+
+    image.src =
+      news.image_url;
+
+    image.alt =
+      news.title || "";
+
+    image.style.display =
+      "block";
+
+
+    image.onerror =
+      function() {
+
+        image.style.display =
+          "none";
+
+      };
+
+  }
+
+
+  // SUMMARY
+
+  const summary =
+    document.getElementById(
+      "summary"
+    );
+
+
+  if (news.summary) {
+
+    summary.textContent =
+      news.summary;
+
+    summary.style.display =
+      "block";
+
+  }
+
+
+  // CONTENT
+
+  document
+    .getElementById(
+      "content"
+    )
+    .textContent =
+      news.content || "";
+
+
+  // SHOW ARTICLE
+
+  document
+    .getElementById(
+      "loading"
+    )
+    .style.display =
+      "none";
+
+
+  document
+    .getElementById(
+      "article"
+    )
+    .style.display =
+      "block";
+
+
+  // UPDATE URL TITLE
+
+  try {
+
+    history.replaceState(
+      null,
+      "",
+      "/news.html?id=" +
+      encodeURIComponent(
+        news.id
+      )
+    );
+
+  } catch {}
+
+}
+
+
+// =====================================================
+// ERROR
+// =====================================================
+
+function showError(
+  message
+) {
+
+  document
+    .getElementById(
+      "loading"
+    )
+    .style.display =
+      "none";
+
+
+  const error =
+    document.getElementById(
+      "error"
+    );
+
+
+  error.textContent =
+    message;
+
+
+  error.style.display =
+    "block";
+
+}
+
+
+// =====================================================
+// DATE
+// =====================================================
+
+function formatDate(
+  value
+) {
+
+  if (!value) {
+    return "";
+  }
+
+
+  try {
+
+    return new Date(
+      value
+    ).toLocaleDateString(
+      "hi-IN",
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }
+    );
+
+  } catch {
+
+    return "";
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
