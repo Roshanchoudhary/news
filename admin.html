@@ -3794,13 +3794,6 @@ function setupNavigation(){
 
 }
 
-if (tab === "comments") {
-  loadAdminComments();
-}
-
-if (tab === "users") {
-  loadUsers();
-}
 function switchTab(
   tab
 ){
@@ -3836,7 +3829,17 @@ function switchTab(
 
       }
     );
+// =====================================================
+  // LOAD COMMENTS / USERS
+  // =====================================================
 
+  if (tab === "comments") {
+    loadAdminComments();
+  }
+
+  if (tab === "users") {
+    loadUsers();
+  }
 
   const info =
     TAB_TITLES[tab] ||
