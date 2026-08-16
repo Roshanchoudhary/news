@@ -318,6 +318,55 @@ Reset
 </section>
 
 
+
+<!-- TAG MANAGEMENT -->
+<section class="panel">
+  <div class="panel-header">
+    <h2>🏷️ Tag Management</h2>
+    <button type="button" class="btn btn-light" id="cancelTagBtn" style="display:none">Cancel</button>
+  </div>
+  <div id="tagMessage" class="message"></div>
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label>Tag Name *</label>
+      <input type="text" id="tagName" placeholder="जैसे: दरभंगा">
+    </div>
+
+    <div class="form-group">
+      <label>English URL Slug *</label>
+      <input type="text" id="tagSlug" placeholder="जैसे: darbhanga">
+    </div>
+
+    <div class="form-group full">
+      <label>विवरण</label>
+      <textarea id="tagDescription" placeholder="Tag केर विवरण..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <select id="tagStatus">
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn btn-primary" id="saveTagBtn">+ Tag जोड़ू</button>
+    <button type="button" class="btn btn-light" id="resetTagBtn">Reset</button>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>🏷️ सभी Tags</h2>
+  </div>
+  <div id="tagList">
+    <div class="empty">Tag लोड भ' रहल अछि...</div>
+  </div>
+</section>
+
 <!-- =====================================================
      NEWS EDITOR
 ====================================================== -->
@@ -421,6 +470,12 @@ type="text"
 id="newsSlug"
 placeholder="darbhanga-new-medical-college"
 >
+
+<div id="newsUrlPreview"
+style="margin-top:6px;color:#777;font-size:12px;font-family:monospace">
+URL: /news/your-news-url
+</div>
+
 
 </div>
 
@@ -610,7 +665,9 @@ Draft
 // ======================================================
 
 let categories = [];
+let tags = [];
 let editingCategoryId = null;
+let editingTagId = null;
 
 
 // ======================================================
@@ -635,6 +692,8 @@ return;
 }
 
 await loadCategories();
+
+await loadTags();
 
 await loadNews();
 
@@ -669,6 +728,27 @@ document
 "click",
 resetCategoryForm
 );
+
+
+
+document
+.getElementById("saveTagBtn")
+.addEventListener("click", saveTag);
+
+document
+.getElementById("resetTagBtn")
+.addEventListener("click", resetTagForm);
+
+document
+.getElementById("cancelTagBtn")
+.addEventListener("click", resetTagForm);
+
+document
+.getElementById("tagName")
+.addEventListener("input", function(){
+  if(editingTagId) return;
+  document.getElementById("tagSlug").value = slugify(this.value);
+});
 
 
 document
@@ -718,6 +798,25 @@ document
 logout
 );
 
+
+
+document
+.getElementById("newsSlug")
+.addEventListener("input", function(){
+
+  const box =
+    document.getElementById("newsUrlPreview");
+
+  if(!box) return;
+
+  const slug =
+    this.value.trim().toLowerCase();
+
+  box.textContent =
+    "URL: /news/" +
+    (slug || "your-news-url");
+
+});
 
 // Auto slug
 
@@ -1513,6 +1612,353 @@ option
 
 }
 );
+
+}
+
+
+
+// ======================================================
+// TAG MANAGEMENT
+// ======================================================
+
+async function loadTags(){
+
+  try{
+
+    const response = await fetch("/api/tags", {
+      credentials:"same-origin",
+      cache:"no-store"
+    });
+
+    const data = await response.json();
+
+    if(!data.success){
+      throw new Error(data.error || "Tag loading failed");
+    }
+
+    tags = data.tags || [];
+    renderTags();
+    fillNewsTags();
+
+  }catch(error){
+
+    console.error("LOAD TAGS:", error);
+
+    document.getElementById("tagList").innerHTML =
+      `<div class="empty">
+        Tag लोड नहि भ' सकल।<br>
+        ${escapeHtml(error.message)}
+      </div>`;
+
+  }
+
+}
+
+
+function renderTags(){
+
+  const box = document.getElementById("tagList");
+
+  if(!tags.length){
+
+    box.innerHTML =
+      `<div class="empty">एखन कोनो Tag नहि अछि।</div>`;
+
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>क्रम</th>
+            <th>नाम</th>
+            <th>English URL</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tags.map(tag => `
+            <tr>
+              <td>${Number(tag.id)}</td>
+
+              <td>
+                <strong>${escapeHtml(tag.name)}</strong>
+                ${
+                  tag.description
+                  ? `<br><small style="color:#777">
+                       ${escapeHtml(tag.description)}
+                     </small>`
+                  : ""
+                }
+              </td>
+
+              <td>
+                <span class="category-slug">
+                  /tag/${escapeHtml(tag.slug)}
+                </span>
+              </td>
+
+              <td>
+                ${
+                  tag.status === "active"
+                  ? `<span class="badge badge-active">Active</span>`
+                  : `<span class="badge badge-inactive">Inactive</span>`
+                }
+              </td>
+
+              <td>
+                <div class="category-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="editTag(${Number(tag.id)})">
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    onclick="deleteTag(${Number(tag.id)})">
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+}
+
+
+async function saveTag(){
+
+  const name =
+    document.getElementById("tagName").value.trim();
+
+  const slug =
+    document.getElementById("tagSlug").value.trim().toLowerCase();
+
+  const description =
+    document.getElementById("tagDescription").value.trim();
+
+  const status =
+    document.getElementById("tagStatus").value;
+
+  if(!name){
+    showTagMessage("Tag name जरूरी अछि।","error");
+    return;
+  }
+
+  if(!slug){
+    showTagMessage("English URL slug जरूरी अछि।","error");
+    return;
+  }
+
+  if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)){
+    showTagMessage(
+      "URL slug केवल English अक्षर, number आ hyphen में लिखू।",
+      "error"
+    );
+    return;
+  }
+
+  try{
+
+    const response = await fetch(
+      editingTagId
+        ? "/api/tags?id=" + encodeURIComponent(editingTagId)
+        : "/api/tags",
+      {
+        method: editingTagId ? "PUT" : "POST",
+        credentials:"same-origin",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          name,
+          slug,
+          description,
+          status
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!data.success){
+      showTagMessage(
+        data.error || "Tag save नहि भ' सकल।",
+        "error"
+      );
+      return;
+    }
+
+    showTagMessage(
+      editingTagId
+        ? "Tag सफलतापूर्वक update भ' गेल।"
+        : "Tag सफलतापूर्वक जोड़ल गेल।",
+      "success"
+    );
+
+    resetTagForm();
+    await loadTags();
+
+  }catch(error){
+
+    console.error("SAVE TAG:", error);
+
+    showTagMessage(
+      "Server error: " + error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+function editTag(id){
+
+  const tag = tags.find(
+    item => Number(item.id) === Number(id)
+  );
+
+  if(!tag) return;
+
+  editingTagId = tag.id;
+
+  document.getElementById("tagName").value = tag.name || "";
+  document.getElementById("tagSlug").value = tag.slug || "";
+  document.getElementById("tagDescription").value = tag.description || "";
+  document.getElementById("tagStatus").value =
+    tag.status === "inactive" ? "inactive" : "active";
+
+  document.getElementById("saveTagBtn").textContent =
+    "✓ Tag Update करू";
+
+  document.getElementById("cancelTagBtn").style.display =
+    "inline-block";
+
+  document.getElementById("tagName").focus();
+
+}
+
+
+function resetTagForm(){
+
+  editingTagId = null;
+
+  document.getElementById("tagName").value = "";
+  document.getElementById("tagSlug").value = "";
+  document.getElementById("tagDescription").value = "";
+  document.getElementById("tagStatus").value = "active";
+
+  document.getElementById("saveTagBtn").textContent =
+    "+ Tag जोड़ू";
+
+  document.getElementById("cancelTagBtn").style.display =
+    "none";
+
+}
+
+
+async function deleteTag(id){
+
+  if(!confirm(
+    "की अहाँ एहि Tag केँ delete कर' चाहैत छी?"
+  )){
+    return;
+  }
+
+  try{
+
+    const response = await fetch(
+      "/api/tags?id=" + encodeURIComponent(id),
+      {
+        method:"DELETE",
+        credentials:"same-origin"
+      }
+    );
+
+    const data = await response.json();
+
+    if(!data.success){
+
+      showTagMessage(
+        data.error || "Tag delete नहि भ' सकल।",
+        "error"
+      );
+
+      return;
+    }
+
+    showTagMessage(
+      "Tag delete भ' गेल।",
+      "success"
+    );
+
+    await loadTags();
+
+  }catch(error){
+
+    console.error(error);
+
+    showTagMessage("Server error।","error");
+
+  }
+
+}
+
+
+function showTagMessage(text,type){
+
+  const box = document.getElementById("tagMessage");
+
+  box.textContent = text;
+  box.className = "message " + type;
+
+  setTimeout(
+    function(){
+      box.className = "message";
+    },
+    4000
+  );
+
+}
+
+
+function fillNewsTags(){
+
+  const input = document.getElementById("newsTags");
+
+  if(!input) return;
+
+  let list = document.getElementById("newsTagSuggestions");
+
+  if(!list){
+
+    list = document.createElement("datalist");
+    list.id = "newsTagSuggestions";
+    document.body.appendChild(list);
+
+  }
+
+  input.setAttribute("list","newsTagSuggestions");
+
+  list.innerHTML =
+    tags
+    .filter(tag => tag.status === "active")
+    .map(
+      tag =>
+        `<option value="${escapeHtml(tag.slug)}"></option>`
+    )
+    .join("");
 
 }
 
