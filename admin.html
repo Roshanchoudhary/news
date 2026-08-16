@@ -9874,7 +9874,1437 @@ document.addEventListener(
    "Maithili News Admin Dashboard loaded."
  );
 
+/* =========================================================
+   USER MANAGEMENT
+========================================================= */
 
+let allUsers = [];
+
+
+/* =========================================================
+   OPEN USER MANAGEMENT
+========================================================= */
+
+async function openUserManagement() {
+
+  const section =
+    document.getElementById(
+      "userManagement"
+    );
+
+  if (!section) {
+    console.error(
+      "userManagement section not found"
+    );
+    return;
+  }
+
+  section.style.display = "block";
+
+  await loadUsers();
+}
+
+
+/* =========================================================
+   LOAD USERS
+========================================================= */
+
+async function loadUsers() {
+
+  const loading =
+    document.getElementById(
+      "usersLoading"
+    );
+
+  const tableWrap =
+    document.getElementById(
+      "usersTableWrap"
+    );
+
+  const empty =
+    document.getElementById(
+      "usersEmpty"
+    );
+
+
+  if (loading) {
+    loading.style.display =
+      "block";
+  }
+
+  if (tableWrap) {
+    tableWrap.style.display =
+      "none";
+  }
+
+  if (empty) {
+    empty.style.display =
+      "none";
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        API + "/users",
+        {
+          method: "GET",
+          credentials: "same-origin",
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Users load नहि भ' सकल"
+      );
+
+    }
+
+
+    if (!data.success) {
+
+      throw new Error(
+        data.error ||
+        "Users load नहि भ' सकल"
+      );
+
+    }
+
+
+    allUsers =
+      Array.isArray(
+        data.users
+      )
+        ? data.users
+        : [];
+
+
+    renderUsers(
+      allUsers
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "LOAD USERS ERROR:",
+      error
+    );
+
+
+    if (loading) {
+
+      loading.innerHTML =
+        `
+          <div
+            style="
+              color:#a00000;
+              margin-bottom:10px;
+            "
+          >
+            Users load नहि भ' सकल
+          </div>
+
+          <button
+            type="button"
+            onclick="loadUsers()"
+            style="
+              border:0;
+              background:#8b0000;
+              color:#fff;
+              padding:8px 14px;
+              border-radius:6px;
+              cursor:pointer;
+            "
+          >
+            Retry
+          </button>
+        `;
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER USERS
+========================================================= */
+
+function renderUsers(
+  users
+) {
+
+  const loading =
+    document.getElementById(
+      "usersLoading"
+    );
+
+  const tableWrap =
+    document.getElementById(
+      "usersTableWrap"
+    );
+
+  const empty =
+    document.getElementById(
+      "usersEmpty"
+    );
+
+  const tbody =
+    document.getElementById(
+      "usersTableBody"
+    );
+
+
+  if (loading) {
+
+    loading.style.display =
+      "none";
+
+  }
+
+
+  if (!tbody) {
+
+    console.error(
+      "usersTableBody not found"
+    );
+
+    return;
+
+  }
+
+
+  tbody.innerHTML =
+    "";
+
+
+  if (!users.length) {
+
+    if (tableWrap) {
+      tableWrap.style.display =
+        "none";
+    }
+
+    if (empty) {
+      empty.style.display =
+        "block";
+    }
+
+    return;
+
+  }
+
+
+  if (empty) {
+    empty.style.display =
+      "none";
+  }
+
+
+  if (tableWrap) {
+    tableWrap.style.display =
+      "block";
+  }
+
+
+  tbody.innerHTML =
+    users
+      .map(
+        user =>
+          userRow(
+            user
+          )
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   USER ROW
+========================================================= */
+
+function userRow(
+  user
+) {
+
+  const role =
+    String(
+      user.role || ""
+    );
+
+
+  const status =
+    String(
+      user.status || ""
+    );
+
+
+  const created =
+    formatUserDate(
+      user.created_at
+    );
+
+
+  return `
+    <tr>
+
+      <td class="user-td">
+        <strong>
+          ${escapeUserHtml(
+            user.name
+          )}
+        </strong>
+      </td>
+
+
+      <td class="user-td">
+        ${escapeUserHtml(
+          user.email
+        )}
+      </td>
+
+
+      <td class="user-td">
+
+        <span class="user-role">
+          ${escapeUserHtml(
+            role
+          )}
+        </span>
+
+      </td>
+
+
+      <td class="user-td">
+
+        <span
+          class="user-status ${status === "active"
+            ? "active"
+            : "inactive"}"
+        >
+          ${status === "active"
+            ? "Active"
+            : "Inactive"}
+        </span>
+
+      </td>
+
+
+      <td class="user-td">
+        ${created}
+      </td>
+
+
+      <td class="user-td">
+
+        <button
+          type="button"
+          class="user-action user-edit"
+          onclick="editUser(${Number(
+            user.id
+          )})"
+        >
+          Edit
+        </button>
+
+
+        <button
+          type="button"
+          class="user-action user-toggle"
+          onclick="toggleUserStatus(${Number(
+            user.id
+          )})"
+        >
+          ${status === "active"
+            ? "Deactivate"
+            : "Activate"}
+        </button>
+
+
+        <button
+          type="button"
+          class="user-action"
+          style="
+            background:#fde7e7;
+            color:#a00000;
+          "
+          onclick="deleteUser(${Number(
+            user.id
+          )})"
+        >
+          Delete
+        </button>
+
+      </td>
+
+    </tr>
+  `;
+
+}
+
+
+/* =========================================================
+   FILTER USERS
+========================================================= */
+
+function filterUsers() {
+
+  const search =
+    String(
+      document.getElementById(
+        "userSearch"
+      )?.value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const role =
+    String(
+      document.getElementById(
+        "userRoleFilter"
+      )?.value || ""
+    );
+
+
+  const status =
+    String(
+      document.getElementById(
+        "userStatusFilter"
+      )?.value || ""
+    );
+
+
+  const filtered =
+    allUsers.filter(
+      user => {
+
+        const name =
+          String(
+            user.name || ""
+          )
+            .toLowerCase();
+
+
+        const email =
+          String(
+            user.email || ""
+          )
+            .toLowerCase();
+
+
+        const matchSearch =
+          !search ||
+          name.includes(
+            search
+          ) ||
+          email.includes(
+            search
+          );
+
+
+        const matchRole =
+          !role ||
+          user.role === role;
+
+
+        const matchStatus =
+          !status ||
+          user.status === status;
+
+
+        return (
+          matchSearch &&
+          matchRole &&
+          matchStatus
+        );
+
+      }
+    );
+
+
+  renderUsers(
+    filtered
+  );
+
+}
+
+
+/* =========================================================
+   ADD USER MODAL
+========================================================= */
+
+function openAddUserModal() {
+
+  const modal =
+    document.getElementById(
+      "userModal"
+    );
+
+
+  const title =
+    document.getElementById(
+      "userModalTitle"
+    );
+
+
+  const form =
+    document.getElementById(
+      "userForm"
+    );
+
+
+  const id =
+    document.getElementById(
+      "editUserId"
+    );
+
+
+  if (!modal) {
+    return;
+  }
+
+
+  if (title) {
+    title.textContent =
+      "नया User";
+  }
+
+
+  if (form) {
+    form.reset();
+  }
+
+
+  if (id) {
+    id.value = "";
+  }
+
+
+  const role =
+    document.getElementById(
+      "userRole"
+    );
+
+
+  const status =
+    document.getElementById(
+      "userStatus"
+    );
+
+
+  if (role) {
+    role.value =
+      "editor";
+  }
+
+
+  if (status) {
+    status.value =
+      "active";
+  }
+
+
+  const password =
+    document.getElementById(
+      "userPassword"
+    );
+
+
+  if (password) {
+    password.required =
+      true;
+  }
+
+
+  clearUserMessage();
+
+
+  modal.style.display =
+    "flex";
+
+}
+
+
+/* =========================================================
+   CLOSE MODAL
+========================================================= */
+
+function closeUserModal() {
+
+  const modal =
+    document.getElementById(
+      "userModal"
+    );
+
+
+  if (modal) {
+
+    modal.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* =========================================================
+   EDIT USER
+========================================================= */
+
+function editUser(
+  id
+) {
+
+  const user =
+    allUsers.find(
+      item =>
+        Number(item.id) ===
+        Number(id)
+    );
+
+
+  if (!user) {
+
+    showUserMessage(
+      "User नहि भेटल",
+      false
+    );
+
+    return;
+
+  }
+
+
+  document.getElementById(
+    "editUserId"
+  ).value =
+    user.id;
+
+
+  document.getElementById(
+    "userName"
+  ).value =
+    user.name || "";
+
+
+  document.getElementById(
+    "userEmail"
+  ).value =
+    user.email || "";
+
+
+  document.getElementById(
+    "userRole"
+  ).value =
+    user.role || "editor";
+
+
+  document.getElementById(
+    "userStatus"
+  ).value =
+    user.status || "active";
+
+
+  document.getElementById(
+    "userPassword"
+  ).value =
+    "";
+
+
+  const password =
+    document.getElementById(
+      "userPassword"
+    );
+
+
+  if (password) {
+    password.required =
+      false;
+  }
+
+
+  document.getElementById(
+    "userModalTitle"
+  ).textContent =
+    "User Edit करू";
+
+
+  clearUserMessage();
+
+
+  document.getElementById(
+    "userModal"
+  ).style.display =
+    "flex";
+
+}
+
+
+/* =========================================================
+   SAVE USER
+========================================================= */
+
+async function saveUser(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const button =
+    document.getElementById(
+      "userSaveButton"
+    );
+
+
+  const id =
+    String(
+      document.getElementById(
+        "editUserId"
+      )?.value || ""
+    );
+
+
+  const name =
+    String(
+      document.getElementById(
+        "userName"
+      )?.value || ""
+    ).trim();
+
+
+  const email =
+    String(
+      document.getElementById(
+        "userEmail"
+      )?.value || ""
+    ).trim();
+
+
+  const role =
+    String(
+      document.getElementById(
+        "userRole"
+      )?.value || ""
+    );
+
+
+  const status =
+    String(
+      document.getElementById(
+        "userStatus"
+      )?.value || ""
+    );
+
+
+  const password =
+    String(
+      document.getElementById(
+        "userPassword"
+      )?.value || ""
+    );
+
+
+  if (!name) {
+
+    showUserMessage(
+      "नाम जरूरी अछि",
+      false
+    );
+
+    return;
+
+  }
+
+
+  if (!email) {
+
+    showUserMessage(
+      "Email जरूरी अछि",
+      false
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      .test(email)
+  ) {
+
+    showUserMessage(
+      "Email सही नहि अछि",
+      false
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !id &&
+    password.length < 8
+  ) {
+
+    showUserMessage(
+      "नया User केर password कम-से-कम 8 characters केर हो",
+      false
+    );
+
+    return;
+
+  }
+
+
+  if (
+    id &&
+    password &&
+    password.length < 8
+  ) {
+
+    showUserMessage(
+      "Password कम-से-कम 8 characters केर हो",
+      false
+    );
+
+    return;
+
+  }
+
+
+  const payload = {
+
+    name,
+
+    email,
+
+    role,
+
+    status
+
+  };
+
+
+  if (password) {
+
+    payload.password =
+      password;
+
+  }
+
+
+  const isEdit =
+    Boolean(id);
+
+
+  const url =
+    isEdit
+      ? API +
+        "/users?id=" +
+        encodeURIComponent(
+          id
+        )
+      : API +
+        "/users";
+
+
+  const method =
+    isEdit
+      ? "PUT"
+      : "POST";
+
+
+  try {
+
+    if (button) {
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        isEdit
+          ? "Updating..."
+          : "Saving...";
+
+    }
+
+
+    const response =
+      await fetch(
+        url,
+        {
+
+          method,
+
+          credentials:
+            "same-origin",
+
+          headers: {
+
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "User save नहि भ' सकल"
+      );
+
+    }
+
+
+    if (!data.success) {
+
+      throw new Error(
+        data.error ||
+        "User save नहि भ' सकल"
+      );
+
+    }
+
+
+    closeUserModal();
+
+
+    showToast(
+      data.message ||
+      "User saved"
+    );
+
+
+    await loadUsers();
+
+
+  } catch (error) {
+
+    console.error(
+      "SAVE USER ERROR:",
+      error
+    );
+
+
+    showUserMessage(
+      error.message ||
+      "User save नहि भ' सकल",
+      false
+    );
+
+
+  } finally {
+
+    if (button) {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        "Save User";
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   TOGGLE STATUS
+========================================================= */
+
+async function toggleUserStatus(
+  id
+) {
+
+  const user =
+    allUsers.find(
+      item =>
+        Number(item.id) ===
+        Number(id)
+    );
+
+
+  if (!user) {
+
+    showToast(
+      "User नहि भेटल"
+    );
+
+    return;
+
+  }
+
+
+  const newStatus =
+    user.status === "active"
+      ? "inactive"
+      : "active";
+
+
+  const action =
+    newStatus === "active"
+      ? "activate"
+      : "deactivate";
+
+
+  const confirmed =
+    window.confirm(
+      `${user.name} केँ ${action} करब?`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        API +
+        "/users?id=" +
+        encodeURIComponent(
+          id
+        ),
+        {
+
+          method: "PUT",
+
+          credentials:
+            "same-origin",
+
+          headers: {
+
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+
+              status:
+                newStatus
+
+            })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "Status update नहि भ' सकल"
+      );
+
+    }
+
+
+    if (!data.success) {
+
+      throw new Error(
+        data.error ||
+        "Status update नहि भ' सकल"
+      );
+
+    }
+
+
+    showToast(
+      data.message ||
+      "Status updated"
+    );
+
+
+    await loadUsers();
+
+
+  } catch (error) {
+
+    console.error(
+      "TOGGLE USER ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Status update नहि भ' सकल"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   DELETE USER
+========================================================= */
+
+async function deleteUser(
+  id
+) {
+
+  const user =
+    allUsers.find(
+      item =>
+        Number(item.id) ===
+        Number(id)
+    );
+
+
+  if (!user) {
+
+    showToast(
+      "User नहि भेटल"
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `क्या "${user.name}" केँ delete करए चाहैत छी?\n\nई action वापस नहि होयत।`
+    );
+
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        API +
+        "/users?id=" +
+        encodeURIComponent(
+          id
+        ),
+        {
+
+          method: "DELETE",
+
+          credentials:
+            "same-origin",
+
+          headers: {
+
+            "Accept":
+              "application/json"
+
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.error ||
+        "User delete नहि भ' सकल"
+      );
+
+    }
+
+
+    if (!data.success) {
+
+      throw new Error(
+        data.error ||
+        "User delete नहि भ' सकल"
+      );
+
+    }
+
+
+    showToast(
+      data.message ||
+      "User deleted"
+    );
+
+
+    await loadUsers();
+
+
+  } catch (error) {
+
+    console.error(
+      "DELETE USER ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "User delete नहि भ' सकल"
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   USER MESSAGE
+========================================================= */
+
+function showUserMessage(
+  message,
+  success
+) {
+
+  const box =
+    document.getElementById(
+      "userFormMessage"
+    );
+
+
+  if (!box) {
+    return;
+  }
+
+
+  box.textContent =
+    message;
+
+
+  box.style.display =
+    "block";
+
+
+  if (success) {
+
+    box.style.background =
+      "#e5f5e9";
+
+    box.style.color =
+      "#176b2c";
+
+  } else {
+
+    box.style.background =
+      "#fde7e7";
+
+    box.style.color =
+      "#a00000";
+
+  }
+
+}
+
+
+function clearUserMessage() {
+
+  const box =
+    document.getElementById(
+      "userFormMessage"
+    );
+
+
+  if (box) {
+
+    box.textContent =
+      "";
+
+    box.style.display =
+      "none";
+
+  }
+
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function formatUserDate(
+  value
+) {
+
+  if (!value) {
+    return "—";
+  }
+
+
+  try {
+
+    return new Date(
+      value
+    ).toLocaleDateString(
+      "hi-IN",
+      {
+        day:
+          "numeric",
+
+        month:
+          "short",
+
+        year:
+          "numeric"
+      }
+    );
+
+  } catch {
+
+    return "—";
+
+  }
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeUserHtml(
+  value
+) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* =========================================================
+   TOAST FALLBACK
+========================================================= */
+
+function showToast(
+  message
+) {
+
+  if (
+    typeof window.showToast ===
+    "function"
+  ) {
+
+    window.showToast(
+      message
+    );
+
+    return;
+
+  }
+
+
+  const toast =
+    document.getElementById(
+      "toast"
+    );
+
+
+  if (!toast) {
+
+    alert(
+      message
+    );
+
+    return;
+
+  }
+
+
+  toast.textContent =
+    message;
+
+
+  toast.classList.add(
+    "show"
+  );
+
+
+  setTimeout(
+    () => {
+
+      toast.classList.remove(
+        "show"
+      );
+
+    },
+    2500
+  );
+
+}
 </script>
 
 
