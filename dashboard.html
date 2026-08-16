@@ -1,2667 +1,2278 @@
 <!DOCTYPE html>
 <html lang="mai">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Admin Dashboard - मैथिली समाचार</title>
-
-  <link rel="stylesheet" href="/style.css">
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #f5f5f5;
-      color: #222;
-      font-family: Arial, sans-serif;
-    }
-
-    .container {
-      width: min(1150px, 94%);
-      margin: auto;
-    }
-
-    .dashboard-header {
-      background: #8b0000;
-      color: white;
-      padding: 15px 0;
-    }
-
-    .header-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-    }
-
-    .header-inner h1 {
-      margin: 0 0 4px;
-      font-size: 25px;
-    }
-
-    .header-inner small {
-      opacity: .9;
-    }
-
-    .dashboard {
-      padding: 25px 0 60px;
-    }
-
-    .page-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .page-title h2 {
-      margin: 0 0 5px;
-    }
-
-    .page-title p {
-      margin: 0;
-      color: #666;
-    }
-
-    button {
-      font-family: inherit;
-    }
-
-    .btn {
-      border: 0;
-      border-radius: 7px;
-      padding: 10px 16px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .btn-primary {
-      background: #8b0000;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #6d0000;
-    }
-
-    .btn-secondary {
-      background: #555;
-      color: white;
-    }
-
-    .btn-danger {
-      background: #b00020;
-      color: white;
-    }
-
-    .btn-light {
-      background: white;
-      color: #222;
-      border: 1px solid #ddd;
-    }
-
-    .btn-success {
-      background: #16733a;
-      color: white;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.07);
-    }
-
-    .stat-card span {
-      color: #666;
-      font-size: 14px;
-    }
-
-    .stat-card strong {
-      display: block;
-      margin-top: 8px;
-      font-size: 30px;
-    }
-
-    .panel {
-      background: white;
-      padding: 22px;
-      border-radius: 10px;
-      margin-bottom: 25px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    }
-
-    .panel-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      margin-bottom: 18px;
-    }
-
-    .panel-title h3 {
-      margin: 0;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .form-group {
-      margin-bottom: 5px;
-    }
-
-    .full {
-      grid-column: 1 / -1;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 7px;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      padding: 11px 12px;
-      border: 1px solid #d7d7d7;
-      border-radius: 7px;
-      background: white;
-      color: #222;
-      font-size: 15px;
-      font-family: inherit;
-    }
-
-    input:focus,
-    select:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #8b0000;
-    }
-
-    textarea {
-      min-height: 220px;
-      resize: vertical;
-    }
-
-    #summary {
-      min-height: 100px;
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 18px;
-    }
-
-    .message {
-      display: none;
-      padding: 11px 13px;
-      margin-bottom: 15px;
-      border-radius: 7px;
-    }
-
-    .message.success {
-      display: block;
-      background: #e7f6eb;
-      color: #176b2c;
-    }
-
-    .message.error {
-      display: block;
-      background: #fde8e8;
-      color: #a00000;
-    }
-
-    .news-filter {
-      width: 180px;
-    }
-
-    .table-wrap {
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    .news-table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 750px;
-    }
-
-    .news-table th,
-    .news-table td {
-      padding: 12px 9px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-      vertical-align: top;
-    }
-
-    .news-table th {
-      background: #f7f7f7;
-      font-weight: 700;
-    }
-
-    .news-title {
-      font-weight: 600;
-      line-height: 1.4;
-    }
-
-    .news-date {
-      display: block;
-      color: #777;
-      font-size: 12px;
-      margin-top: 5px;
-    }
-
-    .status {
-      display: inline-block;
-      padding: 4px 9px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .status-published {
-      background: #e3f5e8;
-      color: #176b2c;
-    }
-
-    .status-draft {
-      background: #fff2d6;
-      color: #8a5a00;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .action-buttons .btn {
-      padding: 7px 11px;
-      font-size: 13px;
-    }
-
-    /* CATEGORY */
-
-    .category-add {
-      display: grid;
-      grid-template-columns:
-        1fr 1fr auto;
-      gap: 10px;
-      align-items: end;
-      margin-bottom: 20px;
-    }
-
-    .category-list {
-      border-top: 1px solid #eee;
-    }
-
-    .category-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      padding: 13px 0;
-      border-bottom: 1px solid #eee;
-    }
-
-    .category-name {
-      font-weight: 600;
-    }
-
-    .category-slug {
-      color: #777;
-      font-size: 13px;
-      margin-left: 7px;
-    }
-
-    .category-description {
-      color: #666;
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .loading {
-      color: #777;
-      padding: 15px 0;
-    }
-
-    .empty {
-      color: #777;
-      padding: 20px 0;
-    }
-
-    @media (max-width: 850px) {
-
-      .stats {
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
-      }
-
-      .category-add {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 650px) {
-
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .full {
-        grid-column: auto;
-      }
-
-      .stats {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .page-title {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .panel-title {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .news-filter {
-        width: 100%;
-      }
-    }
-
-    @media (max-width: 420px) {
-
-      .stats {
-        grid-template-columns: 1fr;
-      }
-
-      .header-inner {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Admin Dashboard - मैथिली समाचार</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f5f7;color:#222;font-family:Arial,"Noto Sans Devanagari",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.container{width:min(1200px,94%);margin:auto}
+
+.header{background:#8b0000;color:#fff;padding:15px 0}
+.header-inner{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.logo{font-size:25px;font-weight:700}
+.user-info{font-size:13px;opacity:.9}
+
+.btn{border:0;border-radius:6px;padding:9px 14px;font-weight:600}
+.btn-primary{background:#8b0000;color:#fff}
+.btn-secondary{background:#555;color:#fff}
+.btn-success{background:#16733a;color:#fff}
+.btn-danger{background:#b00020;color:#fff}
+.btn-light{background:#fff;border:1px solid #ddd;color:#333}
+
+main{padding:25px 0 60px}
+
+.page-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.page-title h1{margin:0 0 5px;font-size:25px}
+.page-title p{margin:0;color:#777}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
+.stat{background:#fff;padding:18px;border-radius:9px;box-shadow:0 2px 8px #0000000d}
+.stat span{font-size:13px;color:#777}
+.stat strong{display:block;font-size:28px;margin-top:7px}
+
+.panel{background:#fff;border-radius:9px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px #0000000d}
+.panel-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:18px}
+.panel-header h2{font-size:19px;margin:0}
+
+.message{display:none;padding:11px;border-radius:6px;margin-bottom:15px}
+.message.success{display:block;background:#e7f6eb;color:#176b2c}
+.message.error{display:block;background:#fde8e8;color:#a00000}
+
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.full{grid-column:1/-1}
+.form-group label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #d5d5d5;border-radius:6px;background:#fff}
+textarea{min-height:100px;resize:vertical}
+.checkbox{display:flex;align-items:center;gap:8px}
+.checkbox input{width:auto}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:800px}
+th,td{padding:11px 9px;border-bottom:1px solid #eee;text-align:left}
+th{background:#f7f7f7;font-size:13px}
+td{font-size:14px}
+
+.badge{display:inline-block;padding:4px 8px;border-radius:15px;font-size:11px;font-weight:600}
+.badge-active{background:#e4f6e9;color:#176b2c}
+.badge-inactive{background:#eee;color:#666}
+.badge-visible{background:#e8f1ff;color:#1454a0}
+
+.category-slug{font-family:monospace;color:#666;font-size:12px}
+
+.category-actions{display:flex;gap:5px;flex-wrap:wrap}
+
+.hidden{display:none!important}
+
+.empty{padding:25px;text-align:center;color:#777}
+
+@media(max-width:800px){
+.stats{grid-template-columns:repeat(2,1fr)}
+.form-grid{grid-template-columns:1fr}
+.full{grid-column:auto}
+}
+
+@media(max-width:500px){
+.stats{grid-template-columns:1fr}
+.page-title{align-items:flex-start;flex-direction:column}
+.header-inner{align-items:flex-start;flex-direction:column}
+}
+</style>
 </head>
 
 <body>
 
+<header class="header">
+<div class="container header-inner">
 
-<!-- =====================================================
-     HEADER
-====================================================== -->
+<div>
+<div class="logo">मैथिली समाचार</div>
+<div class="user-info" id="adminInfo">Admin Dashboard</div>
+</div>
 
-<header class="dashboard-header">
+<button type="button" class="btn btn-light" id="logoutBtn">
+Logout
+</button>
 
-  <div class="container header-inner">
-
-    <div>
-      <h1>मैथिली समाचार</h1>
-
-      <small id="adminName">
-        Admin Dashboard
-      </small>
-    </div>
-
-    <button
-      type="button"
-      class="btn btn-light"
-      id="logoutButton"
-    >
-      Logout
-    </button>
-
-  </div>
-
+</div>
 </header>
 
 
-<main class="container dashboard">
+<main class="container">
 
+<div class="page-title">
+<div>
+<h1>Admin Dashboard</h1>
+<p>समाचार, श्रेणी आ Menu प्रबंधन</p>
+</div>
 
-  <!-- =====================================================
-       PAGE TITLE
-  ====================================================== -->
+<button type="button" class="btn btn-primary" id="newNewsBtn">
++ नवीन समाचार
+</button>
+</div>
 
-  <section class="page-title">
 
-    <div>
+<!-- ================= STATS ================= -->
 
-      <h2>
-        Admin Dashboard
-      </h2>
+<div class="stats">
 
-      <p>
-        समाचार आ श्रेणी प्रबंधन
-      </p>
+<div class="stat">
+<span>कुल समाचार</span>
+<strong id="totalNews">0</strong>
+</div>
 
-    </div>
+<div class="stat">
+<span>Published</span>
+<strong id="publishedNews">0</strong>
+</div>
 
-    <button
-      type="button"
-      class="btn btn-primary"
-      id="newNewsButton"
-    >
-      + नवीन समाचार
-    </button>
+<div class="stat">
+<span>Draft</span>
+<strong id="draftNews">0</strong>
+</div>
 
-  </section>
+<div class="stat">
+<span>Categories</span>
+<strong id="totalCategories">0</strong>
+</div>
 
+</div>
 
-  <!-- =====================================================
-       STATISTICS
-  ====================================================== -->
 
-  <section class="stats">
+<!-- =====================================================
+     CATEGORY MANAGEMENT
+====================================================== -->
 
-    <div class="stat-card">
+<section class="panel">
 
-      <span>
-        कुल समाचार
-      </span>
+<div class="panel-header">
+<h2>📂 Category Management</h2>
 
-      <strong id="totalNews">
-        0
-      </strong>
+<button
+type="button"
+class="btn btn-light"
+id="cancelCategoryBtn"
+style="display:none">
+Cancel
+</button>
+</div>
 
-    </div>
 
+<div id="categoryMessage" class="message"></div>
 
-    <div class="stat-card">
 
-      <span>
-        प्रकाशित
-      </span>
+<div class="form-grid">
 
-      <strong id="publishedNews">
-        0
-      </strong>
+<div class="form-group">
 
-    </div>
+<label>
+श्रेणी नाम *
+</label>
 
+<input
+type="text"
+id="categoryName"
+placeholder="जैसे: मिथिला"
+>
 
-    <div class="stat-card">
+</div>
 
-      <span>
-        Draft
-      </span>
 
-      <strong id="draftNews">
-        0
-      </strong>
+<div class="form-group">
 
-    </div>
+<label>
+English URL Slug *
+</label>
 
+<input
+type="text"
+id="categorySlug"
+placeholder="जैसे: mithila"
+>
 
-    <div class="stat-card">
+</div>
 
-      <span>
-        श्रेणी
-      </span>
 
-      <strong id="totalCategories">
-        0
-      </strong>
+<div class="form-group full">
 
-    </div>
+<label>
+विवरण
+</label>
 
-  </section>
+<textarea
+id="categoryDescription"
+placeholder="श्रेणीक विवरण..."
+></textarea>
 
+</div>
 
-  <!-- =====================================================
-       NEWS EDITOR
-  ====================================================== -->
 
-  <section
-    class="panel hidden"
-    id="editorPanel"
-  >
+<div class="form-group">
 
-    <div class="panel-title">
+<label>
+Menu Order
+</label>
 
-      <h3 id="editorTitle">
-        नवीन समाचार
-      </h3>
+<input
+type="number"
+id="categoryOrder"
+value="0"
+min="0"
+>
 
-      <button
-        type="button"
-        class="btn btn-light"
-        id="closeEditorButton"
-      >
-        बन्द करू
-      </button>
+</div>
 
-    </div>
 
+<div class="form-group">
 
-    <div
-      id="editorMessage"
-      class="message"
-    ></div>
+<label>
+Status
+</label>
 
+<select id="categoryStatus">
 
-    <!-- ONLY NEWS FORM -->
+<option value="active">
+Active
+</option>
 
-    <form id="newsForm">
+<option value="inactive">
+Inactive
+</option>
 
-      <input
-        type="hidden"
-        id="newsId"
-      >
+</select>
 
+</div>
 
-      <div class="form-grid">
 
+<div class="form-group full">
 
-        <!-- TITLE -->
+<label class="checkbox">
 
-        <div class="form-group full">
+<input
+type="checkbox"
+id="categoryMenuVisible"
+checked
+>
 
-          <label for="title">
-            समाचार शीर्षक *
-          </label>
+<span>
+Menu में देखाउ
+</span>
 
-          <input
-            type="text"
-            id="title"
-            placeholder="समाचारक शीर्षक लिखू"
-            required
-          >
+</label>
 
-        </div>
+</div>
 
+</div>
 
-        <!-- CATEGORY -->
 
-        <div class="form-group">
+<div class="actions">
 
-          <label for="category">
-            श्रेणी
-          </label>
+<button
+type="button"
+class="btn btn-primary"
+id="saveCategoryBtn">
++ श्रेणी जोड़ू
+</button>
 
-          <select id="category">
+<button
+type="button"
+class="btn btn-light"
+id="resetCategoryBtn">
+Reset
+</button>
 
-            <option value="">
-              श्रेणी चुनू
-            </option>
+</div>
 
-          </select>
+</section>
 
-        </div>
 
+<!-- =====================================================
+     CATEGORY LIST
+====================================================== -->
 
-        <!-- STATUS -->
+<section class="panel">
 
-        <div class="form-group">
+<div class="panel-header">
 
-          <label for="status">
-            स्थिति
-          </label>
+<h2>
+सभी श्रेणी
+</h2>
 
-          <select id="status">
+</div>
 
-            <option value="draft">
-              Draft
-            </option>
 
-            <option value="published">
-              Publish
-            </option>
+<div id="categoryList">
 
-          </select>
+<div class="empty">
+श्रेणी लोड भ' रहल अछि...
+</div>
 
-        </div>
+</div>
 
+</section>
 
-        <!-- SUMMARY -->
 
-        <div class="form-group full">
+<!-- =====================================================
+     NEWS EDITOR
+====================================================== -->
 
-          <label for="summary">
-            संक्षिप्त समाचार
-          </label>
+<section
+class="panel hidden"
+id="newsEditor">
 
-          <textarea
-            id="summary"
-            placeholder="समाचारक छोट विवरण लिखू"
-          ></textarea>
+<div class="panel-header">
 
-        </div>
+<h2 id="newsEditorTitle">
+नवीन समाचार
+</h2>
 
+<button
+type="button"
+class="btn btn-light"
+id="closeNewsBtn">
+बन्द करू
+</button>
 
-        <!-- CONTENT -->
+</div>
 
-        <div class="form-group full">
 
-          <label for="content">
-            पूरा समाचार *
-          </label>
+<div id="newsMessage" class="message"></div>
 
-          <textarea
-            id="content"
-            placeholder="पूरा समाचार एतय लिखू..."
-            required
-          ></textarea>
 
-        </div>
+<form id="newsForm">
 
+<input
+type="hidden"
+id="newsId"
+>
 
-        <!-- IMAGE -->
 
-        <div class="form-group full">
+<div class="form-grid">
 
-          <label for="imageUrl">
-            Photo URL
-          </label>
 
-          <input
-            type="url"
-            id="imageUrl"
-            placeholder="https://example.com/photo.jpg"
-          >
+<div class="form-group full">
 
-        </div>
+<label>
+समाचार शीर्षक *
+</label>
 
+<input
+type="text"
+id="newsTitle"
+required
+placeholder="समाचारक शीर्षक"
+>
 
-        <!-- SEO TITLE -->
+</div>
 
-        <div class="form-group">
 
-          <label for="seoTitle">
-            SEO Title
-          </label>
+<div class="form-group">
 
-          <input
-            type="text"
-            id="seoTitle"
-            placeholder="SEO title"
-          >
+<label>
+Category
+</label>
 
-        </div>
+<select id="newsCategory">
 
+<option value="">
+Category चुनू
+</option>
 
-        <!-- SEO DESCRIPTION -->
+</select>
 
-        <div class="form-group">
+</div>
 
-          <label for="seoDescription">
-            SEO Description
-          </label>
 
-          <input
-            type="text"
-            id="seoDescription"
-            placeholder="SEO description"
-          >
+<div class="form-group">
 
-        </div>
+<label>
+Status
+</label>
 
+<select id="newsStatus">
 
-        <!-- FEATURED -->
+<option value="draft">
+Draft
+</option>
 
-        <div class="form-group">
+<option value="published">
+Published
+</option>
 
-          <label for="featured">
-            Featured
-          </label>
+</select>
 
-          <select id="featured">
+</div>
 
-            <option value="0">
-              नहि
-            </option>
 
-            <option value="1">
-              हँ
-            </option>
+<div class="form-group full">
 
-          </select>
+<label>
+English URL Slug
+</label>
 
-        </div>
+<input
+type="text"
+id="newsSlug"
+placeholder="darbhanga-new-medical-college"
+>
 
-      </div>
+</div>
 
 
-      <div class="form-actions">
+<div class="form-group full">
 
-        <button
-          type="submit"
-          class="btn btn-primary"
-        >
-          Save News
-        </button>
+<label>
+Tags
+</label>
 
-        <button
-          type="button"
-          class="btn btn-light"
-          id="cancelNewsButton"
-        >
-          Cancel
-        </button>
+<input
+type="text"
+id="newsTags"
+placeholder="darbhanga, health, education"
+>
 
-      </div>
+<small style="color:#777">
+Tags comma (,) सँ अलग करू।
+</small>
 
-    </form>
+</div>
 
-  </section>
 
+<div class="form-group full">
 
-  <!-- =====================================================
-       NEWS LIST
-  ====================================================== -->
+<label>
+संक्षिप्त समाचार
+</label>
 
-  <section class="panel">
+<textarea
+id="newsSummary"
+></textarea>
 
-    <div class="panel-title">
+</div>
 
-      <h3>
-        समाचार सूची
-      </h3>
 
-      <select
-        id="newsFilter"
-        class="news-filter"
-      >
+<div class="form-group full">
 
-        <option value="all">
-          सभ समाचार
-        </option>
+<label>
+पूरा समाचार *
+</label>
 
-        <option value="published">
-          Published
-        </option>
+<textarea
+id="newsContent"
+style="min-height:300px"
+required
+></textarea>
 
-        <option value="draft">
-          Draft
-        </option>
+</div>
 
-      </select>
 
-    </div>
+<div class="form-group full">
 
+<label>
+Photo URL
+</label>
 
-    <div
-      id="newsTable"
-      class="loading"
-    >
-      समाचार लोड भ' रहल अछि...
-    </div>
+<input
+type="url"
+id="newsImage"
+placeholder="https://..."
+>
 
-  </section>
+</div>
 
 
-  <!-- =====================================================
-       CATEGORY MANAGEMENT
-       
-       IMPORTANT:
-       एहि section में कोनो FORM नहि अछि।
-  ====================================================== -->
+<div class="form-group">
 
-  <section class="panel">
+<label>
+SEO Title
+</label>
 
-    <div class="panel-title">
+<input
+type="text"
+id="seoTitle"
+>
 
-      <h3>
-        श्रेणी प्रबंधन
-      </h3>
+</div>
 
-    </div>
 
+<div class="form-group">
 
-    <div class="category-add">
+<label>
+SEO Description
+</label>
 
+<input
+type="text"
+id="seoDescription"
+>
 
-      <div>
+</div>
 
-        <label for="categoryName">
-          श्रेणी नाम
-        </label>
 
-        <input
-          type="text"
-          id="categoryName"
-          placeholder="जैसे: मिथिला"
-        >
+<div class="form-group">
 
-      </div>
+<label class="checkbox">
 
+<input
+type="checkbox"
+id="newsFeatured"
+>
 
-      <div>
+<span>
+Featured News
+</span>
 
-        <label for="categoryDescription">
-          विवरण
-        </label>
+</label>
 
-        <input
-          type="text"
-          id="categoryDescription"
-          placeholder="श्रेणीक विवरण"
-        >
+</div>
 
-      </div>
+</div>
 
 
-      <div>
+<div class="actions">
 
-        <button
-          type="button"
-          class="btn btn-primary"
-          id="addCategoryButton"
-        >
-          + श्रेणी जोड़ू
-        </button>
+<button
+type="submit"
+class="btn btn-primary">
+Save News
+</button>
 
-      </div>
+<button
+type="button"
+class="btn btn-light"
+id="cancelNewsBtn">
+Cancel
+</button>
 
-    </div>
+</div>
 
+</form>
 
-    <div
-      id="categoryMessage"
-      class="message"
-    ></div>
+</section>
 
 
-    <div
-      id="categoryList"
-      class="category-list"
-    >
-      <div class="loading">
-        श्रेणी लोड भ' रहल अछि...
-      </div>
-    </div>
+<!-- =====================================================
+     NEWS LIST
+====================================================== -->
 
-  </section>
+<section class="panel">
 
+<div class="panel-header">
+
+<h2>
+📰 समाचार सूची
+</h2>
+
+<select
+id="newsFilter"
+style="width:170px">
+
+<option value="all">
+सभ
+</option>
+
+<option value="published">
+Published
+</option>
+
+<option value="draft">
+Draft
+</option>
+
+</select>
+
+</div>
+
+
+<div id="newsList">
+
+<div class="empty">
+समाचार लोड भ' रहल अछि...
+</div>
+
+</div>
+
+</section>
 
 </main>
 
 
 <script>
 
-
-// =====================================================
+// ======================================================
 // GLOBAL
-// =====================================================
+// ======================================================
 
 let categories = [];
+let editingCategoryId = null;
 
 
-// =====================================================
-// DOM READY
-// =====================================================
+// ======================================================
+// START
+// ======================================================
 
 document.addEventListener(
-  "DOMContentLoaded",
-  startDashboard
+"DOMContentLoaded",
+start
 );
 
 
-// =====================================================
-// START
-// =====================================================
+async function start(){
 
-async function startDashboard() {
+bindEvents();
 
-  const loggedIn =
-    await checkLogin();
+const logged =
+await checkLogin();
 
-  if (!loggedIn) {
-    return;
-  }
+if(!logged){
+return;
+}
 
+await loadCategories();
 
-  bindEvents();
-
-
-  await loadCategories();
-
-  await loadNews();
+await loadNews();
 
 }
 
 
-// =====================================================
-// BIND EVENTS
-//
-// IMPORTANT:
-// Category button केवल addCategory() call करत।
-// News form केवल saveNews() call करत।
-// दुनू एक-दोसर सँ अलग अछि।
-// =====================================================
+// ======================================================
+// EVENTS
+// ======================================================
 
-function bindEvents() {
+function bindEvents(){
 
-
-  // NEW NEWS
-
-  document
-    .getElementById(
-      "newNewsButton"
-    )
-    .addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        newNews();
-
-      }
-    );
+document
+.getElementById("saveCategoryBtn")
+.addEventListener(
+"click",
+saveCategory
+);
 
 
-  // CLOSE EDITOR
-
-  document
-    .getElementById(
-      "closeEditorButton"
-    )
-    .addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        closeEditor();
-
-      }
-    );
+document
+.getElementById("resetCategoryBtn")
+.addEventListener(
+"click",
+resetCategoryForm
+);
 
 
-  // CANCEL NEWS
-
-  document
-    .getElementById(
-      "cancelNewsButton"
-    )
-    .addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        closeEditor();
-
-      }
-    );
+document
+.getElementById("cancelCategoryBtn")
+.addEventListener(
+"click",
+resetCategoryForm
+);
 
 
-  // NEWS FILTER
-
-  document
-    .getElementById(
-      "newsFilter"
-    )
-    .addEventListener(
-      "change",
-      function() {
-
-        loadNews();
-
-      }
-    );
+document
+.getElementById("newNewsBtn")
+.addEventListener(
+"click",
+newNews
+);
 
 
-  // NEWS FORM
-
-  document
-    .getElementById(
-      "newsForm"
-    )
-    .addEventListener(
-      "submit",
-      saveNews
-    );
+document
+.getElementById("closeNewsBtn")
+.addEventListener(
+"click",
+closeNews
+);
 
 
-  // CATEGORY BUTTON
-
-  document
-    .getElementById(
-      "addCategoryButton"
-    )
-    .addEventListener(
-      "click",
-      function(event) {
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        addCategory();
-
-      }
-    );
+document
+.getElementById("cancelNewsBtn")
+.addEventListener(
+"click",
+closeNews
+);
 
 
-  // LOGOUT
+document
+.getElementById("newsForm")
+.addEventListener(
+"submit",
+saveNews
+);
 
-  document
-    .getElementById(
-      "logoutButton"
-    )
-    .addEventListener(
-      "click",
-      function(event) {
 
-        event.preventDefault();
+document
+.getElementById("newsFilter")
+.addEventListener(
+"change",
+loadNews
+);
 
-        logout();
 
-      }
-    );
+document
+.getElementById("logoutBtn")
+.addEventListener(
+"click",
+logout
+);
+
+
+// Auto slug
+
+document
+.getElementById("categoryName")
+.addEventListener(
+"input",
+function(){
+
+if(editingCategoryId){
+return;
+}
+
+const slug =
+slugify(
+this.value
+);
+
+document
+.getElementById("categorySlug")
+.value =
+slug;
+
+}
+);
 
 }
 
 
-// =====================================================
-// CHECK LOGIN
-// =====================================================
+// ======================================================
+// LOGIN CHECK
+// ======================================================
 
-async function checkLogin() {
+async function checkLogin(){
 
-  try {
+try{
 
-    const response =
-      await fetch(
-        "/api/login",
-        {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store"
-        }
-      );
+const response =
+await fetch(
+"/api/login",
+{
+method:"GET",
+credentials:"same-origin",
+cache:"no-store"
+}
+);
 
+const data =
+await response.json();
 
-    const data =
-      await response.json();
+if(
+!response.ok ||
+!data.success
+){
 
+window.location.href =
+"/admin.html";
 
-    if (
-      !response.ok ||
-      !data.success
-    ) {
+return false;
+}
 
-      window.location.href =
-        "/admin.html";
+document
+.getElementById("adminInfo")
+.textContent =
+(data.user?.name || "Admin") +
+" (" +
+(data.user?.role || "admin") +
+")";
 
-      return false;
+return true;
 
-    }
+}catch(error){
 
+console.error(error);
 
-    const adminName =
-      document.getElementById(
-        "adminName"
-      );
+window.location.href =
+"/admin.html";
 
+return false;
 
-    adminName.textContent =
-      data.user.name +
-      " (" +
-      data.user.role +
-      ")";
-
-
-    return true;
-
-
-  } catch (error) {
-
-    console.error(
-      "LOGIN CHECK ERROR:",
-      error
-    );
-
-
-    window.location.href =
-      "/admin.html";
-
-    return false;
-
-  }
+}
 
 }
 
 
-// =====================================================
+// ======================================================
 // LOAD CATEGORIES
-// =====================================================
+// ======================================================
 
-async function loadCategories() {
+async function loadCategories(){
 
-  try {
+try{
 
-    const response =
-      await fetch(
-        "/api/categories",
-        {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store"
-        }
-      );
+const response =
+await fetch(
+"/api/categories",
+{
+credentials:"same-origin",
+cache:"no-store"
+}
+);
 
+const data =
+await response.json();
 
-    const data =
-      await response.json();
+if(!data.success){
 
+throw new Error(
+data.error ||
+"Category loading failed"
+);
 
-    console.log(
-      "CATEGORY GET:",
-      data
-    );
+}
 
+categories =
+data.categories || [];
 
-    if (!data.success) {
+document
+.getElementById("totalCategories")
+.textContent =
+categories.length;
 
-      throw new Error(
-        data.error ||
-        "Category loading failed"
-      );
+renderCategories();
 
-    }
+fillNewsCategories();
 
+}catch(error){
 
-    categories =
-      data.categories || [];
+console.error(
+"LOAD CATEGORY:",
+error
+);
 
+document
+.getElementById("categoryList")
+.innerHTML =
+`
+<div class="empty">
+श्रेणी लोड नहि भ' सकल।
+<br>
+${escapeHtml(error.message)}
+</div>
+`;
 
-    // COUNT
-
-    document
-      .getElementById(
-        "totalCategories"
-      )
-      .textContent =
-      categories.length;
-
-
-    // DROPDOWN
-
-    const select =
-      document.getElementById(
-        "category"
-      );
-
-
-    select.innerHTML =
-      `
-        <option value="">
-          श्रेणी चुनू
-        </option>
-      `;
-
-
-    categories.forEach(
-      category => {
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        option.value =
-          category.id;
-
-
-        option.textContent =
-          category.name;
-
-
-        select.appendChild(
-          option
-        );
-
-      }
-    );
-
-
-    renderCategories();
-
-
-  } catch (error) {
-
-    console.error(
-      "LOAD CATEGORY ERROR:",
-      error
-    );
-
-
-    document
-      .getElementById(
-        "categoryList"
-      )
-      .innerHTML =
-      `
-        <div class="empty">
-          श्रेणी लोड नहि भ' सकल।
-          <br>
-          ${escapeHtml(
-            error.message
-          )}
-        </div>
-      `;
-
-  }
+}
 
 }
 
 
-// =====================================================
-// ADD CATEGORY
-// =====================================================
-
-async function addCategory() {
-
-  console.log(
-    "ADD CATEGORY CLICKED"
-  );
-
-
-  const name =
-    document
-      .getElementById(
-        "categoryName"
-      )
-      .value
-      .trim();
-
-
-  const description =
-    document
-      .getElementById(
-        "categoryDescription"
-      )
-      .value
-      .trim();
-
-
-  if (!name) {
-
-    showCategoryMessage(
-      "श्रेणी नाम लिखू।",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/categories",
-        {
-          method: "POST",
-
-          credentials:
-            "same-origin",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({
-
-              name:
-                name,
-
-              description:
-                description
-
-            })
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    console.log(
-      "CATEGORY POST:",
-      data
-    );
-
-
-    if (!data.success) {
-
-      showCategoryMessage(
-        data.error ||
-        "श्रेणी जोड़ल नहि गेल।",
-        "error"
-      );
-
-      return;
-
-    }
-
-
-    document
-      .getElementById(
-        "categoryName"
-      )
-      .value = "";
-
-
-    document
-      .getElementById(
-        "categoryDescription"
-      )
-      .value = "";
-
-
-    showCategoryMessage(
-      "श्रेणी सफलतापूर्वक जोड़ल गेल।",
-      "success"
-    );
-
-
-    await loadCategories();
-
-
-  } catch (error) {
-
-    console.error(
-      "ADD CATEGORY ERROR:",
-      error
-    );
-
-
-    showCategoryMessage(
-      "Server error: " +
-      error.message,
-      "error"
-    );
-
-  }
-
-}
-
-
-// =====================================================
-// DELETE CATEGORY
-// =====================================================
-
-async function deleteCategory(id) {
-
-  const confirmed =
-    confirm(
-      "की अहाँ एहि श्रेणी के delete कर' चाहैत छी?"
-    );
-
-
-  if (!confirmed) {
-    return;
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/categories?id=" +
-        encodeURIComponent(id),
-        {
-          method: "DELETE",
-          credentials:
-            "same-origin"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (!data.success) {
-
-      showCategoryMessage(
-        data.error ||
-        "श्रेणी delete नहि भ' सकल।",
-        "error"
-      );
-
-      return;
-
-    }
-
-
-    showCategoryMessage(
-      "श्रेणी delete भ' गेल।",
-      "success"
-    );
-
-
-    await loadCategories();
-
-
-  } catch (error) {
-
-    console.error(
-      "DELETE CATEGORY ERROR:",
-      error
-    );
-
-
-    showCategoryMessage(
-      "Server error।",
-      "error"
-    );
-
-  }
-
-}
-
-
-// =====================================================
+// ======================================================
 // RENDER CATEGORIES
-// =====================================================
+// ======================================================
 
-function renderCategories() {
+function renderCategories(){
 
-  const box =
-    document.getElementById(
-      "categoryList"
-    );
+const box =
+document.getElementById(
+"categoryList"
+);
 
+if(!categories.length){
 
-  if (!categories.length) {
+box.innerHTML =
+`
+<div class="empty">
+एखन कोनो category नहि अछि।
+</div>
+`;
 
-    box.innerHTML =
-      `
-        <div class="empty">
-          एखन कोनो श्रेणी नहि अछि।
-        </div>
-      `;
-
-    return;
-
-  }
-
-
-  box.innerHTML =
-    categories
-      .map(
-        category => {
-
-          return `
-            <div class="category-item">
-
-              <div>
-
-                <div>
-
-                  <span class="category-name">
-                    ${escapeHtml(
-                      category.name
-                    )}
-                  </span>
-
-                  <span class="category-slug">
-                    /${escapeHtml(
-                      category.slug
-                    )}
-                  </span>
-
-                </div>
-
-                ${
-                  category.description
-                    ? `
-                      <div class="category-description">
-                        ${escapeHtml(
-                          category.description
-                        )}
-                      </div>
-                    `
-                    : ""
-                }
-
-              </div>
-
-
-              <button
-                type="button"
-                class="btn btn-danger"
-                onclick="deleteCategory(${Number(category.id)})"
-              >
-                Delete
-              </button>
-
-            </div>
-          `;
-
-        }
-      )
-      .join("");
+return;
 
 }
 
 
-// =====================================================
+box.innerHTML = `
+
+<div class="table-wrap">
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>क्रम</th>
+
+<th>नाम</th>
+
+<th>English URL</th>
+
+<th>Menu</th>
+
+<th>Status</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+${
+categories
+.map(
+cat => `
+
+<tr>
+
+<td>
+${Number(cat.menu_order || 0)}
+</td>
+
+<td>
+
+<strong>
+${escapeHtml(cat.name)}
+</strong>
+
+${
+cat.description
+?
+`
+<br>
+<small style="color:#777">
+${escapeHtml(cat.description)}
+</small>
+`
+:
+""
+}
+
+</td>
+
+<td>
+
+<span class="category-slug">
+/${escapeHtml(cat.slug)}
+</span>
+
+</td>
+
+<td>
+
+${
+Number(cat.menu_visible)
+?
+`<span class="badge badge-visible">
+Menu
+</span>`
+:
+`<span class="badge badge-inactive">
+Hidden
+</span>`
+}
+
+</td>
+
+<td>
+
+${
+cat.status === "active"
+?
+`<span class="badge badge-active">
+Active
+</span>`
+:
+`<span class="badge badge-inactive">
+Inactive
+</span>`
+}
+
+</td>
+
+<td>
+
+<div class="category-actions">
+
+<button
+type="button"
+class="btn btn-secondary"
+onclick="editCategory(${Number(cat.id)})">
+Edit
+</button>
+
+<button
+type="button"
+class="btn btn-danger"
+onclick="deleteCategory(${Number(cat.id)})">
+Delete
+</button>
+
+</div>
+
+</td>
+
+</tr>
+
+`
+)
+.join("")
+}
+
+</tbody>
+
+</table>
+
+</div>
+`;
+
+}
+
+
+// ======================================================
+// SAVE CATEGORY
+// ======================================================
+
+async function saveCategory(){
+
+const name =
+document
+.getElementById("categoryName")
+.value
+.trim();
+
+const slug =
+document
+.getElementById("categorySlug")
+.value
+.trim()
+.toLowerCase();
+
+const description =
+document
+.getElementById("categoryDescription")
+.value
+.trim();
+
+const menuOrder =
+Number(
+document
+.getElementById("categoryOrder")
+.value || 0
+);
+
+const menuVisible =
+document
+.getElementById("categoryMenuVisible")
+.checked;
+
+const status =
+document
+.getElementById("categoryStatus")
+.value;
+
+
+if(!name){
+
+showCategoryMessage(
+"श्रेणी नाम जरूरी अछि।",
+"error"
+);
+
+return;
+}
+
+
+if(!slug){
+
+showCategoryMessage(
+"English URL slug जरूरी अछि।",
+"error"
+);
+
+return;
+}
+
+
+if(
+!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+){
+
+showCategoryMessage(
+"URL slug केवल English अक्षर, number आ hyphen में लिखू। उदाहरण: mithila-news",
+"error"
+);
+
+return;
+}
+
+
+const body = {
+
+name:name,
+
+slug:slug,
+
+description:description,
+
+menu_visible:menuVisible,
+
+menu_order:menuOrder,
+
+status:status
+
+};
+
+
+try{
+
+const url =
+editingCategoryId
+?
+"/api/categories?id=" +
+encodeURIComponent(
+editingCategoryId
+)
+:
+"/api/categories";
+
+
+const method =
+editingCategoryId
+?
+"PUT"
+:
+"POST";
+
+
+const response =
+await fetch(
+url,
+{
+method:method,
+
+credentials:
+"same-origin",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:
+JSON.stringify(body)
+}
+);
+
+
+const data =
+await response.json();
+
+
+if(!data.success){
+
+showCategoryMessage(
+data.error ||
+"Category save नहि भ' सकल।",
+"error"
+);
+
+return;
+
+}
+
+
+showCategoryMessage(
+editingCategoryId
+?
+"श्रेणी सफलतापूर्वक update भ' गेल।"
+:
+"श्रेणी सफलतापूर्वक जोड़ल गेल।",
+"success"
+);
+
+
+resetCategoryForm();
+
+await loadCategories();
+
+
+}catch(error){
+
+console.error(
+" SAVE CATEGORY:",
+error
+);
+
+showCategoryMessage(
+"Server error: " +
+error.message,
+"error"
+);
+
+}
+
+}
+
+
+// ======================================================
+// EDIT CATEGORY
+// ======================================================
+
+function editCategory(id){
+
+const category =
+categories.find(
+item =>
+Number(item.id) ===
+Number(id)
+);
+
+if(!category){
+return;
+}
+
+
+editingCategoryId =
+category.id;
+
+
+document
+.getElementById("categoryName")
+.value =
+category.name || "";
+
+
+document
+.getElementById("categorySlug")
+.value =
+category.slug || "";
+
+
+document
+.getElementById("categoryDescription")
+.value =
+category.description || "";
+
+
+document
+.getElementById("categoryOrder")
+.value =
+Number(
+category.menu_order || 0
+);
+
+
+document
+.getElementById("categoryMenuVisible")
+.checked =
+Number(
+category.menu_visible
+) === 1;
+
+
+document
+.getElementById("categoryStatus")
+.value =
+category.status === "inactive"
+?
+"inactive"
+:
+"active";
+
+
+document
+.getElementById("saveCategoryBtn")
+.textContent =
+"✓ Category Update करू";
+
+
+document
+.getElementById("cancelCategoryBtn")
+.style.display =
+"inline-block";
+
+
+document
+.getElementById("categoryName")
+.focus();
+
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+
+
+// ======================================================
+// RESET CATEGORY
+// ======================================================
+
+function resetCategoryForm(){
+
+editingCategoryId =
+null;
+
+
+document
+.getElementById("categoryName")
+.value =
+"";
+
+
+document
+.getElementById("categorySlug")
+.value =
+"";
+
+
+document
+.getElementById("categoryDescription")
+.value =
+"";
+
+
+document
+.getElementById("categoryOrder")
+.value =
+"0";
+
+
+document
+.getElementById("categoryMenuVisible")
+.checked =
+true;
+
+
+document
+.getElementById("categoryStatus")
+.value =
+"active";
+
+
+document
+.getElementById("saveCategoryBtn")
+.textContent =
+"+ श्रेणी जोड़ू";
+
+
+document
+.getElementById("cancelCategoryBtn")
+.style.display =
+"none";
+
+}
+
+
+// ======================================================
+// DELETE CATEGORY
+// ======================================================
+
+async function deleteCategory(id){
+
+if(
+!confirm(
+"की अहाँ एहि category केँ delete कर' चाहैत छी?"
+)
+){
+return;
+}
+
+
+try{
+
+const response =
+await fetch(
+"/api/categories?id=" +
+encodeURIComponent(id),
+{
+method:"DELETE",
+credentials:"same-origin"
+}
+);
+
+
+const data =
+await response.json();
+
+
+if(!data.success){
+
+showCategoryMessage(
+data.error ||
+"Category delete नहि भ' सकल।",
+"error"
+);
+
+return;
+}
+
+
+showCategoryMessage(
+"Category delete भ' गेल।",
+"success"
+);
+
+
+await loadCategories();
+
+
+}catch(error){
+
+console.error(error);
+
+showCategoryMessage(
+"Server error।",
+"error"
+);
+
+}
+
+}
+
+
+// ======================================================
 // CATEGORY MESSAGE
-// =====================================================
+// ======================================================
 
 function showCategoryMessage(
-  text,
-  type
-) {
+text,
+type
+){
 
-  const box =
-    document.getElementById(
-      "categoryMessage"
-    );
+const box =
+document.getElementById(
+"categoryMessage"
+);
 
+box.textContent =
+text;
 
-  box.textContent =
-    text;
+box.className =
+"message " +
+type;
 
+setTimeout(
+function(){
 
-  box.className =
-    "message " +
-    type;
+box.className =
+"message";
 
-
-  setTimeout(
-    function() {
-
-      box.className =
-        "message";
-
-    },
-    4000
-  );
+},
+4000
+);
 
 }
 
 
-// =====================================================
+// ======================================================
+// FILL NEWS CATEGORY
+// ======================================================
+
+function fillNewsCategories(){
+
+const select =
+document.getElementById(
+"newsCategory"
+);
+
+select.innerHTML =
+`
+<option value="">
+Category चुनू
+</option>
+`;
+
+
+categories
+.filter(
+cat =>
+cat.status === "active"
+)
+.forEach(
+cat => {
+
+const option =
+document.createElement(
+"option"
+);
+
+option.value =
+cat.id;
+
+option.textContent =
+cat.name;
+
+select.appendChild(
+option
+);
+
+}
+);
+
+}
+
+
+// ======================================================
 // LOAD NEWS
-// =====================================================
+// ======================================================
 
-async function loadNews() {
+async function loadNews(){
 
-  const filter =
-    document
-      .getElementById(
-        "newsFilter"
-      )
-      .value;
+try{
 
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/news?status=" +
-        encodeURIComponent(
-          filter
-        ),
-        {
-          method: "GET",
-          credentials: "same-origin",
-          cache: "no-store"
-        }
-      );
+const filter =
+document
+.getElementById("newsFilter")
+.value;
 
 
-    const data =
-      await response.json();
+const response =
+await fetch(
+"/api/news?status=" +
+encodeURIComponent(filter),
+{
+credentials:"same-origin",
+cache:"no-store"
+}
+);
 
 
-    console.log(
-      "NEWS GET:",
-      data
-    );
+const data =
+await response.json();
 
 
-    if (!data.success) {
+if(!data.success){
 
-      throw new Error(
-        data.error ||
-        "News loading failed"
-      );
-
-    }
-
-
-    renderNews(
-      data.news || []
-    );
-
-
-    await updateStats();
-
-
-  } catch (error) {
-
-    console.error(
-      "LOAD NEWS ERROR:",
-      error
-    );
-
-
-    document
-      .getElementById(
-        "newsTable"
-      )
-      .innerHTML =
-      `
-        <div class="empty">
-          समाचार लोड नहि भ' सकल।
-          <br>
-          ${escapeHtml(
-            error.message
-          )}
-        </div>
-      `;
-
-  }
+throw new Error(
+data.error ||
+"News loading failed"
+);
 
 }
 
 
-// =====================================================
-// UPDATE STATS
-// =====================================================
-
-async function updateStats() {
-
-  try {
-
-    const response =
-      await fetch(
-        "/api/news?status=all",
-        {
-          credentials:
-            "same-origin",
-          cache: "no-store"
-        }
-      );
+const news =
+data.news || [];
 
 
-    const data =
-      await response.json();
+document
+.getElementById("totalNews")
+.textContent =
+news.length;
 
 
-    if (!data.success) {
-      return;
-    }
+document
+.getElementById("publishedNews")
+.textContent =
+news.filter(
+item =>
+item.status ===
+"published"
+).length;
 
 
-    const all =
-      data.news || [];
+document
+.getElementById("draftNews")
+.textContent =
+news.filter(
+item =>
+item.status ===
+"draft"
+).length;
 
 
-    const published =
-      all.filter(
-        item =>
-          item.status ===
-          "published"
-      );
+renderNews(
+news
+);
 
 
-    const drafts =
-      all.filter(
-        item =>
-          item.status ===
-          "draft"
-      );
+}catch(error){
 
+console.error(
+"LOAD NEWS:",
+error
+);
 
-    document
-      .getElementById(
-        "totalNews"
-      )
-      .textContent =
-      all.length;
+document
+.getElementById("newsList")
+.innerHTML =
+`
+<div class="empty">
+समाचार लोड नहि भ' सकल।
+</div>
+`;
 
-
-    document
-      .getElementById(
-        "publishedNews"
-      )
-      .textContent =
-      published.length;
-
-
-    document
-      .getElementById(
-        "draftNews"
-      )
-      .textContent =
-      drafts.length;
-
-  } catch (error) {
-
-    console.error(
-      "STATS ERROR:",
-      error
-    );
-
-  }
+}
 
 }
 
 
-// =====================================================
+// ======================================================
 // RENDER NEWS
-// =====================================================
+// ======================================================
 
-function renderNews(
-  news
-) {
+function renderNews(news){
 
-  const box =
-    document.getElementById(
-      "newsTable"
-    );
+const box =
+document.getElementById(
+"newsList"
+);
 
 
-  if (!news.length) {
+if(!news.length){
 
-    box.innerHTML =
-      `
-        <div class="empty">
-          एखन कोनो समाचार नहि अछि।
-        </div>
-      `;
+box.innerHTML =
+`
+<div class="empty">
+एखन कोनो समाचार नहि अछि।
+</div>
+`;
 
-    return;
-
-  }
-
-
-  box.innerHTML =
-    `
-      <div class="table-wrap">
-
-        <table class="news-table">
-
-          <thead>
-
-            <tr>
-
-              <th>
-                शीर्षक
-              </th>
-
-              <th>
-                श्रेणी
-              </th>
-
-              <th>
-                स्थिति
-              </th>
-
-              <th>
-                Views
-              </th>
-
-              <th>
-                Action
-              </th>
-
-            </tr>
-
-          </thead>
+return;
+}
 
 
-          <tbody>
+box.innerHTML = `
 
-            ${
-              news
-                .map(
-                  item => {
+<div class="table-wrap">
 
-                    const statusClass =
-                      item.status ===
-                      "published"
-                        ? "status-published"
-                        : "status-draft";
+<table>
 
+<thead>
 
-                    return `
-                      <tr>
+<tr>
 
-                        <td>
+<th>शीर्षक</th>
+<th>Category</th>
+<th>Status</th>
+<th>Views</th>
+<th>Action</th>
 
-                          <div class="news-title">
-                            ${escapeHtml(
-                              item.title
-                            )}
-                          </div>
+</tr>
 
-                          <span class="news-date">
-                            ${formatDate(
-                              item.created_at
-                            )}
-                          </span>
+</thead>
 
-                        </td>
+<tbody>
 
+${
+news
+.map(
+item => `
 
-                        <td>
-                          ${escapeHtml(
-                            item.category_name ||
-                            "-"
-                          )}
-                        </td>
+<tr>
 
+<td>
+<strong>
+${escapeHtml(item.title)}
+</strong>
 
-                        <td>
+<br>
 
-                          <span
-                            class="status ${statusClass}"
-                          >
-                            ${escapeHtml(
-                              item.status
-                            )}
-                          </span>
+<small style="color:#777">
+${escapeHtml(
+item.slug || ""
+)}
+</small>
 
-                        </td>
+</td>
 
+<td>
+${escapeHtml(
+item.category_name ||
+"-"
+)}
+</td>
 
-                        <td>
-                          ${Number(
-                            item.views || 0
-                          )}
-                        </td>
+<td>
+${escapeHtml(
+item.status
+)}
+</td>
 
+<td>
+${Number(item.views || 0)}
+</td>
 
-                        <td>
+<td>
 
-                          <div class="action-buttons">
+<button
+type="button"
+class="btn btn-secondary"
+onclick="editNews(${Number(item.id)})">
+Edit
+</button>
 
-                            <button
-                              type="button"
-                              class="btn btn-secondary"
-                              onclick="editNews(${Number(item.id)})"
-                            >
-                              Edit
-                            </button>
+<button
+type="button"
+class="btn btn-danger"
+onclick="deleteNews(${Number(item.id)})">
+Delete
+</button>
 
-                            <button
-                              type="button"
-                              class="btn btn-danger"
-                              onclick="deleteNews(${Number(item.id)})"
-                            >
-                              Delete
-                            </button>
+</td>
 
-                          </div>
+</tr>
 
-                        </td>
+`
+)
+.join("")
+}
 
-                      </tr>
-                    `;
+</tbody>
 
-                  }
-                )
-                .join("")
-            }
+</table>
 
-          </tbody>
-
-        </table>
-
-      </div>
-    `;
+</div>
+`;
 
 }
 
 
-// =====================================================
+// ======================================================
 // NEW NEWS
-// =====================================================
+// ======================================================
 
-function newNews() {
+function newNews(){
 
-  document
-    .getElementById(
-      "newsForm"
-    )
-    .reset();
+document
+.getElementById("newsForm")
+.reset();
 
 
-  document
-    .getElementById(
-      "newsId"
-    )
-    .value = "";
+document
+.getElementById("newsId")
+.value =
+"";
 
 
-  document
-    .getElementById(
-      "editorTitle"
-    )
-    .textContent =
-      "नवीन समाचार";
+document
+.getElementById("newsEditorTitle")
+.textContent =
+"नवीन समाचार";
 
 
-  document
-    .getElementById(
-      "editorPanel"
-    )
-    .classList
-    .remove(
-      "hidden"
-    );
+document
+.getElementById("newsEditor")
+.classList
+.remove("hidden");
 
 
-  document
-    .getElementById(
-      "editorMessage"
-    )
-    .className =
-      "message";
-
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
 
 }
 
 
-// =====================================================
+// ======================================================
 // EDIT NEWS
-// =====================================================
+// ======================================================
 
-async function editNews(
-  id
-) {
+async function editNews(id){
 
-  try {
+try{
 
-    const response =
-      await fetch(
-        "/api/news?id=" +
-        encodeURIComponent(id),
-        {
-          credentials:
-            "same-origin",
-          cache: "no-store"
-        }
-      );
+const response =
+await fetch(
+"/api/news?id=" +
+encodeURIComponent(id),
+{
+credentials:"same-origin",
+cache:"no-store"
+}
+);
 
 
-    const data =
-      await response.json();
+const data =
+await response.json();
 
 
-    if (!data.success) {
+if(
+!data.success ||
+!data.news
+){
 
-      alert(
-        data.error ||
-        "समाचार नहि भेटल।"
-      );
+alert(
+data.error ||
+"समाचार नहि भेटल।"
+);
 
-      return;
-
-    }
-
-
-    const news =
-      data.news;
+return;
+}
 
 
-    document
-      .getElementById(
-        "newsId"
-      )
-      .value =
-      news.id;
+const n =
+data.news;
 
 
-    document
-      .getElementById(
-        "title"
-      )
-      .value =
-      news.title || "";
+document
+.getElementById("newsId")
+.value =
+n.id;
 
 
-    document
-      .getElementById(
-        "summary"
-      )
-      .value =
-      news.summary || "";
+document
+.getElementById("newsTitle")
+.value =
+n.title || "";
 
 
-    document
-      .getElementById(
-        "content"
-      )
-      .value =
-      news.content || "";
+document
+.getElementById("newsSlug")
+.value =
+n.slug || "";
 
 
-    document
-      .getElementById(
-        "imageUrl"
-      )
-      .value =
-      news.image_url || "";
+document
+.getElementById("newsCategory")
+.value =
+n.category_id || "";
 
 
-    document
-      .getElementById(
-        "category"
-      )
-      .value =
-      news.category_id || "";
+document
+.getElementById("newsStatus")
+.value =
+n.status || "draft";
 
 
-    document
-      .getElementById(
-        "status"
-      )
-      .value =
-      news.status || "draft";
+document
+.getElementById("newsSummary")
+.value =
+n.summary || "";
 
 
-    document
-      .getElementById(
-        "featured"
-      )
-      .value =
-      news.featured
-        ? "1"
-        : "0";
+document
+.getElementById("newsContent")
+.value =
+n.content || "";
 
 
-    document
-      .getElementById(
-        "seoTitle"
-      )
-      .value =
-      news.seo_title || "";
+document
+.getElementById("newsImage")
+.value =
+n.image_url || "";
 
 
-    document
-      .getElementById(
-        "seoDescription"
-      )
-      .value =
-      news.seo_description || "";
+document
+.getElementById("seoTitle")
+.value =
+n.seo_title || "";
 
 
-    document
-      .getElementById(
-        "editorTitle"
-      )
-      .textContent =
-      "समाचार Edit करू";
+document
+.getElementById("seoDescription")
+.value =
+n.seo_description || "";
 
 
-    document
-      .getElementById(
-        "editorPanel"
-      )
-      .classList
-      .remove(
-        "hidden"
-      );
+document
+.getElementById("newsFeatured")
+.checked =
+Number(n.featured) === 1;
 
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+document
+.getElementById("newsEditorTitle")
+.textContent =
+"समाचार Edit करू";
 
 
-  } catch (error) {
-
-    console.error(
-      "EDIT NEWS ERROR:",
-      error
-    );
+document
+.getElementById("newsEditor")
+.classList
+.remove("hidden");
 
 
-    alert(
-      "समाचार लोड नहि भ' सकल।"
-    );
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
 
-  }
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"समाचार लोड नहि भ' सकल।"
+);
+
+}
 
 }
 
 
-// =====================================================
+// ======================================================
 // SAVE NEWS
-// =====================================================
-
-async function saveNews(
-  event
-) {
-
-  event.preventDefault();
-  event.stopPropagation();
-
-
-  const id =
-    document
-      .getElementById(
-        "newsId"
-      )
-      .value;
+// ======================================================
 
+async function saveNews(event){
 
-  const title =
-    document
-      .getElementById(
-        "title"
-      )
-      .value
-      .trim();
+event.preventDefault();
 
 
-  const summary =
-    document
-      .getElementById(
-        "summary"
-      )
-      .value
-      .trim();
+const id =
+document
+.getElementById("newsId")
+.value;
 
 
-  const content =
-    document
-      .getElementById(
-        "content"
-      )
-      .value
-      .trim();
+const title =
+document
+.getElementById("newsTitle")
+.value
+.trim();
 
 
-  const imageUrl =
-    document
-      .getElementById(
-        "imageUrl"
-      )
-      .value
-      .trim();
+const slug =
+document
+.getElementById("newsSlug")
+.value
+.trim();
+
+
+const content =
+document
+.getElementById("newsContent")
+.value
+.trim();
+
+
+if(!title || !content){
+
+showNewsMessage(
+"शीर्षक आ समाचार जरूरी अछि।",
+"error"
+);
+
+return;
+}
+
+
+const body = {
+
+title:title,
+
+slug:slug,
 
+category_id:
+document
+.getElementById("newsCategory")
+.value
+?
+Number(
+document
+.getElementById("newsCategory")
+.value
+)
+:
+null,
 
-  const categoryValue =
-    document
-      .getElementById(
-        "category"
-      )
-      .value;
+status:
+document
+.getElementById("newsStatus")
+.value,
 
+summary:
+document
+.getElementById("newsSummary")
+.value
+.trim(),
 
-  const status =
-    document
-      .getElementById(
-        "status"
-      )
-      .value;
+content:content,
 
+image_url:
+document
+.getElementById("newsImage")
+.value
+.trim(),
 
-  const featured =
-    document
-      .getElementById(
-        "featured"
-      )
-      .value ===
-      "1";
+seo_title:
+document
+.getElementById("seoTitle")
+.value
+.trim(),
 
+seo_description:
+document
+.getElementById("seoDescription")
+.value
+.trim(),
 
-  const seoTitle =
-    document
-      .getElementById(
-        "seoTitle"
-      )
-      .value
-      .trim();
+featured:
+document
+.getElementById("newsFeatured")
+.checked,
 
+tags:
+document
+.getElementById("newsTags")
+.value
+.split(",")
+.map(
+x =>
+x.trim()
+)
+.filter(Boolean)
 
-  const seoDescription =
-    document
-      .getElementById(
-        "seoDescription"
-      )
-      .value
-      .trim();
+};
 
 
-  if (
-    !title ||
-    !content
-  ) {
+try{
 
-    showEditorMessage(
-      "शीर्षक आ समाचार जरूरी अछि।",
-      "error"
-    );
+const response =
+await fetch(
+id
+?
+"/api/news?id=" +
+encodeURIComponent(id)
+:
+"/api/news",
+{
+method:
+id
+?
+"PUT"
+:
+"POST",
 
-    return;
+credentials:
+"same-origin",
 
-  }
+headers:{
+"Content-Type":
+"application/json"
+},
 
+body:
+JSON.stringify(body)
+}
+);
 
-  const body = {
 
-    title:
-      title,
+const data =
+await response.json();
 
-    summary:
-      summary,
 
-    content:
-      content,
+if(!data.success){
 
-    image_url:
-      imageUrl,
+showNewsMessage(
+data.error ||
+"समाचार save नहि भ' सकल।",
+"error"
+);
 
-    category_id:
-      categoryValue
-        ? Number(
-            categoryValue
-          )
-        : null,
+return;
+}
 
-    status:
-      status,
 
-    featured:
-      featured,
+showNewsMessage(
+"समाचार सफलतापूर्वक save भ' गेल।",
+"success"
+);
 
-    seo_title:
-      seoTitle,
 
-    seo_description:
-      seoDescription
+await loadNews();
 
-  };
 
+setTimeout(
+closeNews,
+700
+);
 
-  try {
 
-    const url =
-      id
-        ? "/api/news?id=" +
-          encodeURIComponent(id)
-        : "/api/news";
+}catch(error){
 
+console.error(error);
 
-    const method =
-      id
-        ? "PUT"
-        : "POST";
+showNewsMessage(
+"Server error: " +
+error.message,
+"error"
+);
 
-
-    const response =
-      await fetch(
-        url,
-        {
-          method:
-            method,
-
-          credentials:
-            "same-origin",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(
-              body
-            )
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    console.log(
-      "NEWS SAVE:",
-      data
-    );
-
-
-    if (!data.success) {
-
-      showEditorMessage(
-        data.error ||
-        "समाचार save नहि भ' सकल।",
-        "error"
-      );
-
-      return;
-
-    }
-
-
-    showEditorMessage(
-      data.message ||
-      "समाचार save भ' गेल।",
-      "success"
-    );
-
-
-    await loadNews();
-
-
-    setTimeout(
-      function() {
-
-        closeEditor();
-
-      },
-      700
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "SAVE NEWS ERROR:",
-      error
-    );
-
-
-    showEditorMessage(
-      "Server error: " +
-      error.message,
-      "error"
-    );
-
-  }
+}
 
 }
 
 
-// =====================================================
+// ======================================================
 // DELETE NEWS
-// =====================================================
+// ======================================================
 
-async function deleteNews(
-  id
-) {
+async function deleteNews(id){
 
-  if (
-    !confirm(
-      "की अहाँ एहि समाचार के delete कर' चाहैत छी?"
-    )
-  ) {
-    return;
-  }
+if(
+!confirm(
+"की अहाँ एहि समाचार केँ delete कर' चाहैत छी?"
+)
+){
+return;
+}
 
 
-  try {
+try{
 
-    const response =
-      await fetch(
-        "/api/news?id=" +
-        encodeURIComponent(id),
-        {
-          method: "DELETE",
-          credentials:
-            "same-origin"
-        }
-      );
-
-
-    const data =
-      await response.json();
+const response =
+await fetch(
+"/api/news?id=" +
+encodeURIComponent(id),
+{
+method:"DELETE",
+credentials:"same-origin"
+}
+);
 
 
-    if (!data.success) {
-
-      alert(
-        data.error ||
-        "समाचार delete नहि भ' सकल।"
-      );
-
-      return;
-
-    }
+const data =
+await response.json();
 
 
-    await loadNews();
+if(!data.success){
+
+alert(
+data.error ||
+"Delete नहि भ' सकल।"
+);
+
+return;
+}
 
 
-  } catch (error) {
-
-    console.error(
-      "DELETE NEWS ERROR:",
-      error
-    );
+await loadNews();
 
 
-    alert(
-      "Server error।"
-    );
+}catch(error){
 
-  }
+console.error(error);
+
+alert(
+"Server error।"
+);
+
+}
 
 }
 
 
-// =====================================================
-// CLOSE EDITOR
-// =====================================================
+// ======================================================
+// CLOSE NEWS
+// ======================================================
 
-function closeEditor() {
+function closeNews(){
 
-  document
-    .getElementById(
-      "editorPanel"
-    )
-    .classList
-    .add(
-      "hidden"
-    );
+document
+.getElementById("newsEditor")
+.classList
+.add("hidden");
 
 
-  document
-    .getElementById(
-      "newsForm"
-    )
-    .reset();
+document
+.getElementById("newsForm")
+.reset();
 
 
-  document
-    .getElementById(
-      "newsId"
-    )
-    .value = "";
-
-
-  document
-    .getElementById(
-      "editorMessage"
-    )
-    .className =
-      "message";
+document
+.getElementById("newsId")
+.value =
+"";
 
 }
 
 
-// =====================================================
-// EDITOR MESSAGE
-// =====================================================
+// ======================================================
+// NEWS MESSAGE
+// ======================================================
 
-function showEditorMessage(
-  text,
-  type
-) {
+function showNewsMessage(
+text,
+type
+){
 
-  const box =
-    document.getElementById(
-      "editorMessage"
-    );
+const box =
+document.getElementById(
+"newsMessage"
+);
 
+box.textContent =
+text;
 
-  box.textContent =
-    text;
-
-
-  box.className =
-    "message " +
-    type;
-
-
-  setTimeout(
-    function() {
-
-      box.className =
-        "message";
-
-    },
-    4000
-  );
+box.className =
+"message " +
+type;
 
 }
 
 
-// =====================================================
+// ======================================================
 // LOGOUT
-// =====================================================
+// ======================================================
 
-async function logout() {
+async function logout(){
 
-  try {
+try{
 
-    await fetch(
-      "/api/login",
-      {
-        method: "DELETE",
-        credentials:
-          "same-origin"
-      }
-    );
+await fetch(
+"/api/login",
+{
+method:"DELETE",
+credentials:"same-origin"
+}
+);
 
-  } catch (error) {
+}catch(error){
 
-    console.error(
-      error
-    );
+console.error(error);
 
-  }
+}
 
-
-  window.location.href =
-    "/admin.html";
+window.location.href =
+"/admin.html";
 
 }
 
 
-// =====================================================
-// ESCAPE HTML
-// =====================================================
+// ======================================================
+// SLUGIFY
+// ======================================================
 
-function escapeHtml(
-  value
-) {
+function slugify(value){
 
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
+return String(value || "")
+.toLowerCase()
+.trim()
+.replace(
+/[^a-z0-9]+/g,
+"-"
+)
+.replace(
+/^-+|-+$/g,
+""
+);
 
 }
 
 
-// =====================================================
-// DATE FORMAT
-// =====================================================
+// ======================================================
+// ESCAPE
+// ======================================================
 
-function formatDate(
-  value
-) {
+function escapeHtml(value){
 
-  if (!value) {
-    return "";
-  }
-
-
-  try {
-
-    return new Date(
-      value
-    ).toLocaleString(
-      "hi-IN",
-      {
-        dateStyle:
-          "medium",
-        timeStyle:
-          "short"
-      }
-    );
-
-  } catch {
-
-    return String(
-      value
-    );
-
-  }
+return String(
+value ?? ""
+)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
 
 }
 
