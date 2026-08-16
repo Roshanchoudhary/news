@@ -1,63 +1,60 @@
 // functions/api/news.js
 
-// ============================================
-// GET NEWS
-// /api/news
-// /api/news?id=123
-// /api/news?status=published
-// ============================================
-
 export async function onRequestGet(context) {
   const { request, env } = context;
+  const url = new URL(request.url);
+  const id = url.searchParams.get("id");
+  const status = url.searchParams.get("status");
 
   try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get("id");
-    const status = url.searchParams.get("status");
-
-    // ----------------------------------------
+    // --------------------------------------------------
     // SINGLE NEWS
-    // ----------------------------------------
+    // --------------------------------------------------
     if (id) {
-      const news = await env.DB
-        .prepare(`
-          SELECT
-            n.*,
-            c.name AS category_name,
-            u.name AS author_name
-          FROM news n
-          LEFT JOIN categories c
-            ON n.category_id = c.id
-          LEFT JOIN users u
-            ON n.author_id = u.id
-          WHERE n.id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
+      const news = await env.DB.prepare(`
+        SELECT
+          n.*,
+          c.name AS category_name,
+          u.name AS author_name
+        FROM news n
+        LEFT JOIN categories c
+          ON c.id = n.category_id
+        LEFT JOIN users u
+          ON u.id = n.author_id
+        WHERE n.id = ?
+        LIMIT 1
+      `).bind(id).first();
 
       if (!news) {
-        return Response.json(
-          {
-            success: false,
-            error: "समाचार नहि भेटल"
-          },
-          { status: 404 }
-        );
+        return Response.json({
+          success: false,
+          error: "समाचार नहि भेटल"
+        }, { status: 404 });
       }
 
-      // Public view count
-      if (news.status === "published") {
-        await env.DB
-          .prepare(`
-            UPDATE news
-            SET views = views + 1
-            WHERE id = ?
-          `)
-          .bind(id)
-          .run();
+      // Public visitor के Draft नहि देखाउ
+      if (
+        news.status !== "published" &&
+        !(await isAdmin(request, env))
+      ) {
+        return Response.json({
+          success: false,
+          error: "समाचार उपलब्ध नहि अछि"
+        }, { status: 404 });
+      }
 
-        news.views = Number(news.views || 0) + 1;
+      // ------------------------------------------------
+      // VIEW +1
+      // ------------------------------------------------
+      if (news.status === "published") {
+        await env.DB.prepare(`
+          UPDATE news
+          SET views = COALESCE(views, 0) + 1
+          WHERE id = ?
+        `).bind(id).run();
+
+        news.views =
+          Number(news.views || 0) + 1;
       }
 
       return Response.json({
@@ -66,84 +63,49 @@ export async function onRequestGet(context) {
       });
     }
 
-    // ----------------------------------------
+    // --------------------------------------------------
     // NEWS LIST
-    // ----------------------------------------
+    // --------------------------------------------------
 
     let query = `
       SELECT
-        n.id,
-        n.title,
-        n.slug,
-        n.summary,
-        n.image_url,
-        n.category_id,
-        n.author_id,
-        n.status,
-        n.featured,
-        n.views,
-        n.seo_title,
-        n.seo_description,
-        n.published_at,
-        n.created_at,
-        n.updated_at,
+        n.*,
         c.name AS category_name,
         u.name AS author_name
       FROM news n
       LEFT JOIN categories c
-        ON n.category_id = c.id
+        ON c.id = n.category_id
       LEFT JOIN users u
-        ON n.author_id = u.id
+        ON u.id = n.author_id
     `;
 
     const params = [];
 
-    // Public website पर default केवल published
-    if (!status) {
-      query += `
-        WHERE n.status = 'published'
-        ORDER BY
-          COALESCE(n.published_at, n.created_at) DESC
-        LIMIT 100
-      `;
-    }
-
-    // Admin dashboard status अनुसार
-    else if (
-      status === "draft" ||
-      status === "published"
+    if (
+      status &&
+      status !== "all"
     ) {
       query += `
         WHERE n.status = ?
-        ORDER BY n.created_at DESC
-        LIMIT 100
       `;
 
       params.push(status);
     }
 
-    // Admin dashboard के लेल all
-    else if (status === "all") {
-      query += `
-        ORDER BY n.created_at DESC
-        LIMIT 100
-      `;
-    }
+    query += `
+      ORDER BY
+        COALESCE(
+          n.published_at,
+          n.created_at
+        ) DESC,
+        n.id DESC
+    `;
 
-    else {
-      return Response.json(
-        {
-          success: false,
-          error: "Invalid status"
-        },
-        { status: 400 }
-      );
-    }
-
-    const result = await env.DB
-      .prepare(query)
-      .bind(...params)
-      .all();
+    const result =
+      await env.DB
+        .prepare(query)
+        .bind(...params)
+        .all();
 
     return Response.json({
       success: true,
@@ -152,43 +114,46 @@ export async function onRequestGet(context) {
 
   } catch (error) {
 
-    console.error("GET NEWS ERROR:", error);
-
-    return Response.json(
-      {
-        success: false,
-        error: "समाचार लोड नहि भ' सकल"
-      },
-      { status: 500 }
+    console.error(
+      "GET NEWS ERROR:",
+      error
     );
+
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "समाचार लोड नहि भ' सकल"
+    }, { status: 500 });
   }
 }
 
 
-// ============================================
+// ======================================================
 // CREATE NEWS
-// POST /api/news
-// ============================================
+// ======================================================
 
 export async function onRequestPost(context) {
+
   const { request, env } = context;
 
   try {
 
-    // Admin authentication
-    const user = await requireAdmin(request, env);
+    const user =
+      await requireAdmin(
+        request,
+        env
+      );
 
     if (!user) {
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        { status: 401 }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body =
+      await request.json();
 
     const title =
       String(body.title || "").trim();
@@ -199,10 +164,10 @@ export async function onRequestPost(context) {
     const content =
       String(body.content || "").trim();
 
-    const imageUrl =
+    const image_url =
       String(body.image_url || "").trim();
 
-    const categoryId =
+    const category_id =
       body.category_id
         ? Number(body.category_id)
         : null;
@@ -215,20 +180,22 @@ export async function onRequestPost(context) {
     const featured =
       body.featured ? 1 : 0;
 
-    const seoTitle =
-      String(body.seo_title || "").trim();
+    const seo_title =
+      String(
+        body.seo_title || ""
+      ).trim();
 
-    const seoDescription =
-      String(body.seo_description || "").trim();
+    const seo_description =
+      String(
+        body.seo_description || ""
+      ).trim();
 
     if (!title || !content) {
-      return Response.json(
-        {
-          success: false,
-          error: "शीर्षक आ समाचार जरूरी अछि"
-        },
-        { status: 400 }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "शीर्षक आ समाचार जरूरी अछि"
+      }, { status: 400 });
     }
 
     const slug =
@@ -237,13 +204,13 @@ export async function onRequestPost(context) {
         env
       );
 
-    const publishedAt =
+    const published_at =
       status === "published"
         ? new Date().toISOString()
         : null;
 
-    const result = await env.DB
-      .prepare(`
+    const result =
+      await env.DB.prepare(`
         INSERT INTO news (
           title,
           slug,
@@ -264,62 +231,65 @@ export async function onRequestPost(context) {
       .bind(
         title,
         slug,
-        summary,
+        summary || null,
         content,
-        imageUrl || null,
-        categoryId,
+        image_url || null,
+        category_id,
         user.id,
         status,
         featured,
-        seoTitle || title,
-        seoDescription || summary,
-        publishedAt
+        seo_title || null,
+        seo_description || null,
+        published_at
       )
       .run();
 
     return Response.json({
       success: true,
-      message: "समाचार सफलतापूर्वक जोड़ल गेल",
-      id: result.meta.last_row_id,
-      slug
+      message:
+        "समाचार सफलतापूर्वक जोड़ल गेल",
+      id:
+        result.meta.last_row_id
     });
 
   } catch (error) {
 
-    console.error("CREATE NEWS ERROR:", error);
-
-    return Response.json(
-      {
-        success: false,
-        error: error.message
-      },
-      { status: 500 }
+    console.error(
+      "CREATE NEWS ERROR:",
+      error
     );
+
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "समाचार जोड़ल नहि जा सकल"
+    }, { status: 500 });
   }
 }
 
 
-// ============================================
+// ======================================================
 // UPDATE NEWS
-// PUT /api/news?id=123
-// ============================================
+// ======================================================
 
 export async function onRequestPut(context) {
+
   const { request, env } = context;
 
   try {
 
     const user =
-      await requireAdmin(request, env);
+      await requireAdmin(
+        request,
+        env
+      );
 
     if (!user) {
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        { status: 401 }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
     }
 
     const url =
@@ -329,60 +299,28 @@ export async function onRequestPut(context) {
       url.searchParams.get("id");
 
     if (!id) {
-      return Response.json(
-        {
-          success: false,
-          error: "News ID जरूरी अछि"
-        },
-        { status: 400 }
-      );
-    }
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT id, title, status
-          FROM news
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-    if (!existing) {
-      return Response.json(
-        {
-          success: false,
-          error: "समाचार नहि भेटल"
-        },
-        { status: 404 }
-      );
+      return Response.json({
+        success: false,
+        error: "News ID जरूरी अछि"
+      }, { status: 400 });
     }
 
     const body =
       await request.json();
 
     const title =
-      String(
-        body.title ?? existing.title
-      ).trim();
+      String(body.title || "").trim();
 
     const summary =
-      String(
-        body.summary ?? ""
-      ).trim();
+      String(body.summary || "").trim();
 
     const content =
-      String(
-        body.content ?? ""
-      ).trim();
+      String(body.content || "").trim();
 
-    const imageUrl =
-      String(
-        body.image_url ?? ""
-      ).trim();
+    const image_url =
+      String(body.image_url || "").trim();
 
-    const categoryId =
+    const category_id =
       body.category_id
         ? Number(body.category_id)
         : null;
@@ -395,120 +333,134 @@ export async function onRequestPut(context) {
     const featured =
       body.featured ? 1 : 0;
 
-    const seoTitle =
+    const seo_title =
       String(
-        body.seo_title ?? ""
+        body.seo_title || ""
       ).trim();
 
-    const seoDescription =
+    const seo_description =
       String(
-        body.seo_description ?? ""
+        body.seo_description || ""
       ).trim();
 
     if (!title || !content) {
-      return Response.json(
-        {
-          success: false,
-          error: "शीर्षक आ समाचार जरूरी अछि"
-        },
-        { status: 400 }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "शीर्षक आ समाचार जरूरी अछि"
+      }, { status: 400 });
     }
 
-    // Publish time only when first published
-    let publishedAt = null;
-
-    if (status === "published") {
-
-      const old =
-        await env.DB
-          .prepare(`
-            SELECT published_at
-            FROM news
-            WHERE id = ?
-          `)
-          .bind(id)
-          .first();
-
-      publishedAt =
-        old?.published_at ||
-        new Date().toISOString();
-
-    }
-
-    await env.DB
-      .prepare(`
-        UPDATE news
-        SET
-          title = ?,
-          summary = ?,
-          content = ?,
-          image_url = ?,
-          category_id = ?,
-          status = ?,
-          featured = ?,
-          seo_title = ?,
-          seo_description = ?,
-          published_at = ?,
-          updated_at = CURRENT_TIMESTAMP
+    const oldNews =
+      await env.DB.prepare(`
+        SELECT
+          id,
+          slug,
+          published_at
+        FROM news
         WHERE id = ?
+        LIMIT 1
       `)
-      .bind(
-        title,
-        summary,
-        content,
-        imageUrl || null,
-        categoryId,
-        status,
-        featured,
-        seoTitle || title,
-        seoDescription || summary,
-        publishedAt,
-        id
-      )
-      .run();
+      .bind(id)
+      .first();
+
+    if (!oldNews) {
+      return Response.json({
+        success: false,
+        error: "समाचार नहि भेटल"
+      }, { status: 404 });
+    }
+
+    let published_at =
+      oldNews.published_at;
+
+    if (
+      status === "published" &&
+      !published_at
+    ) {
+      published_at =
+        new Date().toISOString();
+    }
+
+    if (status === "draft") {
+      published_at = null;
+    }
+
+    await env.DB.prepare(`
+      UPDATE news
+      SET
+        title = ?,
+        summary = ?,
+        content = ?,
+        image_url = ?,
+        category_id = ?,
+        status = ?,
+        featured = ?,
+        seo_title = ?,
+        seo_description = ?,
+        published_at = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    .bind(
+      title,
+      summary || null,
+      content,
+      image_url || null,
+      category_id,
+      status,
+      featured,
+      seo_title || null,
+      seo_description || null,
+      published_at,
+      id
+    )
+    .run();
 
     return Response.json({
       success: true,
-      message: "समाचार अपडेट भ' गेल"
+      message:
+        "समाचार अपडेट भ' गेल"
     });
 
   } catch (error) {
 
-    console.error("UPDATE NEWS ERROR:", error);
-
-    return Response.json(
-      {
-        success: false,
-        error: error.message
-      },
-      { status: 500 }
+    console.error(
+      "UPDATE NEWS ERROR:",
+      error
     );
+
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "समाचार अपडेट नहि भ' सकल"
+    }, { status: 500 });
   }
 }
 
 
-// ============================================
+// ======================================================
 // DELETE NEWS
-// DELETE /api/news?id=123
-// ============================================
+// ======================================================
 
 export async function onRequestDelete(context) {
+
   const { request, env } = context;
 
   try {
 
     const user =
-      await requireAdmin(request, env);
+      await requireAdmin(
+        request,
+        env
+      );
 
     if (!user) {
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        { status: 401 }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
     }
 
     const url =
@@ -518,67 +470,56 @@ export async function onRequestDelete(context) {
       url.searchParams.get("id");
 
     if (!id) {
-      return Response.json(
-        {
-          success: false,
-          error: "News ID जरूरी अछि"
-        },
-        { status: 400 }
-      );
+      return Response.json({
+        success: false,
+        error: "News ID जरूरी अछि"
+      }, { status: 400 });
     }
 
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT id
-          FROM news
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-    if (!existing) {
-      return Response.json(
-        {
-          success: false,
-          error: "समाचार नहि भेटल"
-        },
-        { status: 404 }
-      );
-    }
-
-    await env.DB
-      .prepare(`
+    const result =
+      await env.DB.prepare(`
         DELETE FROM news
         WHERE id = ?
       `)
       .bind(id)
       .run();
 
+    if (
+      !result.meta ||
+      !result.meta.changes
+    ) {
+      return Response.json({
+        success: false,
+        error: "समाचार नहि भेटल"
+      }, { status: 404 });
+    }
+
     return Response.json({
       success: true,
-      message: "समाचार delete भ' गेल"
+      message:
+        "समाचार delete भ' गेल"
     });
 
   } catch (error) {
 
-    console.error("DELETE NEWS ERROR:", error);
-
-    return Response.json(
-      {
-        success: false,
-        error: error.message
-      },
-      { status: 500 }
+    console.error(
+      "DELETE NEWS ERROR:",
+      error
     );
+
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "समाचार delete नहि भ' सकल"
+    }, { status: 500 });
   }
 }
 
 
-// ============================================
-// ADMIN AUTHENTICATION
-// ============================================
+// ======================================================
+// ADMIN AUTH
+// ======================================================
 
 async function requireAdmin(
   request,
@@ -587,47 +528,11 @@ async function requireAdmin(
 
   try {
 
-    if (!env.AUTH_SECRET) {
-      return null;
-    }
-
-    const cookies =
-      parseCookies(
-        request.headers.get("Cookie") || ""
-      );
-
-    const token =
-      cookies.session;
-
-    if (!token) {
-      return null;
-    }
-
-    const session =
-      await verifySessionToken(
-        token,
-        env.AUTH_SECRET
-      );
-
-    if (!session || !session.id) {
-      return null;
-    }
-
     const user =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            name,
-            email,
-            role,
-            status
-          FROM users
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(session.id)
-        .first();
+      await getAuthenticatedUser(
+        request,
+        env
+      );
 
     if (
       !user ||
@@ -639,19 +544,110 @@ async function requireAdmin(
 
     return user;
 
-  } catch {
+  } catch (error) {
+
+    console.error(
+      "AUTH ERROR:",
+      error
+    );
+
     return null;
   }
 }
 
 
-// ============================================
-// SLUG
-// ============================================
+// ======================================================
+// CHECK ADMIN FOR PUBLIC DETAIL
+// ======================================================
+
+async function isAdmin(
+  request,
+  env
+) {
+
+  const user =
+    await getAuthenticatedUser(
+      request,
+      env
+    );
+
+  return !!(
+    user &&
+    user.status === "active" &&
+    user.role === "admin"
+  );
+}
+
+
+// ======================================================
+// AUTHENTICATED USER
+// ======================================================
+
+async function getAuthenticatedUser(
+  request,
+  env
+) {
+
+  if (!env.AUTH_SECRET) {
+    return null;
+  }
+
+  const cookieHeader =
+    request.headers.get("Cookie") || "";
+
+  const cookies =
+    parseCookies(
+      cookieHeader
+    );
+
+  const token =
+    cookies.session;
+
+  if (!token) {
+    return null;
+  }
+
+  const session =
+    await verifySessionToken(
+      token,
+      env.AUTH_SECRET
+    );
+
+  if (
+    !session ||
+    !session.id
+  ) {
+    return null;
+  }
+
+  const user =
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          name,
+          email,
+          role,
+          status
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(session.id)
+      .first();
+
+  return user || null;
+}
+
+
+// ======================================================
+// CREATE SLUG
+// ======================================================
 
 async function createUniqueSlug(
   title,
-  env
+  env,
+  currentId = null
 ) {
 
   let base =
@@ -668,15 +664,30 @@ async function createUniqueSlug(
 
   while (true) {
 
+    let query = `
+      SELECT id
+      FROM news
+      WHERE slug = ?
+    `;
+
+    const params = [slug];
+
+    if (currentId) {
+      query += `
+        AND id != ?
+      `;
+
+      params.push(currentId);
+    }
+
+    query += `
+      LIMIT 1
+    `;
+
     const existing =
       await env.DB
-        .prepare(`
-          SELECT id
-          FROM news
-          WHERE slug = ?
-          LIMIT 1
-        `)
-        .bind(slug)
+        .prepare(query)
+        .bind(...params)
         .first();
 
     if (!existing) {
@@ -684,26 +695,35 @@ async function createUniqueSlug(
     }
 
     slug =
-      `${base}-${number}`;
+      base + "-" + number;
 
     number++;
   }
 }
 
 
+// ======================================================
+// SLUGIFY
+// ======================================================
+
 function slugify(value) {
 
-  return String(value)
+  return String(value || "")
     .toLowerCase()
     .trim()
-    .replace(/[^\p{L}\p{N}]+/gu, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(
+      /[^\p{L}\p{N}]+/gu,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
 }
 
 
-// ============================================
-// COOKIE
-// ============================================
+// ======================================================
+// COOKIES
+// ======================================================
 
 function parseCookies(
   cookieString
@@ -718,25 +738,31 @@ function parseCookies(
       const index =
         part.indexOf("=");
 
-      if (index === -1) return;
+      if (index === -1) {
+        return;
+      }
 
       const key =
-        part.slice(0, index).trim();
+        part
+          .slice(0, index)
+          .trim();
 
       const value =
-        part.slice(index + 1).trim();
+        part
+          .slice(index + 1)
+          .trim();
 
-      cookies[key] = value;
-
+      cookies[key] =
+        value;
     });
 
   return cookies;
 }
 
 
-// ============================================
-// SESSION TOKEN
-// ============================================
+// ======================================================
+// VERIFY SESSION TOKEN
+// ======================================================
 
 async function verifySessionToken(
   token,
@@ -748,7 +774,9 @@ async function verifySessionToken(
     const parts =
       String(token).split(".");
 
-    if (parts.length !== 2) {
+    if (
+      parts.length !== 2
+    ) {
       return null;
     }
 
@@ -765,7 +793,7 @@ async function verifySessionToken(
       );
 
     if (
-      !timingSafeEqualString(
+      !timingSafeEqual(
         signature,
         expected
       )
@@ -775,13 +803,17 @@ async function verifySessionToken(
 
     const data =
       JSON.parse(
-        fromBase64url(payload)
+        fromBase64url(
+          payload
+        )
       );
 
     if (
       !data.exp ||
       data.exp <
-        Math.floor(Date.now() / 1000)
+        Math.floor(
+          Date.now() / 1000
+        )
     ) {
       return null;
     }
@@ -789,14 +821,15 @@ async function verifySessionToken(
     return data;
 
   } catch {
+
     return null;
   }
 }
 
 
-// ============================================
-// HMAC
-// ============================================
+// ======================================================
+// SIGN
+// ======================================================
 
 async function sign(
   value,
@@ -806,7 +839,9 @@ async function sign(
   const key =
     await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(secret),
+      new TextEncoder().encode(
+        secret
+      ),
       {
         name: "HMAC",
         hash: "SHA-256"
@@ -819,25 +854,36 @@ async function sign(
     await crypto.subtle.sign(
       "HMAC",
       key,
-      new TextEncoder().encode(value)
+      new TextEncoder().encode(
+        value
+      )
     );
 
-  return base64urlBytes(
-    new Uint8Array(signature)
+  return base64url(
+    new Uint8Array(
+      signature
+    )
   );
 }
 
 
-// ============================================
-// ENCODING
-// ============================================
+// ======================================================
+// BASE64 URL
+// ======================================================
 
-function base64urlBytes(bytes) {
+function base64url(
+  bytes
+) {
 
   let binary = "";
 
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+  for (
+    const byte of bytes
+  ) {
+    binary +=
+      String.fromCharCode(
+        byte
+      );
   }
 
   return btoa(binary)
@@ -847,14 +893,22 @@ function base64urlBytes(bytes) {
 }
 
 
-function fromBase64url(value) {
+// ======================================================
+// BASE64 URL DECODE
+// ======================================================
+
+function fromBase64url(
+  value
+) {
 
   let base64 =
-    value
+    String(value)
       .replace(/-/g, "+")
       .replace(/_/g, "/");
 
-  while (base64.length % 4) {
+  while (
+    base64.length % 4
+  ) {
     base64 += "=";
   }
 
@@ -880,12 +934,19 @@ function fromBase64url(value) {
 }
 
 
-function timingSafeEqualString(
+// ======================================================
+// TIMING SAFE
+// ======================================================
+
+function timingSafe(
   a,
   b
 ) {
 
-  if (a.length !== b.length) {
+  if (
+    a.length !==
+    b.length
+  ) {
     return false;
   }
 
