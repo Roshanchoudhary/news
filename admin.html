@@ -2128,11 +2128,9 @@ tr:hover td{
 ========================================================= -->
 
 <section
-  id="commentsManagement"
-  style="
-    display:none;
-    padding:20px;
-  "
+  class="tab-page"
+  id="tab-comments"
+  style="padding:20px;"
 >
 
   <!-- HEADER -->
@@ -2555,11 +2553,9 @@ tr:hover td{
 ========================================================= -->
 
 <section
-  id="userManagement"
-  style="
-    display:none;
-    padding:20px;
-  "
+  class="tab-page"
+  id="tab-users"
+  style="padding:20px;"
 >
 
   <div
@@ -3798,7 +3794,13 @@ function setupNavigation(){
 
 }
 
+if (tab === "comments") {
+  loadAdminComments();
+}
 
+if (tab === "users") {
+  loadUsers();
+}
 function switchTab(
   tab
 ){
