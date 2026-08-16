@@ -8953,6 +8953,8 @@ function loadSettings(){
 ===================================================== */
 let adminCommentsCache = [];
 
+let adminCommentsCache = [];
+
 async function loadAdminComments(){
 
   const loading =
@@ -8971,37 +8973,59 @@ async function loadAdminComments(){
     document.getElementById("commentStatusFilter");
 
   if(!tableBody){
-    console.error("commentsTableBody not found");
+    console.error(
+      "commentsTableBody not found"
+    );
     return;
   }
 
-  loading.style.display = "block";
-  empty.style.display = "none";
-  tableWrap.style.display = "none";
+  if(loading){
+    loading.style.display = "block";
+  }
+
+  if(empty){
+    empty.style.display = "none";
+  }
+
+  if(tableWrap){
+    tableWrap.style.display = "none";
+  }
 
   tableBody.innerHTML = "";
 
   try{
 
     const status =
-  statusFilter?.value || "";
+      statusFilter?.value || "";
 
-let url =
-  API + "/comments?admin=1";
+    /*
+     * IMPORTANT:
+     * Admin request को explicitly identify करू।
+     */
+    let url =
+      API + "/comments?admin=1";
 
-if(status){
-  url +=
-    "&status=" +
-    encodeURIComponent(status);
-}
+    if(status){
+
+      url +=
+        "&status=" +
+        encodeURIComponent(status);
+
+    }
+
+    console.log(
+      "LOADING ADMIN COMMENTS:",
+      url
+    );
+
     const response =
       await fetch(
         url,
         {
-          method:"GET",
-          credentials:"include",
-          cache:"no-store",
-          headers:{
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
             "Accept":
               "application/json"
           }
@@ -9012,7 +9036,7 @@ if(status){
       await response.json();
 
     console.log(
-      "ADMIN COMMENTS:",
+      "ADMIN COMMENTS RESPONSE:",
       response.status,
       data
     );
@@ -9021,10 +9045,12 @@ if(status){
       !response.ok ||
       data.success !== true
     ){
+
       throw new Error(
         data.error ||
         "Comments load नहि भ' सकल।"
       );
+
     }
 
     adminCommentsCache =
@@ -9032,7 +9058,9 @@ if(status){
         ? data.comments
         : [];
 
-    loading.style.display = "none";
+    if(loading){
+      loading.style.display = "none";
+    }
 
     updateCommentStats(
       adminCommentsCache
@@ -9042,16 +9070,36 @@ if(status){
       adminCommentsCache.length === 0
     ){
 
-      empty.style.display = "block";
-      return;
+      if(empty){
 
+        empty.style.display =
+          "block";
+
+        empty.innerHTML = `
+          <div
+            style="
+              padding:30px;
+              text-align:center;
+              color:#777;
+            "
+          >
+            एखन कोनो comment नहि अछि।
+          </div>
+        `;
+
+      }
+
+      return;
     }
 
     renderAdminComments(
       adminCommentsCache
     );
 
-    tableWrap.style.display = "block";
+    if(tableWrap){
+      tableWrap.style.display =
+        "block";
+    }
 
   }catch(error){
 
@@ -9060,39 +9108,52 @@ if(status){
       error
     );
 
-    loading.style.display = "none";
+    if(loading){
+      loading.style.display =
+        "none";
+    }
 
-    empty.style.display = "block";
+    if(empty){
 
-    empty.innerHTML =
-      `
+      empty.style.display =
+        "block";
+
+      empty.innerHTML = `
         <div
           style="
+            padding:30px;
+            text-align:center;
             color:#b00000;
-            font-weight:700;
           "
         >
-          Comments load नहि भ' सकल।
-        </div>
+          <div
+            style="
+              font-weight:700;
+              margin-bottom:8px;
+            "
+          >
+            Comments load नहि भ' सकल।
+          </div>
 
-        <div
-          style="
-            margin-top:8px;
-            font-size:11px;
-            color:#777;
-          "
-        >
-          ${escapeHtml(
-            error.message ||
-            "Unknown error"
-          )}
+          <div
+            style="
+              font-size:11px;
+              color:#777;
+            "
+          >
+            ${escapeHtml(
+              error.message ||
+              "Unknown error"
+            )}
+          </div>
         </div>
       `;
+
+    }
 
   }
 
 }
-
 
 function updateCommentStats(
   comments
