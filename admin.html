@@ -4088,6 +4088,281 @@ modal.classList.add(
   }
 
 }
+
+async function saveNews(event){
+
+  event.preventDefault();
+
+  const title =
+    document.getElementById(
+      "newsTitle"
+    ).value.trim();
+
+  const slug =
+    document.getElementById(
+      "newsSlug"
+    ).value.trim();
+
+  const content =
+    document.getElementById(
+      "newsContent"
+    ).value.trim();
+
+
+  if(!title){
+
+    showToast(
+      "समाचार शीर्षक जरूरी अछि।"
+    );
+
+    return;
+  }
+
+
+  if(!content){
+
+    showToast(
+      "समाचार सामग्री जरूरी अछि।"
+    );
+
+    return;
+  }
+
+
+  if(!slug){
+
+    showToast(
+      "News URL जरूरी अछि।"
+    );
+
+    return;
+  }
+
+
+  const tags =
+    Array.from(
+      document.querySelectorAll(
+        'input[name="newsTag"]:checked'
+      )
+    ).map(
+      input =>
+        Number(input.value)
+    );
+
+
+  const payload = {
+
+    title: title,
+
+    slug: slug,
+
+    summary:
+      document.getElementById(
+        "newsSummary"
+      ).value.trim(),
+
+    content: content,
+
+    image_url:
+      document.getElementById(
+        "newsImage"
+      ).value.trim() || null,
+
+    category_id:
+      document.getElementById(
+        "newsCategory"
+      ).value
+        ? Number(
+            document.getElementById(
+              "newsCategory"
+            ).value
+          )
+        : null,
+
+    status:
+      document.getElementById(
+        "newsStatus"
+      ).value,
+
+    featured:
+      document.getElementById(
+        "newsFeatured"
+      ).checked,
+
+    seo_title:
+      document.getElementById(
+        "newsSeoTitle"
+      ).value.trim(),
+
+    seo_description:
+      document.getElementById(
+        "newsSeoDescription"
+      ).value.trim(),
+
+    tags: tags
+
+  };
+
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/news",
+        {
+          method: "POST",
+
+          credentials: "include",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success
+    ){
+
+      throw new Error(
+        data.error ||
+        "समाचार save नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "समाचार सफलतापूर्वक save भ' गेल।"
+    );
+
+
+    closeNewsEditor();
+
+
+    if(
+      typeof loadNews ===
+      "function"
+    ){
+
+      await loadNews();
+
+    }
+
+
+    if(
+      typeof loadOverview ===
+      "function"
+    ){
+
+      await loadOverview();
+
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "SAVE NEWS ERROR:",
+      error
+    );
+
+    showToast(
+      error.message ||
+      "समाचार save नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+  document
+  .getElementById("newsTitle")
+  ?.addEventListener(
+    "input",
+    function(){
+
+      const slug =
+        document.getElementById(
+          "newsSlug"
+        );
+
+      if(!slug){
+        return;
+      }
+
+      /*
+       * अगर user ने manually slug नहीं बदला है,
+       * तो title से automatic slug बनेगा।
+       */
+
+      if(
+        !slug.dataset.manual
+      ){
+
+        slug.value =
+          this.value
+            .toLowerCase()
+            .trim()
+            .replace(
+              /[^a-z0-9]+/g,
+              "-"
+            )
+            .replace(
+              /^-+|-+$/g,
+              ""
+            );
+
+      }
+
+    }
+  );
+
+
+document
+  .getElementById("newsSlug")
+  ?.addEventListener(
+    "input",
+    function(){
+
+      this.dataset.manual =
+        this.value.trim()
+          ? "1"
+          : "";
+
+      this.value =
+        this.value
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9-]/g,
+            "-"
+          )
+          .replace(
+            /-+/g,
+            "-"
+          )
+          .replace(
+            /^-+|-+$/g,
+            "");
+
+    }
+  );
+  
 function editNews(id){
 
   showToast(
@@ -4718,20 +4993,20 @@ function showToast(
 
       <div class="news-editor-footer">
 
-        <button
-          type="button"
-          onclick="closeNewsEditor()"
-        >
-          Cancel
-        </button>
+  <button
+    type="button"
+    onclick="closeNewsEditor()"
+  >
+    Cancel
+  </button>
 
-        <button
-          type="submit"
-        >
-          Save News
-        </button>
+  <button
+    type="submit"
+  >
+    Save News
+  </button>
 
-      </div>
+</div>
 
     </form>
 
