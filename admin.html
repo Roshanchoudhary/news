@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="mai">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Admin Login - मैथिली समाचार</title>
+
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body class="login-page">
+
+<div class="login-box">
+
+  <h1>मैथिली समाचार</h1>
+
+  <h2>Admin Login</h2>
+
+  <form id="loginForm">
+
+    <label>Email</label>
+
+    <input
+      id="email"
+      type="email"
+      required
+      placeholder="Admin Email"
+    >
+
+    <label>Password</label>
+
+    <input
+      id="password"
+      type="password"
+      required
+      placeholder="Password"
+    >
+
+    <button type="submit">
+      Login
+    </button>
+
+  </form>
+
+  <p id="message"></p>
+
+  <a href="/">
+    ← मुख्य पृष्ठ
+  </a>
+
+</div>
+
+<script>
+
+document
+  .getElementById("loginForm")
+  .addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const message =
+      document.getElementById("message");
+
+    message.textContent = "Login भ' रहल अछि...";
+
+    try {
+
+      const response = await fetch("/api/login", {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+
+          email:
+            document.getElementById("email").value,
+
+          password:
+            document.getElementById("password").value
+
+        })
+
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+
+        message.textContent =
+          data.error || "Login असफल";
+
+        return;
+      }
+
+      window.location.href =
+        "/dashboard.html";
+
+    } catch (error) {
+
+      message.textContent =
+        "Server error";
+
+      console.error(error);
+    }
+
+  });
+
+</script>
+
+</body>
+</html>
