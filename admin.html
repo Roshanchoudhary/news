@@ -3925,14 +3925,11 @@ function switchTab(
     loadMenu();
 
   }
-
-  if(
-    tab === "comments"
-  ){
-
-    loadComments();
-
-  }
+if(
+  tab === "comments"
+){
+  loadAdminComments();
+}
 
   if(
     tab === "users"
@@ -8954,12 +8951,582 @@ function loadSettings(){
 /* =====================================================
    COMMENTS
 ===================================================== */
+let adminCommentsCache = [];
 
-function loadComments(){
+async function loadAdminComments(){
 
-  console.log(
-    "Comments ready"
+  const loading =
+    document.getElementById("commentsLoading");
+
+  const empty =
+    document.getElementById("commentsEmpty");
+
+  const tableWrap =
+    document.getElementById("commentsTableWrap");
+
+  const tableBody =
+    document.getElementById("commentsTableBody");
+
+  const statusFilter =
+    document.getElementById("commentStatusFilter");
+
+  if(!tableBody){
+    console.error("commentsTableBody not found");
+    return;
+  }
+
+  loading.style.display = "block";
+  empty.style.display = "none";
+  tableWrap.style.display = "none";
+
+  tableBody.innerHTML = "";
+
+  try{
+
+    const status =
+      statusFilter?.value || "";
+
+    let url =
+      API + "/comments";
+
+    if(status){
+      url +=
+        "?status=" +
+        encodeURIComponent(status);
+    }
+
+    const response =
+      await fetch(
+        url,
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+    const data =
+      await response.json();
+
+    console.log(
+      "ADMIN COMMENTS:",
+      response.status,
+      data
+    );
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+      throw new Error(
+        data.error ||
+        "Comments load नहि भ' सकल।"
+      );
+    }
+
+    adminCommentsCache =
+      Array.isArray(data.comments)
+        ? data.comments
+        : [];
+
+    loading.style.display = "none";
+
+    updateCommentStats(
+      adminCommentsCache
+    );
+
+    if(
+      adminCommentsCache.length === 0
+    ){
+
+      empty.style.display = "block";
+      return;
+
+    }
+
+    renderAdminComments(
+      adminCommentsCache
+    );
+
+    tableWrap.style.display = "block";
+
+  }catch(error){
+
+    console.error(
+      "ADMIN COMMENTS LOAD ERROR:",
+      error
+    );
+
+    loading.style.display = "none";
+
+    empty.style.display = "block";
+
+    empty.innerHTML =
+      `
+        <div
+          style="
+            color:#b00000;
+            font-weight:700;
+          "
+        >
+          Comments load नहि भ' सकल।
+        </div>
+
+        <div
+          style="
+            margin-top:8px;
+            font-size:11px;
+            color:#777;
+          "
+        >
+          ${escapeHtml(
+            error.message ||
+            "Unknown error"
+          )}
+        </div>
+      `;
+
+  }
+
+}
+
+
+function updateCommentStats(
+  comments
+){
+
+  const total =
+    comments.length;
+
+  const pending =
+    comments.filter(
+      c =>
+        String(c.status || "")
+          .toLowerCase() ===
+        "pending"
+    ).length;
+
+  const approved =
+    comments.filter(
+      c =>
+        String(c.status || "")
+          .toLowerCase() ===
+        "approved"
+    ).length;
+
+  const rejected =
+    comments.filter(
+      c =>
+        String(c.status || "")
+          .toLowerCase() ===
+        "rejected"
+    ).length;
+
+  const totalEl =
+    document.getElementById(
+      "commentTotalCount"
+    );
+
+  const pendingEl =
+    document.getElementById(
+      "commentPendingCount"
+    );
+
+  const approvedEl =
+    document.getElementById(
+      "commentApprovedCount"
+    );
+
+  const rejectedEl =
+    document.getElementById(
+      "commentRejectedCount"
+    );
+
+  if(totalEl)
+    totalEl.textContent = total;
+
+  if(pendingEl)
+    pendingEl.textContent = pending;
+
+  if(approvedEl)
+    approvedEl.textContent = approved;
+
+  if(rejectedEl)
+    rejectedEl.textContent = rejected;
+
+}
+
+
+function renderAdminComments(
+  comments
+){
+
+  const body =
+    document.getElementById(
+      "commentsTableBody"
+    );
+
+  if(!body){
+    return;
+  }
+
+  body.innerHTML =
+    comments.map(
+      comment => {
+
+        const status =
+          String(
+            comment.status ||
+            "pending"
+          ).toLowerCase();
+
+        let statusClass =
+          "pending";
+
+        if(status === "approved"){
+          statusClass = "approved";
+        }
+
+        if(status === "rejected"){
+          statusClass = "rejected";
+        }
+
+        let actions = "";
+
+        if(status === "pending"){
+
+          actions = `
+            <button
+              class="comment-action comment-approve"
+              onclick="approveAdminComment(${Number(comment.id)})"
+            >
+              ✓ Approve
+            </button>
+
+            <button
+              class="comment-action comment-reject"
+              onclick="rejectAdminComment(${Number(comment.id)})"
+            >
+              ✕ Reject
+            </button>
+          `;
+
+        }
+
+        actions += `
+          <button
+            class="comment-action comment-delete"
+            onclick="deleteAdminComment(${Number(comment.id)})"
+          >
+            Delete
+          </button>
+        `;
+
+        return `
+          <tr>
+
+            <td class="comment-td">
+              ${escapeHtml(
+                formatDate(
+                  comment.created_at
+                )
+              )}
+            </td>
+
+            <td class="comment-td">
+              ${escapeHtml(
+                comment.news_title ||
+                comment.title ||
+                "—"
+              )}
+            </td>
+
+            <td class="comment-td">
+              <strong>
+                ${escapeHtml(
+                  comment.name ||
+                  "Anonymous"
+                )}
+              </strong>
+            </td>
+
+            <td class="comment-td">
+              ${escapeHtml(
+                comment.email ||
+                "—"
+              )}
+            </td>
+
+            <td class="comment-td">
+              ${escapeHtml(
+                comment.mobile ||
+                "—"
+              )}
+            </td>
+
+            <td
+              class="comment-td"
+              style="
+                max-width:300px;
+                white-space:pre-wrap;
+              "
+            >
+              ${escapeHtml(
+                comment.comment ||
+                ""
+              )}
+            </td>
+
+            <td class="comment-td">
+              <span
+                class="comment-status ${statusClass}"
+              >
+                ${escapeHtml(
+                  status
+                )}
+              </span>
+            </td>
+
+            <td class="comment-td">
+              ${actions}
+            </td>
+
+          </tr>
+        `;
+
+      }
+    ).join("");
+
+}
+
+
+function filterAdminComments(){
+
+  const input =
+    document.getElementById(
+      "commentSearch"
+    );
+
+  const search =
+    (
+      input?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const filtered =
+    adminCommentsCache.filter(
+      comment => {
+
+        const text = [
+          comment.name,
+          comment.email,
+          comment.mobile,
+          comment.comment,
+          comment.news_title,
+          comment.title
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return text.includes(search);
+
+      }
+    );
+
+  renderAdminComments(
+    filtered
   );
+
+}
+
+
+async function approveAdminComment(
+  id
+){
+
+  if(!id){
+    return;
+  }
+
+  if(
+    !confirm(
+      "की एहि comment केँ approve करबाक अछि?"
+    )
+  ){
+    return;
+  }
+
+  await updateAdminCommentStatus(
+    id,
+    "approved"
+  );
+
+}
+
+
+async function rejectAdminComment(
+  id
+){
+
+  if(!id){
+    return;
+  }
+
+  if(
+    !confirm(
+      "की एहि comment केँ reject करबाक अछि?"
+    )
+  ){
+    return;
+  }
+
+  await updateAdminCommentStatus(
+    id,
+    "rejected"
+  );
+
+}
+
+
+async function updateAdminCommentStatus(
+  id,
+  status
+){
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/comments?id=" +
+        encodeURIComponent(id),
+        {
+          method:"PUT",
+          credentials:"include",
+          headers:{
+            "Content-Type":
+              "application/json",
+            "Accept":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              status
+            })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+      throw new Error(
+        data.error ||
+        "Comment status update नहि भ' सकल।"
+      );
+    }
+
+    showToast(
+      status === "approved"
+        ? "Comment approve भ' गेल।"
+        : "Comment reject भ' गेल।"
+    );
+
+    await loadAdminComments();
+
+  }catch(error){
+
+    console.error(
+      "COMMENT STATUS ERROR:",
+      error
+    );
+
+    showToast(
+      error.message ||
+      "Comment update नहि भ' सकल।",
+      "error"
+    );
+
+  }
+
+}
+
+
+async function deleteAdminComment(
+  id
+){
+
+  if(!id){
+    return;
+  }
+
+  if(
+    !confirm(
+      "की एहि comment केँ permanently delete करबाक अछि?"
+    )
+  ){
+    return;
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/comments?id=" +
+        encodeURIComponent(id),
+        {
+          method:"DELETE",
+          credentials:"include",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+      throw new Error(
+        data.error ||
+        "Comment delete नहि भ' सकल।"
+      );
+    }
+
+    showToast(
+      "Comment delete भ' गेल।"
+    );
+
+    await loadAdminComments();
+
+  }catch(error){
+
+    console.error(
+      "COMMENT DELETE ERROR:",
+      error
+    );
+
+    showToast(
+      error.message ||
+      "Comment delete नहि भ' सकल।",
+      "error"
+    );
+
+  }
 
 }
 
@@ -9391,7 +9958,7 @@ async function refreshCurrentTab(){
       "comments"
     ){
 
-      await loadComments();
+      await loadAdminComments();
 
     }
 
