@@ -4187,16 +4187,46 @@ async function saveNews(event){
 
   try{
 
-    showToast(
-      "समाचार save भ' रहल अछि..."
+  const newsId =
+    document.getElementById(
+      "newsId"
+    ).value.trim();
+
+
+  const requestUrl =
+    newsId
+      ? API +
+        "/news?id=" +
+        encodeURIComponent(newsId)
+      : API + "/news";
+
+
+  const requestMethod =
+    newsId
+      ? "PUT"
+      : "POST";
+
+
+  const response =
+    await fetch(
+      requestUrl,
+      {
+        method: requestMethod,
+
+        credentials: "include",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          "Accept":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify(payload)
+      }
     );
-
-const response =
-  await fetch(
-    requestUrl,
-    {
-      method: requestMethod,
-
           credentials: "include",
 
           headers: {
