@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="mai">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>श्रेणी | मैथिली समाचार</title>
+
+<meta
+  id="metaDescription"
+  name="description"
+  content="मैथिली समाचार श्रेणी"
+/>
+
+<meta
+  name="robots"
+  content="index, follow"
+/>
+
+<style>
+
+*{
+  box-sizing:border-box;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:#f5f5f5;
+  color:#222;
+  font-family:
+    Arial,
+    "Noto Sans Devanagari",
+    sans-serif;
+}
+
+a{
+  color:inherit;
+  text-decoration:none;
+}
+
+button,
+input{
+  font-family:inherit;
+}
+
+.container{
+  width:min(1200px,94%);
+  margin:auto;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.top-header{
+  background:#8b0000;
+  color:#fff;
+}
+
+.header-main{
+  padding:18px 0;
+}
+
+.header-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.logo{
+  font-size:30px;
+  font-weight:800;
+}
+
+.tagline{
+  font-size:14px;
+  opacity:.9;
+  margin-top:5px;
+}
+
+.home-link{
+  background:#fff;
+  color:#8b0000;
+  padding:9px 14px;
+  border-radius:7px;
+  font-size:13px;
+  font-weight:bold;
+}
+
+
+/* =====================================================
+   NAV
+===================================================== */
+
+.nav{
+  background:#650000;
+  color:#fff;
+}
+
+.nav-inner{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+  min-height:46px;
+}
+
+.nav-inner::-webkit-scrollbar{
+  display:none;
+}
+
+.nav-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 14px;
+  border-radius:5px;
+  white-space:nowrap;
+  flex:0 0 auto;
+  font-size:13px;
+  font-weight:600;
+}
+
+.nav-link:hover,
+.nav-link.active{
+  background:rgba(255,255,255,.16);
+}
+
+
+/* =====================================================
+   SEARCH
+===================================================== */
+
+.search-section{
+  background:#fff;
+  padding:15px 0;
+  border-bottom:1px solid #ddd;
+}
+
+.search-box{
+  display:flex;
+  gap:10px;
+}
+
+.search-box input{
+  flex:1;
+  min-width:0;
+  height:45px;
+  padding:0 14px;
+  border:1px solid #ddd;
+  border-radius:7px;
+  font-size:14px;
+}
+
+.search-box button{
+  min-width:90px;
+  border:0;
+  border-radius:7px;
+  background:#8b0000;
+  color:#fff;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+
+/* =====================================================
+   MAIN
+===================================================== */
+
+main{
+  padding:28px 0 60px;
+}
+
+
+/* =====================================================
+   CATEGORY HEADER
+===================================================== */
+
+.category-header{
+  background:#fff;
+  padding:25px;
+  border-radius:12px;
+  margin-bottom:25px;
+  box-shadow:
+    0 2px 10px rgba(0,0,0,.06);
+}
+
+.breadcrumb{
+  color:#777;
+  font-size:13px;
+  margin-bottom:12px;
+}
+
+.breadcrumb a{
+  color:#8b0000;
+  font-weight:600;
+}
+
+.category-title{
+  margin:0;
+  font-size:32px;
+  line-height:1.35;
+}
+
+.category-description{
+  margin:10px 0 0;
+  color:#666;
+  font-size:15px;
+  line-height:1.7;
+}
+
+
+/* =====================================================
+   SECTION
+===================================================== */
+
+.section-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:17px;
+}
+
+.section-header h2{
+  margin:0;
+  font-size:22px;
+}
+
+.news-count{
+  color:#777;
+  font-size:13px;
+}
+
+
+/* =====================================================
+   NEWS GRID
+===================================================== */
+
+.news-grid{
+  display:grid;
+  grid-template-columns:
+    repeat(3,minmax(0,1fr));
+  gap:20px;
+}
+
+.news-card{
+  background:#fff;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:
+    0 2px 10px rgba(0,0,0,.07);
+  transition:
+    transform .2s,
+    box-shadow .2s;
+}
+
+.news-card:hover{
+  transform:translateY(-3px);
+  box-shadow:
+    0 7px 20px rgba(0,0,0,.13);
+}
+
+.news-image,
+.no-image{
+  width:100%;
+  height:200px;
+}
+
+.news-image{
+  display:block;
+  object-fit:cover;
+  background:#eee;
+}
+
+.no-image{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:
+    linear-gradient(
+      135deg,
+      #eee,
+      #ddd
+    );
+  color:#888;
+}
+
+.news-body{
+  padding:16px;
+}
+
+.news-category{
+  color:#8b0000;
+  font-size:12px;
+  font-weight:bold;
+  margin-bottom:8px;
+}
+
+.news-title{
+  margin:0 0 9px;
+  font-size:19px;
+  line-height:1.4;
+}
+
+.news-summary{
+  color:#666;
+  font-size:14px;
+  line-height:1.65;
+  margin:0 0 12px;
+}
+
+.news-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-bottom:12px;
+}
+
+.news-tag{
+  background:#fff1f1;
+  color:#8b0000;
+  padding:4px 8px;
+  border-radius:20px;
+  font-size:11px;
+}
+
+.news-meta{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  border-top:1px solid #eee;
+  padding-top:10px;
+  color:#888;
+  font-size:12px;
+}
+
+
+/* =====================================================
+   PAGINATION
+===================================================== */
+
+.pagination{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:30px;
+}
+
+.page-btn{
+  min-width:40px;
+  height:40px;
+  border:1px solid #ddd;
+  background:#fff;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.page-btn:hover,
+.page-btn.active{
+  background:#8b0000;
+  color:#fff;
+  border-color:#8b0000;
+}
+
+.page-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+
+/* =====================================================
+   STATES
+===================================================== */
+
+.loading,
+.empty,
+.error{
+  background:#fff;
+  border-radius:10px;
+  padding:45px 20px;
+  text-align:center;
+  color:#777;
+  grid-column:1/-1;
+}
+
+.error{
+  color:#a00000;
+}
+
+
+/* =====================================================
+   FOOTER
+===================================================== */
+
+footer{
+  background:#222;
+  color:#fff;
+  text-align:center;
+  padding:30px 0;
+}
+
+footer p{
+  color:#bbb;
+  font-size:13px;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media(max-width:900px){
+
+  .news-grid{
+    grid-template-columns:
+      repeat(2,minmax(0,1fr));
+  }
+
+}
+
+
+@media(max-width:600px){
+
+  .container{
+    width:92%;
+  }
+
+  .header-main{
+    padding:14px 0;
+  }
+
+  .logo{
+    font-size:24px;
+  }
+
+  .tagline{
+    font-size:12px;
+  }
+
+  .home-link{
+    padding:8px 10px;
+    font-size:12px;
+  }
+
+  .search-box{
+    flex-direction:column;
+  }
+
+  .search-box button{
+    width:100%;
+    height:44px;
+  }
+
+  main{
+    padding:18px 0 40px;
+  }
+
+  .category-header{
+    padding:18px;
+    border-radius:9px;
+  }
+
+  .category-title{
+    font-size:25px;
+  }
+
+  .category-description{
+    font-size:14px;
+  }
+
+  .section-header{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:5px;
+  }
+
+  .news-grid{
+    grid-template-columns:1fr;
+    gap:15px;
+  }
+
+  .news-image,
+  .no-image{
+    height:210px;
+  }
+
+  .news-body{
+    padding:14px;
+  }
+
+  .news-title{
+    font-size:18px;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
+
+<header class="top-header">
+
+  <div class="header-main">
+
+    <div class="container header-inner">
+
+      <div>
+
+        <div class="logo">
+          मैथिली समाचार
+        </div>
+
+        <div class="tagline">
+          मैथिली भाषामे नवीनतम समाचार
+        </div>
+
+      </div>
+
+
+      <a
+        href="/"
+        class="home-link"
+      >
+        ← मुख्य पृष्ठ
+      </a>
+
+    </div>
+
+  </div>
+
+
+  <nav class="nav">
+
+    <div
+      class="container nav-inner"
+      id="categoryNav"
+    >
+
+      <a
+        href="/"
+        class="nav-link"
+      >
+        सभ समाचार
+      </a>
+
+    </div>
+
+  </nav>
+
+</header>
+
+
+<!-- =====================================================
+     SEARCH
+===================================================== -->
+
+<section class="search-section">
+
+  <div class="container">
+
+    <form
+      class="search-box"
+      id="searchForm"
+    >
+
+      <input
+        type="search"
+        id="searchInput"
+        placeholder="समाचार खोजू..."
+      >
+
+      <button type="submit">
+        खोजू
+      </button>
+
+    </form>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     MAIN
+===================================================== -->
+
+<main>
+
+  <div class="container">
+
+
+    <!-- CATEGORY -->
+
+    <section
+      class="category-header"
+      id="categoryHeader"
+    >
+
+      <div class="breadcrumb">
+
+        <a href="/">
+          मुख्य पृष्ठ
+        </a>
+
+        <span>
+          &nbsp;›&nbsp;
+        </span>
+
+        <span>
+          श्रेणी
+        </span>
+
+      </div>
+
+
+      <h1
+        class="category-title"
+        id="categoryTitle"
+      >
+        श्रेणी लोड भ' रहल अछि...
+      </h1>
+
+
+      <p
+        class="category-description"
+        id="categoryDescription"
+      ></p>
+
+    </section>
+
+
+    <!-- NEWS -->
+
+    <div class="section-header">
+
+      <h2>
+        नवीनतम समाचार
+      </h2>
+
+      <span
+        class="news-count"
+        id="newsCount"
+      >
+        0 समाचार
+      </span>
+
+    </div>
+
+
+    <div
+      id="newsContainer"
+      class="news-grid"
+    >
+
+      <div class="loading">
+        समाचार लोड भ' रहल अछि...
+      </div>
+
+    </div>
+
+
+    <!-- PAGINATION -->
+
+    <div
+      id="pagination"
+      class="pagination"
+    ></div>
+
+  </div>
+
+</main>
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer>
+
+  <div class="container">
+
+    <strong>
+      मैथिली समाचार
+    </strong>
+
+    <p>
+      मैथिली भाषामे समाचार आ जानकारी।
+    </p>
+
+    <p>
+      ©
+      <span id="year"></span>
+      मैथिली समाचार
+    </p>
+
+  </div>
+
+</footer>
+
+
+<script>
+
+/* ======================================================
+   GLOBAL
+====================================================== */
+
+let category = null;
+
+let currentPage = 1;
+
+const limit = 12;
+
+
+/* ======================================================
+   START
+====================================================== */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  start
+);
+
+
+async function start(){
+
+  document
+    .getElementById("year")
+    .textContent =
+    new Date().getFullYear();
+
+
+  document
+    .getElementById("searchForm")
+    .addEventListener(
+      "submit",
+      function(event){
+
+        event.preventDefault();
+
+        searchNews();
+
+      }
+    );
+
+
+  await loadCategories();
+
+  await loadCategory();
+
+}
+
+
+/* ======================================================
+   GET CATEGORY SLUG
+====================================================== */
+
+function getCategorySlug(){
+
+  const path =
+    location.pathname
+      .replace(
+        /\/+$/,
+        ""
+      );
+
+
+  const parts =
+    path
+      .split("/")
+      .filter(Boolean);
+
+
+  if(
+    parts.length >= 2 &&
+    parts[0] === "category"
+  ){
+
+    return decodeURIComponent(
+      parts[1]
+    );
+
+  }
+
+
+  const params =
+    new URLSearchParams(
+      location.search
+    );
+
+
+  return (
+    params.get("slug") ||
+    ""
+  );
+
+}
+
+
+/* ======================================================
+   LOAD CATEGORIES
+====================================================== */
+
+async function loadCategories(){
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/categories?status=active",
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !data.success
+    ){
+      return;
+    }
+
+
+    const nav =
+      document.getElementById(
+        "categoryNav"
+      );
+
+
+    (data.categories || [])
+      .filter(
+        item =>
+          String(
+            item.status ||
+            "active"
+          ).toLowerCase()
+          ===
+          "active"
+      )
+      .filter(
+        item =>
+          Number(
+            item.menu_visible ??
+            item.show_in_menu ??
+            1
+          ) === 1
+      )
+      .sort(
+        (a,b) =>
+          Number(
+            a.menu_order || 0
+          ) -
+          Number(
+            b.menu_order || 0
+          )
+      )
+      .forEach(
+        item => {
+
+          if(!item.slug){
+            return;
+          }
+
+
+          const link =
+            document.createElement(
+              "a"
+            );
+
+
+          link.className =
+            "nav-link";
+
+
+          link.href =
+            "/category/" +
+            encodeURIComponent(
+              item.slug
+            );
+
+
+          link.textContent =
+            item.name;
+
+
+          nav.appendChild(
+            link
+          );
+
+        }
+      );
+
+  }catch(error){
+
+    console.error(
+      "CATEGORY MENU ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   LOAD CATEGORY
+====================================================== */
+
+async function loadCategory(){
+
+  const slug =
+    getCategorySlug();
+
+
+  if(!slug){
+
+    showError(
+      "श्रेणी URL सही नहि अछि।"
+    );
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/categories?slug=" +
+        encodeURIComponent(
+          slug
+        ),
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success ||
+      !data.category
+    ){
+
+      throw new Error(
+        data.error ||
+        "श्रेणी नहि भेटल"
+      );
+
+    }
+
+
+    category =
+      data.category;
+
+
+    document.title =
+      category.name +
+      " | मैथिली समाचार";
+
+
+    document
+      .getElementById(
+        "metaDescription"
+      )
+      .setAttribute(
+        "content",
+        category.description ||
+        `${category.name} केर नवीनतम समाचार`
+      );
+
+
+    document
+      .getElementById(
+        "categoryTitle"
+      )
+      .textContent =
+      category.name;
+
+
+    document
+      .getElementById(
+        "categoryDescription"
+      )
+      .textContent =
+      category.description ||
+      `${category.name} केर नवीनतम समाचार`;
+
+
+    await loadNews();
+
+  }catch(error){
+
+    console.error(
+      "CATEGORY ERROR:",
+      error
+    );
+
+
+    showError(
+      error.message ||
+      "श्रेणी लोड नहि भ' सकल"
+    );
+
+  }
+
+}
+
+
+/* ======================================================
+   LOAD NEWS
+====================================================== */
+
+async function loadNews(
+  search = ""
+){
+
+  const container =
+    document.getElementById(
+      "newsContainer"
+    );
+
+
+  container.innerHTML =
+    `
+      <div class="loading">
+        समाचार लोड भ' रहल अछि...
+      </div>
+    `;
+
+
+  if(!category){
+    return;
+  }
+
+
+  try{
+
+    let apiUrl =
+      "/api/news?status=published" +
+      "&category_id=" +
+      encodeURIComponent(
+        category.id
+      ) +
+      "&page=" +
+      currentPage +
+      "&limit=" +
+      limit;
+
+
+    if(search){
+
+      apiUrl +=
+        "&search=" +
+        encodeURIComponent(
+          search
+        );
+
+    }
+
+
+    const response =
+      await fetch(
+        apiUrl,
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success
+    ){
+
+      throw new Error(
+        data.error ||
+        "समाचार नहि भेटल"
+      );
+
+    }
+
+
+    const news =
+      data.news || [];
+
+
+    const pagination =
+      data.pagination || {
+        page:currentPage,
+        pages:1,
+        total:news.length
+      };
+
+
+    renderNews(
+      news
+    );
+
+
+    renderPagination(
+      pagination
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "NEWS ERROR:",
+      error
+    );
+
+
+    container.innerHTML =
+      `
+        <div class="error">
+          ${escapeHtml(
+            error.message ||
+            "समाचार लोड नहि भ' सकल"
+          )}
+        </div>
+      `;
+
+    document
+      .getElementById(
+        "pagination"
+      )
+      .innerHTML =
+      "";
+
+  }
+
+}
+
+
+/* ======================================================
+   RENDER NEWS
+====================================================== */
+
+function renderNews(
+  news
+){
+
+  const container =
+    document.getElementById(
+      "newsContainer"
+    );
+
+
+  document
+    .getElementById(
+      "newsCount"
+    )
+    .textContent =
+      news.length +
+      " समाचार";
+
+
+  if(
+    !news.length
+  ){
+
+    container.innerHTML =
+      `
+        <div class="empty">
+          एहि श्रेणी में
+          कोनो प्रकाशित समाचार नहि भेटल।
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    news
+      .map(
+        createNewsCard
+      )
+      .join("");
+
+}
+
+
+/* ======================================================
+   NEWS CARD
+====================================================== */
+
+function createNewsCard(
+  news
+){
+
+  const slug =
+    news.slug ||
+    news.id;
+
+
+  const image =
+    news.image_url
+
+    ? `
+      <img
+        class="news-image"
+        src="${escapeAttribute(
+          news.image_url
+        )}"
+        alt="${escapeAttribute(
+          news.title
+        )}"
+        loading="lazy"
+      >
+    `
+
+    : `
+      <div class="no-image">
+        मैथिली समाचार
+      </div>
+    `;
+
+
+  const summary =
+    news.summary ||
+    makeExcerpt(
+      news.content,
+      150
+    );
+
+
+  const tags =
+    Array.isArray(
+      news.tags
+    )
+      ? news.tags
+      : [];
+
+
+  const tagsHtml =
+    tags.length
+
+      ? `
+        <div class="news-tags">
+
+          ${
+            tags
+              .slice(0,4)
+              .map(
+                tag =>
+                  `
+                    <span
+                      class="news-tag"
+                    >
+                      #${escapeHtml(
+                        tag.name ||
+                        tag.slug
+                      )}
+                    </span>
+                  `
+              )
+              .join("")
+          }
+
+        </div>
+      `
+
+      : "";
+
+
+  return `
+    <article class="news-card">
+
+      <a
+        href="/news/${encodeURIComponent(
+          slug
+        )}"
+      >
+
+        ${image}
+
+
+        <div class="news-body">
+
+          <div class="news-category">
+            ${escapeHtml(
+              news.category_name ||
+              category.name ||
+              "समाचार"
+            )}
+          </div>
+
+
+          <h2 class="news-title">
+            ${escapeHtml(
+              news.title
+            )}
+          </h2>
+
+
+          <p class="news-summary">
+            ${escapeHtml(
+              summary
+            )}
+          </p>
+
+
+          ${tagsHtml}
+
+
+          <div class="news-meta">
+
+            <span>
+              ${formatDate(
+                news.published_at ||
+                news.created_at
+              )}
+            </span>
+
+
+            <span>
+              👁
+              ${Number(
+                news.views || 0
+              )}
+            </span>
+
+          </div>
+
+        </div>
+
+      </a>
+
+    </article>
+  `;
+
+}
+
+
+/* ======================================================
+   PAGINATION
+====================================================== */
+
+function renderPagination(
+  pagination
+){
+
+  const container =
+    document.getElementById(
+      "pagination"
+    );
+
+
+  const pages =
+    Number(
+      pagination.pages || 1
+    );
+
+
+  const page =
+    Number(
+      pagination.page ||
+      currentPage
+    );
+
+
+  if(
+    pages <= 1
+  ){
+
+    container.innerHTML =
+      "";
+
+    return;
+
+  }
+
+
+  let html = "";
+
+
+  html += `
+    <button
+      class="page-btn"
+      ${
+        page <= 1
+          ? "disabled"
+          : ""
+      }
+      onclick="
+        changePage(
+          ${page - 1}
+        )
+      "
+    >
+      ‹
+    </button>
+  `;
+
+
+  const start =
+    Math.max(
+      1,
+      page - 2
+    );
+
+
+  const end =
+    Math.min(
+      pages,
+      page + 2
+    );
+
+
+  for(
+    let i = start;
+    i <= end;
+    i++
+  ){
+
+    html += `
+      <button
+        class="page-btn ${
+          i === page
+            ? "active"
+            : ""
+        }"
+        onclick="
+          changePage(
+            ${i}
+          )
+        "
+      >
+        ${i}
+      </button>
+    `;
+
+  }
+
+
+  html += `
+    <button
+      class="page-btn"
+      ${
+        page >= pages
+          ? "disabled"
+          : ""
+      }
+      onclick="
+        changePage(
+          ${page + 1}
+        )
+      "
+    >
+      ›
+    </button>
+  `;
+
+
+  container.innerHTML =
+    html;
+
+}
+
+
+/* ======================================================
+   CHANGE PAGE
+====================================================== */
+
+function changePage(
+  page
+){
+
+  if(
+    page < 1
+  ){
+    return;
+  }
+
+
+  currentPage =
+    page;
+
+
+  const search =
+    document
+      .getElementById(
+        "searchInput"
+      )
+      .value
+      .trim();
+
+
+  loadNews(
+    search
+  );
+
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+}
+
+
+/* ======================================================
+   SEARCH
+====================================================== */
+
+function searchNews(){
+
+  currentPage =
+    1;
+
+
+  const search =
+    document
+      .getElementById(
+        "searchInput"
+      )
+      .value
+      .trim();
+
+
+  loadNews(
+    search
+  );
+
+}
+
+
+/* ======================================================
+   ERROR
+====================================================== */
+
+function showError(
+  message
+){
+
+  document
+    .getElementById(
+      "categoryTitle"
+    )
+    .textContent =
+    "श्रेणी नहि भेटल";
+
+
+  document
+    .getElementById(
+      "categoryDescription"
+    )
+    .textContent =
+    "";
+
+
+  document
+    .getElementById(
+      "newsContainer"
+    )
+    .innerHTML =
+    `
+      <div class="error">
+
+        ${escapeHtml(
+          message
+        )}
+
+        <br><br>
+
+        <a
+          href="/"
+          style="
+            color:#8b0000;
+            font-weight:bold;
+          "
+        >
+          ← मुख्य पृष्ठ पर जाउ
+        </a>
+
+      </div>
+    `;
+
+}
+
+
+/* ======================================================
+   EXCERPT
+====================================================== */
+
+function makeExcerpt(
+  text,
+  length
+){
+
+  const clean =
+    String(
+      text || ""
+    )
+      .replace(
+        /<[^>]*>/g,
+        ""
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+
+
+  if(
+    clean.length <= length
+  ){
+
+    return clean;
+
+  }
+
+
+  return (
+    clean.substring(
+      0,
+      length
+    ) +
+    "..."
+  );
+
+}
+
+
+/* ======================================================
+   DATE
+====================================================== */
+
+function formatDate(
+  value
+){
+
+  if(!value){
+    return "";
+  }
+
+
+  try{
+
+    return new Date(
+      value
+    ).toLocaleDateString(
+      "hi-IN",
+      {
+        day:"numeric",
+        month:"long",
+        year:"numeric"
+      }
+    );
+
+  }catch{
+
+    return "";
+
+  }
+
+}
+
+
+/* ======================================================
+   ESCAPE HTML
+====================================================== */
+
+function escapeHtml(
+  value
+){
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+/* ======================================================
+   ESCAPE ATTRIBUTE
+====================================================== */
+
+function escapeAttribute(
+  value
+){
+
+  return escapeHtml(
+    value
+  );
+
+}
+
+</script>
+
+</body>
+
+</html>
