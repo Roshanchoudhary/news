@@ -157,12 +157,10 @@ export async function onRequest(context) {
 
 
     // =====================================================
-    // HTML
+    // PAGE HTML
     // =====================================================
 
-    const html = `
-
-<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 
 <html lang="mai">
 
@@ -223,7 +221,6 @@ body {
   margin: 0;
   background: #f5f5f5;
   color: #222;
-
   font-family:
     Arial,
     "Noto Sans Devanagari",
@@ -301,10 +298,8 @@ main {
   background: white;
   padding: 30px;
   border-radius: 12px;
-
   box-shadow:
-    0 2px 12px
-    rgba(0,0,0,.07);
+    0 2px 12px rgba(0,0,0,.07);
 }
 
 
@@ -327,13 +322,10 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 15px;
-
   color: #777;
   font-size: 13px;
-
   padding-bottom: 18px;
   margin-bottom: 20px;
-
   border-bottom: 1px solid #eee;
 }
 
@@ -342,7 +334,6 @@ h1 {
   width: 100%;
   max-height: 600px;
   object-fit: cover;
-
   border-radius: 10px;
   margin-bottom: 25px;
 }
@@ -350,17 +341,11 @@ h1 {
 
 .summary {
   background: #fafafa;
-
-  border-left:
-    4px solid #8b0000;
-
+  border-left: 4px solid #8b0000;
   padding: 15px 18px;
-
   margin-bottom: 25px;
-
   font-size: 18px;
   line-height: 1.8;
-
   font-weight: 600;
   color: #444;
 }
@@ -381,22 +366,16 @@ h1 {
 .back {
   margin-top: 30px;
   padding-top: 20px;
-
-  border-top:
-    1px solid #eee;
+  border-top: 1px solid #eee;
 }
 
 
 .back a {
   display: inline-block;
-
   background: #8b0000;
   color: white;
-
   padding: 10px 16px;
-
   border-radius: 7px;
-
   font-weight: bold;
 }
 
@@ -406,214 +385,134 @@ h1 {
 ===================================================== */
 
 .comments {
-
   margin-top: 30px;
-
   background: white;
-
   padding: 25px;
-
   border-radius: 12px;
-
   box-shadow:
-    0 2px 12px
-    rgba(0,0,0,.07);
+    0 2px 12px rgba(0,0,0,.07);
 }
 
 
 .comments h2 {
-
   margin: 0 0 20px;
-
   font-size: 24px;
-
 }
 
 
 .comment-item {
-
   padding: 15px 0;
-
-  border-bottom:
-    1px solid #eee;
-
+  border-bottom: 1px solid #eee;
 }
 
 
 .comment-name {
-
   font-weight: 700;
-
   font-size: 14px;
-
 }
 
 
 .comment-date {
-
   color: #888;
-
   font-size: 11px;
-
   margin-left: 8px;
-
 }
 
 
 .comment-text {
-
   margin-top: 7px;
-
   font-size: 14px;
-
   line-height: 1.7;
-
   white-space: pre-wrap;
-
 }
 
 
 .comment-empty,
 .comment-loading {
-
   padding: 18px;
-
   background: #fafafa;
-
   border-radius: 8px;
-
   color: #888;
-
   font-size: 12px;
-
   text-align: center;
-
 }
 
 
 .comment-form {
-
   margin-top: 25px;
-
   padding-top: 25px;
-
-  border-top:
-    1px solid #eee;
-
+  border-top: 1px solid #eee;
 }
 
 
 .comment-form h3 {
-
   margin: 0 0 16px;
-
 }
 
 
 .comment-form label {
-
   display: block;
-
   font-size: 12px;
-
   font-weight: 700;
-
   margin-bottom: 6px;
-
 }
 
 
 .comment-form input,
 .comment-form textarea {
-
   width: 100%;
-
   box-sizing: border-box;
-
   border: 1px solid #ddd;
-
   border-radius: 7px;
-
   padding: 10px 12px;
-
   font-size: 13px;
-
   font-family: inherit;
-
   margin-bottom: 14px;
-
 }
 
 
 .comment-form input {
-
   height: 42px;
-
 }
 
 
 .comment-form textarea {
-
   min-height: 120px;
-
   resize: vertical;
-
 }
 
 
 .comment-private {
-
   color: #888;
-
   font-size: 10px;
-
   margin-top: -9px;
-
   margin-bottom: 14px;
-
 }
 
 
 .comment-button {
-
   border: 0;
-
   background: #8b0000;
-
   color: white;
-
   padding: 11px 18px;
-
   border-radius: 7px;
-
   cursor: pointer;
-
   font-weight: 700;
-
 }
 
 
 .comment-button:disabled {
-
   opacity: .6;
-
   cursor: not-allowed;
-
 }
 
 
 .comment-message {
-
   display: none;
-
   margin-top: 12px;
-
   padding: 10px;
-
   border-radius: 7px;
-
   font-size: 11px;
-
 }
 
 
@@ -624,62 +523,37 @@ h1 {
 @media(max-width:650px) {
 
   .header-inner {
-
     align-items: flex-start;
-
     flex-direction: column;
-
   }
-
 
   .logo {
-
     font-size: 25px;
-
   }
-
 
   .article {
-
     padding: 20px;
-
   }
-
 
   h1 {
-
     font-size: 28px;
-
   }
-
 
   .content {
-
     font-size: 17px;
-
     line-height: 1.85;
-
   }
-
 
   .summary {
-
     font-size: 17px;
-
   }
-
 
   .comments {
-
     padding: 18px;
-
   }
 
-
   .comments h2 {
-
     font-size: 20px;
-
   }
 
 }
@@ -691,10 +565,6 @@ h1 {
 
 <body>
 
-
-<!-- =====================================================
-     HEADER
-===================================================== -->
 
 <header>
 
@@ -730,18 +600,10 @@ h1 {
 </header>
 
 
-<!-- =====================================================
-     MAIN
-===================================================== -->
-
 <main>
 
 <div class="container">
 
-
-<!-- =====================================================
-     ARTICLE
-===================================================== -->
 
 <article class="article">
 
@@ -773,16 +635,14 @@ ${title}
 
 ${
   news.author_name
-  ?
-  `
-  <span>
-    ✍ ${escapeHtml(
-      news.author_name
-    )}
-  </span>
-  `
-  :
-  ""
+    ? `
+      <span>
+        ✍ ${escapeHtml(
+          news.author_name
+        )}
+      </span>
+    `
+    : ""
 }
 
 
@@ -824,7 +684,6 @@ ${content}
 
 <section class="comments">
 
-
 <h2>
 💬 टिप्पणी
 </h2>
@@ -839,12 +698,7 @@ ${content}
 </div>
 
 
-<!-- ===================================================
-     COMMENT FORM
-=================================================== -->
-
 <div class="comment-form">
-
 
 <h3>
 अपन टिप्पणी लिखू
@@ -853,8 +707,6 @@ ${content}
 
 <form id="commentForm">
 
-
-<!-- NAME -->
 
 <label>
 
@@ -875,8 +727,6 @@ ${content}
   placeholder="अपन नाम लिखू"
 >
 
-
-<!-- EMAIL -->
 
 <label>
 
@@ -902,8 +752,6 @@ ${content}
 ईमेल केवल Admin देख सकत छथि।
 </div>
 
-
-<!-- MOBILE -->
 
 <label>
 
@@ -931,8 +779,6 @@ ${content}
 </div>
 
 
-<!-- COMMENT -->
-
 <label>
 
 टिप्पणी
@@ -959,10 +805,8 @@ ${content}
     margin-bottom:14px;
   "
 >
-
 ईमेल आ मोबाइल नंबर सार्वजनिक नहि कएल जाएत।
 टिप्पणी Admin approval के बाद प्रकाशित होयत।
-
 </div>
 
 
@@ -993,23 +837,21 @@ ${content}
 </main>
 
 
-<!-- =====================================================
-     COMMENT JAVASCRIPT
-===================================================== -->
-
 <script>
 
+/* =====================================================
+   NEWS ID
+===================================================== */
 
 const NEWS_ID =
   ${Number(news.id)};
 
 
 /* =====================================================
-   LOAD APPROVED COMMENTS
+   LOAD COMMENTS
 ===================================================== */
 
 async function loadComments() {
-
 
   const list =
     document.getElementById(
@@ -1018,14 +860,11 @@ async function loadComments() {
 
 
   if (!list) {
-
     return;
-
   }
 
 
   try {
-
 
     const response =
       await fetch(
@@ -1034,12 +873,8 @@ async function loadComments() {
           NEWS_ID
         ),
         {
-          method:
-            "GET",
-
-          cache:
-            "no-store",
-
+          method: "GET",
+          cache: "no-store",
           headers: {
             "Accept":
               "application/json"
@@ -1077,18 +912,15 @@ async function loadComments() {
       comments.length === 0
     ) {
 
+      /*
+       * यहाँ backtick इस्तेमाल नहि कएल गेल अछि।
+       * कारण outer HTML भी template literal अछि।
+       */
 
-      list.innerHTML = `
-
-        <div
-          class="comment-empty"
-        >
-          एखन धरि कोनो स्वीकृत
-          टिप्पणी नहि अछि।
-        </div>
-
-      `;
-
+      list.innerHTML =
+        '<div class="comment-empty">' +
+        'एखन धरि कोनो स्वीकृत टिप्पणी नहि अछि।' +
+        '</div>';
 
       return;
 
@@ -1098,53 +930,44 @@ async function loadComments() {
     list.innerHTML =
       comments
         .map(
-          comment => `
+          comment => {
 
-            <div
-              class="comment-item"
-            >
+            return (
+              '<div class="comment-item">' +
 
-              <div>
+                '<div>' +
 
-                <span
-                  class="comment-name"
-                >
-                  ${escapeHtml(
-                    comment.name ||
-                    "Anonymous"
-                  )}
-                </span>
+                  '<span class="comment-name">' +
+                    escapeHtml(
+                      comment.name ||
+                      "Anonymous"
+                    ) +
+                  '</span>' +
 
+                  '<span class="comment-date">' +
+                    formatCommentDate(
+                      comment.created_at
+                    ) +
+                  '</span>' +
 
-                <span
-                  class="comment-date"
-                >
-                  ${formatCommentDate(
-                    comment.created_at
-                  )}
-                </span>
+                '</div>' +
 
-              </div>
+                '<div class="comment-text">' +
+                  escapeHtml(
+                    comment.comment ||
+                    ""
+                  ) +
+                '</div>' +
 
+              '</div>'
+            );
 
-              <div
-                class="comment-text"
-              >
-                ${escapeHtml(
-                  comment.comment ||
-                  ""
-                )}
-              </div>
-
-            </div>
-
-          `
+          }
         )
         .join("");
 
 
   } catch (error) {
-
 
     console.error(
       "COMMENTS ERROR:",
@@ -1152,18 +975,10 @@ async function loadComments() {
     );
 
 
-    list.innerHTML = `
-
-      <div
-        style="
-          color:#b00000;
-          font-size:12px;
-        "
-      >
-        टिप्पणी लोड नहि भ' सकल।
-      </div>
-
-    `;
+    list.innerHTML =
+      '<div style="color:#b00000;font-size:12px;">' +
+      "टिप्पणी लोड नहि भ' सकल।" +
+      '</div>';
 
   }
 
@@ -1182,11 +997,9 @@ const commentForm =
 
 if (commentForm) {
 
-
   commentForm.addEventListener(
     "submit",
     async function(event) {
-
 
       event.preventDefault();
 
@@ -1242,22 +1055,17 @@ if (commentForm) {
         !comment
       ) {
 
-
         message.textContent =
           "सभ field भरब जरूरी अछि।";
-
 
         message.style.display =
           "block";
 
-
         message.style.background =
           "#fff0f0";
 
-
         message.style.color =
           "#b00020";
-
 
         return;
 
@@ -1266,7 +1074,6 @@ if (commentForm) {
 
       button.disabled =
         true;
-
 
       button.textContent =
         "भेजल जा रहल अछि...";
@@ -1278,23 +1085,18 @@ if (commentForm) {
 
       try {
 
-
         const response =
           await fetch(
             "/api/comments",
             {
-
-              method:
-                "POST",
+              method: "POST",
 
               headers: {
-
                 "Content-Type":
                   "application/json",
 
                 "Accept":
                   "application/json"
-
               },
 
               body:
@@ -1316,7 +1118,6 @@ if (commentForm) {
                     comment
 
                 })
-
             }
           );
 
@@ -1329,7 +1130,6 @@ if (commentForm) {
           !response.ok ||
           data.success !== true
         ) {
-
 
           throw new Error(
             data.error ||
@@ -1350,17 +1150,14 @@ if (commentForm) {
         message.style.display =
           "block";
 
-
         message.style.background =
           "#edf8ef";
-
 
         message.style.color =
           "#176b2c";
 
 
       } catch (error) {
-
 
         console.error(
           "SUBMIT COMMENT ERROR:",
@@ -1376,10 +1173,8 @@ if (commentForm) {
         message.style.display =
           "block";
 
-
         message.style.background =
           "#fff0f0";
-
 
         message.style.color =
           "#b00020";
@@ -1387,10 +1182,8 @@ if (commentForm) {
 
       } finally {
 
-
         button.disabled =
           false;
-
 
         button.textContent =
           "टिप्पणी भेजू";
@@ -1404,18 +1197,15 @@ if (commentForm) {
 
 
 /* =====================================================
-   DATE
+   COMMENT DATE
 ===================================================== */
 
 function formatCommentDate(
   value
 ) {
 
-
   if (!value) {
-
     return "";
-
   }
 
 
@@ -1459,7 +1249,6 @@ function escapeHtml(
   value
 ) {
 
-
   return String(
     value ?? ""
   )
@@ -1493,11 +1282,10 @@ function escapeHtml(
 
 
 /* =====================================================
-   LOAD COMMENTS
+   START
 ===================================================== */
 
 loadComments();
-
 
 </script>
 
@@ -1505,34 +1293,30 @@ loadComments();
 </body>
 
 </html>
-
 `;
 
 
-/* =====================================================
-   RESPONSE
-===================================================== */
+    // =====================================================
+    // RESPONSE
+    // =====================================================
 
-return new Response(
-  html,
-  {
-    status: 200,
+    return new Response(
+      html,
+      {
+        status: 200,
 
-    headers: {
+        headers: {
+          "Content-Type":
+            "text/html; charset=UTF-8",
 
-      "Content-Type":
-        "text/html; charset=UTF-8",
-
-      "Cache-Control":
-        "public, max-age=60"
-
-    }
-  }
-);
+          "Cache-Control":
+            "public, max-age=60"
+        }
+      }
+    );
 
 
   } catch (error) {
-
 
     console.error(
       "NEWS PAGE ERROR:",
@@ -1546,10 +1330,8 @@ return new Response(
         status: 500,
 
         headers: {
-
           "Content-Type":
             "text/plain; charset=UTF-8"
-
         }
       }
     );
@@ -1567,34 +1349,27 @@ function formatContent(
   text
 ) {
 
-
   const value =
     String(
       text || ""
-    )
-    .trim();
+    ).trim();
 
 
   if (!value) {
-
     return "";
-
   }
 
 
   return value
-
     .split(
       /\n\s*\n/
     )
-
     .map(
       paragraph =>
         `<p>${escapeHtml(
           paragraph.trim()
         )}</p>`
     )
-
     .join("");
 
 }
@@ -1607,7 +1382,6 @@ function formatContent(
 function escapeHtml(
   value
 ) {
-
 
   return String(
     value ?? ""
@@ -1649,39 +1423,30 @@ function formatDate(
   value
 ) {
 
-
   if (!value) {
-
     return "";
-
   }
 
 
   try {
 
-
     return new Date(
       value
-    )
-      .toLocaleDateString(
-        "hi-IN",
-        {
+    ).toLocaleDateString(
+      "hi-IN",
+      {
+        day:
+          "numeric",
 
-          day:
-            "numeric",
+        month:
+          "long",
 
-          month:
-            "long",
-
-          year:
-            "numeric"
-
-        }
-      );
-
+        year:
+          "numeric"
+      }
+    );
 
   } catch {
-
 
     return "";
 
