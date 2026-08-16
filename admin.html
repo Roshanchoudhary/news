@@ -881,7 +881,217 @@ tr:hover td{
   }
 
 }
+/* =====================================================
+   NEWS EDITOR
+===================================================== */
 
+.news-editor-modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  background:rgba(0,0,0,.60);
+  padding:20px;
+  overflow-y:auto;
+}
+
+.news-editor-modal.show{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+}
+
+.news-editor-box{
+  width:100%;
+  max-width:900px;
+  margin:20px auto;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 25px 80px rgba(0,0,0,.25);
+  overflow:hidden;
+}
+
+.news-editor-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:20px 24px;
+  border-bottom:1px solid #eee;
+}
+
+.news-editor-header small{
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:1px;
+  color:#8b0000;
+}
+
+.news-editor-header h2{
+  margin:5px 0 0;
+  font-size:21px;
+}
+
+.news-editor-close{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:8px;
+  background:#f3f3f3;
+  font-size:24px;
+  cursor:pointer;
+}
+
+#newsEditorForm{
+  padding:24px;
+}
+
+.news-field{
+  margin-bottom:17px;
+}
+
+.news-field label{
+  display:block;
+  margin-bottom:7px;
+  font-size:11px;
+  font-weight:800;
+  color:#444;
+}
+
+.news-field label b{
+  color:#b00000;
+}
+
+.news-field label span{
+  color:#999;
+  font-size:9px;
+  font-weight:400;
+}
+
+.news-field input,
+.news-field textarea,
+.news-field select{
+  width:100%;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:12px;
+  outline:none;
+  background:#fff;
+}
+
+.news-field input,
+.news-field select{
+  height:42px;
+}
+
+.news-field textarea{
+  resize:vertical;
+}
+
+.news-field input:focus,
+.news-field textarea:focus,
+.news-field select:focus{
+  border-color:#8b0000;
+  box-shadow:0 0 0 3px rgba(139,0,0,.06);
+}
+
+.news-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.news-tags{
+  min-height:44px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:8px;
+}
+
+.news-content{
+  min-height:320px;
+  line-height:1.8;
+}
+
+.seo-settings{
+  margin:15px 0;
+  padding:12px;
+  border:1px solid #eee;
+  border-radius:8px;
+}
+
+.seo-settings summary{
+  cursor:pointer;
+  font-size:11px;
+  font-weight:800;
+  margin-bottom:15px;
+}
+
+.featured-check{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  font-weight:700;
+  margin:15px 0;
+}
+
+.news-editor-footer{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  padding-top:18px;
+  border-top:1px solid #eee;
+}
+
+.news-editor-footer button{
+  border:0;
+  border-radius:7px;
+  padding:10px 18px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.news-editor-footer button[type="button"]{
+  background:#eee;
+  color:#555;
+}
+
+.news-editor-footer button[type="submit"]{
+  background:#8b0000;
+  color:#fff;
+}
+
+@media(max-width:600px){
+
+  .news-editor-modal{
+    padding:0;
+  }
+
+  .news-editor-box{
+    margin:0;
+    min-height:100vh;
+    border-radius:0;
+  }
+
+  #newsEditorForm{
+    padding:16px;
+  }
+
+  .news-grid{
+    grid-template-columns:1fr;
+    gap:0;
+  }
+
+  .news-editor-footer{
+    position:sticky;
+    bottom:0;
+    background:#fff;
+    padding:12px 0;
+  }
+
+}
 </style>
 
 </head>
@@ -3555,20 +3765,221 @@ async function loadTags(){
 /* =====================================================
    ACTIONS
 ===================================================== */
+  function addNews(){
 
-function addNews(){
+  const modal =
+    document.getElementById(
+      "newsEditorModal"
+    );
 
-  /*
-   * अगिला Step में professional
-   * News Editor खुलेगा।
-   */
+  if(!modal){
 
-  showToast(
-    "News Editor अगिला step में जोड़ब।"
+    showToast(
+      "News Editor उपलब्ध नहि अछि।"
+    );
+
+    return;
+
+  }
+
+
+  document.getElementById(
+    "newsEditorTitle"
+  ).textContent =
+    "नया समाचार";
+
+
+  document.getElementById(
+    "newsId"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsTitle"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsSlug"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsSummary"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsContent"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsImage"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsSeoTitle"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsSeoDescription"
+  ).value =
+    "";
+
+
+  document.getElementById(
+    "newsStatus"
+  ).value =
+    "draft";
+
+
+  document.getElementById(
+    "newsFeatured"
+  ).checked =
+    false;
+
+
+  loadNewsEditorCategories();
+
+  loadNewsEditorTags();
+
+
+  modal.classList.add(
+    "show"
   );
 
 }
 
+  function closeNewsEditor(){
+
+  const modal =
+    document.getElementById(
+      "newsEditorModal"
+    );
+
+  if(modal){
+
+    modal.classList.remove(
+      "show"
+    );
+
+  }
+
+}
+
+  async function loadNewsEditorCategories(){
+
+  const select =
+    document.getElementById(
+      "newsCategory"
+    );
+
+  if(!select){
+    return;
+  }
+
+
+  select.innerHTML = `
+    <option value="">
+      Category लोड भ' रहल अछि...
+    </option>
+  `;
+
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/categories?status=active",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success
+    ){
+
+      throw new Error(
+        data.error ||
+        "Category load नहि भ' सकल।"
+      );
+
+    }
+
+
+    const categories =
+      data.categories || [];
+
+
+    select.innerHTML = `
+      <option value="">
+        Category चुनू
+      </option>
+    `;
+
+
+    categories.forEach(
+      category => {
+
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          category.id;
+
+        option.textContent =
+          category.name;
+
+        select.appendChild(
+          option
+        );
+
+      }
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "CATEGORY LOAD ERROR:",
+      error
+    );
+
+
+    select.innerHTML = `
+      <option value="">
+        Category load नहि भ' सकल
+      </option>
+    `;
+
+    showToast(
+      error.message
+    );
+
+  }
+
+}
 
 function editNews(id){
 
@@ -3972,7 +4383,254 @@ function showToast(
 }
 
 </script>
+<!-- NEWS EDITOR MODAL -->
 
+<div
+  id="newsEditorModal"
+  class="news-editor-modal"
+>
+
+  <div class="news-editor-box">
+
+    <div class="news-editor-header">
+
+      <div>
+        <small>NEWS MANAGEMENT</small>
+
+        <h2 id="newsEditorTitle">
+          नया समाचार
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="news-editor-close"
+        onclick="closeNewsEditor()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <form
+      id="newsEditorForm"
+    >
+
+      <input
+        type="hidden"
+        id="newsId"
+      >
+
+
+      <div class="news-field">
+
+        <label>
+          समाचार शीर्षक
+          <b>*</b>
+        </label>
+
+        <input
+          type="text"
+          id="newsTitle"
+          required
+          placeholder="समाचारक शीर्षक लिखू..."
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          News URL
+          <span>English में</span>
+        </label>
+
+        <input
+          type="text"
+          id="newsSlug"
+          placeholder="mithila-news-example"
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          संक्षिप्त विवरण
+        </label>
+
+        <textarea
+          id="newsSummary"
+          rows="3"
+          placeholder="समाचारक छोट विवरण..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="news-grid">
+
+        <div class="news-field">
+
+          <label>
+            Category
+          </label>
+
+          <select id="newsCategory">
+
+            <option value="">
+              Category चुनू
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="news-field">
+
+          <label>
+            Status
+          </label>
+
+          <select id="newsStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          Tags
+        </label>
+
+        <div
+          id="newsTags"
+          class="news-tags"
+        >
+          Tags लोड भ' रहल अछि...
+        </div>
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          Featured Image URL
+        </label>
+
+        <input
+          type="url"
+          id="newsImage"
+          placeholder="https://..."
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          समाचार सामग्री
+          <b>*</b>
+        </label>
+
+        <textarea
+          id="newsContent"
+          class="news-content"
+          required
+          placeholder="पूरा समाचार लिखू..."
+        ></textarea>
+
+      </div>
+
+
+      <details class="seo-settings">
+
+        <summary>
+          SEO Settings
+        </summary>
+
+        <div class="news-field">
+
+          <label>
+            SEO Title
+          </label>
+
+          <input
+            type="text"
+            id="newsSeoTitle"
+          >
+
+        </div>
+
+
+        <div class="news-field">
+
+          <label>
+            SEO Description
+          </label>
+
+          <textarea
+            id="newsSeoDescription"
+            rows="3"
+          ></textarea>
+
+        </div>
+
+      </details>
+
+
+      <label class="featured-check">
+
+        <input
+          type="checkbox"
+          id="newsFeatured"
+        >
+
+        Featured समाचार
+
+      </label>
+
+
+      <div class="news-editor-footer">
+
+        <button
+          type="button"
+          onclick="closeNewsEditor()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+        >
+          Save News
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
 </body>
 
 </html>
