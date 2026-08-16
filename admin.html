@@ -2348,12 +2348,27 @@ async function checkAdminSession(){
 }
 async function init(){
 
-  // Check real server session first
-  const authenticated = await checkAdminSession();
+  /*
+   * सबसे पहिले server session check।
+   */
 
-  if (!authenticated) {
+  const authenticated =
+    await checkAdminSession();
+
+
+  if(
+    !authenticated
+  ){
+
     return;
+
   }
+
+
+  /*
+   * Session valid भेलाक बाद
+   * dashboard initialize करू।
+   */
 
   setupNavigation();
 
@@ -2364,7 +2379,6 @@ async function init(){
   await loadOverview();
 
 }
-
 
 /* =====================================================
    NAVIGATION
