@@ -32,6 +32,13 @@
       text-decoration: none;
     }
 
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid #8b0000;
+      outline-offset: 2px;
+    }
+
     .container {
       width: min(1200px, 94%);
       margin: auto;
@@ -84,29 +91,49 @@
 
     .nav-inner {
       display: flex;
+      align-items: center;
       gap: 5px;
       overflow-x: auto;
+      overflow-y: hidden;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      min-height: 44px;
     }
 
     .nav-inner::-webkit-scrollbar {
       display: none;
     }
 
-    .nav button {
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
       border: 0;
       background: transparent;
       color: white;
-      padding: 12px 15px;
+      padding: 10px 15px;
       cursor: pointer;
       white-space: nowrap;
       font-family: inherit;
       font-size: 14px;
+      font-weight: 600;
+      border-radius: 4px;
+      flex: 0 0 auto;
     }
 
-    .nav button:hover,
-    .nav button.active {
+    .nav-link:hover,
+    .nav-link.active {
       background: rgba(255,255,255,.15);
+    }
+
+    .nav-loading {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 10px 15px;
+      color: rgba(255,255,255,.75);
+      white-space: nowrap;
+      font-size: 13px;
     }
 
     /* SEARCH */
@@ -292,6 +319,19 @@
 
     @media (max-width: 600px) {
 
+      .nav-link {
+        padding: 10px 12px;
+        font-size: 13px;
+      }
+
+      .search-box {
+        flex-direction: column;
+      }
+
+      .search-box button {
+        min-height: 44px;
+      }
+
       .header-inner {
         align-items: flex-start;
         flex-direction: column;
@@ -363,23 +403,13 @@
   <!-- NAVIGATION -->
 
   <nav class="nav">
-
-    <div
-      class="container nav-inner"
-      id="categoryNav"
-    >
-
-      <button
-        type="button"
-        class="active"
-        data-category=""
-      >
-        सभ समाचार
-      </button>
-
-    </div>
-
-  </nav>
+  <div class="container nav-inner" id="categoryNav">
+    <a class="nav-link active" href="/" data-category="">
+      सभ समाचार
+    </a>
+    <span class="nav-loading" id="categoryNavLoading">श्रेणी लोड भ' रहल अछि...</span>
+  </div>
+</nav>
 
 </header>
 
@@ -485,6 +515,74 @@
 <script>
 
 
+
+// =====================================================
+// LEGACY NEWS URL REDIRECT
+// =====================================================
+
+(function redirectLegacyNewsUrl() {
+
+  const path =
+    location.pathname;
+
+  if (
+    path !== "/news.html" &&
+    path !== "/news"
+  ) {
+    return;
+  }
+
+  const id =
+    new URLSearchParams(
+      location.search
+    ).get("id");
+
+  if (!id) {
+    return;
+  }
+
+  fetch(
+    "/api/news?id=" +
+    encodeURIComponent(id),
+    {
+      cache: "no-store"
+    }
+  )
+  .then(
+    response =>
+      response.json()
+  )
+  .then(
+    data => {
+
+      if (
+        data.success &&
+        data.news &&
+        data.news.slug
+      ) {
+
+        location.replace(
+          "/news/" +
+          encodeURIComponent(
+            data.news.slug
+          )
+        );
+
+      }
+
+    }
+  )
+  .catch(
+    error =>
+      console.error(
+        "LEGACY NEWS REDIRECT:",
+        error
+      )
+  );
+
+})();
+
+
 // =====================================================
 // GLOBAL
 // =====================================================
@@ -534,7 +632,7 @@ document.addEventListener(
       );
 
 
-    loadCategories();
+    loadCategories().then(setActiveCategoryFromUrl);
 
     loadNews();
 
@@ -558,69 +656,76 @@ async function loadCategories() {
         }
       );
 
-
     const data =
       await response.json();
 
-
-    if (
-      !data.success
-    ) {
-
-      return;
-
+    if (!data.success) {
+      throw new Error(
+        data.error ||
+        "श्रेणी लोड नहि भ' सकल"
+      );
     }
-
 
     const nav =
       document.getElementById(
         "categoryNav"
       );
 
-
-    (data.categories || [])
-      .forEach(
-        category => {
-
-          const button =
-            document.createElement(
-              "button"
-            );
-
-
-          button.type =
-            "button";
-
-
-          button.textContent =
-            category.name;
-
-
-          button.dataset.category =
-            category.id;
-
-
-          button.addEventListener(
-            "click",
-            function() {
-
-              selectCategory(
-                category.id,
-                category.name,
-                button
-              );
-
-            }
-          );
-
-
-          nav.appendChild(
-            button
-          );
-
-        }
+    const loading =
+      document.getElementById(
+        "categoryNavLoading"
       );
 
+    if (loading) {
+      loading.remove();
+    }
+
+    const categories =
+      (data.categories || [])
+        .filter(
+          category =>
+            String(category.status || "active")
+              .toLowerCase() === "active"
+        )
+        .filter(
+          category =>
+            Number(category.show_in_menu ?? category.menu ?? 1) === 1
+        )
+        .sort(
+          (a, b) =>
+            Number(a.menu_order || 0) -
+            Number(b.menu_order || 0)
+        );
+
+    categories.forEach(
+      category => {
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.className =
+          "nav-link";
+
+        link.href =
+          "/category/" +
+          encodeURIComponent(
+            category.slug
+          );
+
+        link.textContent =
+          category.name;
+
+        link.dataset.category =
+          category.slug;
+
+        nav.appendChild(
+          link
+        );
+
+      }
+    );
 
   } catch (error) {
 
@@ -629,60 +734,62 @@ async function loadCategories() {
       error
     );
 
+    const loading =
+      document.getElementById(
+        "categoryNavLoading"
+      );
+
+    if (loading) {
+      loading.textContent =
+        "श्रेणी उपलब्ध नहि अछि";
+    }
+
   }
 
 }
 
 
 // =====================================================
-// SELECT CATEGORY
+// ACTIVE CATEGORY FROM URL
 // =====================================================
 
-function selectCategory(
-  categoryId,
-  categoryName,
-  button
-) {
+function setActiveCategoryFromUrl() {
 
-  selectedCategory =
-    String(categoryId);
+  const current =
+    location.pathname;
 
-
-  document
-    .querySelectorAll(
-      "#categoryNav button"
-    )
-    .forEach(
-      btn => {
-
-        btn.classList.remove(
-          "active"
-        );
-
-      }
+  const links =
+    document.querySelectorAll(
+      "#categoryNav .nav-link"
     );
 
+  links.forEach(
+    link => {
 
-  button.classList.add(
-    "active"
+      link.classList.remove(
+        "active"
+      );
+
+      if (
+        link.getAttribute("href") ===
+        current
+      ) {
+        link.classList.add(
+          "active"
+        );
+      }
+
+    }
   );
-
-
-  document
-    .getElementById(
-      "sectionTitle"
-    )
-    .textContent =
-      categoryName;
-
-
-  filterNews();
 
 }
 
 
 // =====================================================
 // LOAD NEWS
+// =====================================================
+
+
 // =====================================================
 
 async function loadNews() {
