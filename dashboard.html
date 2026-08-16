@@ -4,39 +4,90 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Dashboard - मैथिली समाचार</title>
+  <title>Admin Dashboard - मैथिली समाचार</title>
 
   <link rel="stylesheet" href="/style.css">
 
   <style>
-    .dashboard-wrap {
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f5f5;
+      color: #222;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      width: min(1150px, 94%);
+      margin: auto;
+    }
+
+    .dashboard-header {
+      background: #8b0000;
+      color: white;
+      padding: 15px 0;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .header-inner h1 {
+      margin: 0 0 4px;
+      font-size: 25px;
+    }
+
+    .header-inner small {
+      opacity: .9;
+    }
+
+    .dashboard {
       padding: 25px 0 60px;
     }
 
-    .topbar {
+    .page-title {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 15px;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
 
-    .topbar h2,
-    .topbar h3 {
+    .page-title h2 {
+      margin: 0 0 5px;
+    }
+
+    .page-title p {
       margin: 0;
+      color: #666;
+    }
+
+    button {
+      font-family: inherit;
     }
 
     .btn {
       border: 0;
+      border-radius: 7px;
       padding: 10px 16px;
-      border-radius: 6px;
       cursor: pointer;
       font-size: 14px;
+      font-weight: 600;
     }
 
     .btn-primary {
       background: #8b0000;
       color: white;
+    }
+
+    .btn-primary:hover {
+      background: #6d0000;
     }
 
     .btn-secondary {
@@ -50,29 +101,40 @@
     }
 
     .btn-light {
-      background: #eee;
+      background: white;
       color: #222;
+      border: 1px solid #ddd;
+    }
+
+    .btn-success {
+      background: #16733a;
+      color: white;
     }
 
     .stats {
       display: grid;
       grid-template-columns:
-        repeat(auto-fit, minmax(180px, 1fr));
+        repeat(4, minmax(0, 1fr));
       gap: 15px;
       margin-bottom: 25px;
     }
 
-    .stat {
+    .stat-card {
       background: white;
       padding: 20px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,.07);
     }
 
-    .stat strong {
+    .stat-card span {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .stat-card strong {
       display: block;
-      font-size: 28px;
       margin-top: 8px;
+      font-size: 30px;
     }
 
     .panel {
@@ -83,19 +145,31 @@
       box-shadow: 0 2px 8px rgba(0,0,0,.06);
     }
 
-    .panel h3 {
-      margin-top: 0;
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 18px;
+    }
+
+    .panel-title h3 {
+      margin: 0;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns:
         repeat(2, minmax(0, 1fr));
-      gap: 15px;
+      gap: 16px;
     }
 
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 5px;
     }
 
     .full {
@@ -104,58 +178,111 @@
 
     label {
       display: block;
-      font-weight: bold;
-      margin-bottom: 6px;
+      font-weight: 600;
+      margin-bottom: 7px;
     }
 
     input,
     select,
     textarea {
       width: 100%;
-      padding: 11px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-family: inherit;
+      padding: 11px 12px;
+      border: 1px solid #d7d7d7;
+      border-radius: 7px;
+      background: white;
+      color: #222;
       font-size: 15px;
+      font-family: inherit;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #8b0000;
     }
 
     textarea {
-      min-height: 180px;
+      min-height: 220px;
       resize: vertical;
     }
 
-    .summary-input {
-      min-height: 90px;
+    #summary {
+      min-height: 100px;
     }
 
-    .actions {
+    .form-actions {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .message {
+      display: none;
+      padding: 11px 13px;
+      margin-bottom: 15px;
+      border-radius: 7px;
+    }
+
+    .message.success {
+      display: block;
+      background: #e7f6eb;
+      color: #176b2c;
+    }
+
+    .message.error {
+      display: block;
+      background: #fde8e8;
+      color: #a00000;
+    }
+
+    .news-filter {
+      width: 180px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
     }
 
     .news-table {
       width: 100%;
       border-collapse: collapse;
+      min-width: 750px;
     }
 
     .news-table th,
     .news-table td {
-      padding: 12px 8px;
+      padding: 12px 9px;
       border-bottom: 1px solid #eee;
       text-align: left;
       vertical-align: top;
     }
 
     .news-table th {
-      background: #f5f5f5;
+      background: #f7f7f7;
+      font-weight: 700;
+    }
+
+    .news-title {
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .news-date {
+      display: block;
+      color: #777;
+      font-size: 12px;
+      margin-top: 5px;
     }
 
     .status {
       display: inline-block;
-      padding: 4px 8px;
+      padding: 4px 9px;
       border-radius: 20px;
       font-size: 12px;
+      font-weight: 600;
     }
 
     .status-published {
@@ -168,56 +295,80 @@
       color: #8a5a00;
     }
 
-    .category-row {
+    .action-buttons {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .action-buttons .btn {
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+
+    /* CATEGORY */
+
+    .category-add {
+      display: grid;
+      grid-template-columns:
+        1fr 1fr auto;
       gap: 10px;
-      padding: 12px 0;
+      align-items: end;
+      margin-bottom: 20px;
+    }
+
+    .category-list {
+      border-top: 1px solid #eee;
+    }
+
+    .category-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 13px 0;
       border-bottom: 1px solid #eee;
     }
 
     .category-name {
-      font-weight: bold;
+      font-weight: 600;
     }
 
     .category-slug {
       color: #777;
       font-size: 13px;
-      margin-left: 5px;
+      margin-left: 7px;
     }
 
-    .message {
-      margin: 12px 0;
-      padding: 10px;
-      border-radius: 6px;
-      display: none;
+    .category-description {
+      color: #666;
+      font-size: 13px;
+      margin-top: 4px;
     }
 
-    .message.success {
-      display: block;
-      background: #e8f7ed;
-      color: #176b2c;
+    .loading {
+      color: #777;
+      padding: 15px 0;
     }
 
-    .message.error {
-      display: block;
-      background: #fde8e8;
-      color: #a00000;
+    .empty {
+      color: #777;
+      padding: 20px 0;
     }
 
-    .hidden {
-      display: none !important;
+    @media (max-width: 850px) {
+
+      .stats {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .category-add {
+        grid-template-columns: 1fr;
+      }
     }
 
-    .category-add-box {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    @media (max-width: 700px) {
+    @media (max-width: 650px) {
 
       .form-grid {
         grid-template-columns: 1fr;
@@ -227,16 +378,32 @@
         grid-column: auto;
       }
 
-      .category-add-box {
+      .stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .page-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .panel-title {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .news-filter {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 420px) {
+
+      .stats {
         grid-template-columns: 1fr;
       }
 
-      .news-table {
-        display: block;
-        overflow-x: auto;
-      }
-
-      .topbar {
+      .header-inner {
         align-items: flex-start;
         flex-direction: column;
       }
@@ -246,12 +413,18 @@
 
 <body>
 
+
+<!-- =====================================================
+     HEADER
+====================================================== -->
+
 <header class="dashboard-header">
 
-  <div class="container">
+  <div class="container header-inner">
 
     <div>
       <h1>मैथिली समाचार</h1>
+
       <small id="adminName">
         Admin Dashboard
       </small>
@@ -260,7 +433,7 @@
     <button
       type="button"
       class="btn btn-light"
-      onclick="logout()"
+      id="logoutButton"
     >
       Logout
     </button>
@@ -270,70 +443,108 @@
 </header>
 
 
-<main class="container dashboard-wrap">
+<main class="container dashboard">
 
 
-  <!-- ======================================
-       HEADER
-  ======================================= -->
+  <!-- =====================================================
+       PAGE TITLE
+  ====================================================== -->
 
-  <div class="topbar">
+  <section class="page-title">
 
     <div>
-      <h2>Admin Dashboard</h2>
-      <p>समाचार आ श्रेणी प्रबंधन</p>
+
+      <h2>
+        Admin Dashboard
+      </h2>
+
+      <p>
+        समाचार आ श्रेणी प्रबंधन
+      </p>
+
     </div>
 
     <button
       type="button"
       class="btn btn-primary"
-      onclick="newNews()"
+      id="newNewsButton"
     >
       + नवीन समाचार
     </button>
 
-  </div>
+  </section>
 
 
-  <!-- ======================================
+  <!-- =====================================================
        STATISTICS
-  ======================================= -->
+  ====================================================== -->
 
   <section class="stats">
 
-    <div class="stat">
-      कुल समाचार
-      <strong id="totalNews">0</strong>
+    <div class="stat-card">
+
+      <span>
+        कुल समाचार
+      </span>
+
+      <strong id="totalNews">
+        0
+      </strong>
+
     </div>
 
-    <div class="stat">
-      प्रकाशित
-      <strong id="publishedNews">0</strong>
+
+    <div class="stat-card">
+
+      <span>
+        प्रकाशित
+      </span>
+
+      <strong id="publishedNews">
+        0
+      </strong>
+
     </div>
 
-    <div class="stat">
-      Draft
-      <strong id="draftNews">0</strong>
+
+    <div class="stat-card">
+
+      <span>
+        Draft
+      </span>
+
+      <strong id="draftNews">
+        0
+      </strong>
+
     </div>
 
-    <div class="stat">
-      श्रेणी
-      <strong id="totalCategories">0</strong>
+
+    <div class="stat-card">
+
+      <span>
+        श्रेणी
+      </span>
+
+      <strong id="totalCategories">
+        0
+      </strong>
+
     </div>
 
   </section>
 
 
-  <!-- ======================================
+  <!-- =====================================================
        NEWS EDITOR
-  ======================================= -->
+  ====================================================== -->
 
   <section
     class="panel hidden"
     id="editorPanel"
   >
 
-    <div class="topbar">
+    <div class="panel-title">
 
       <h3 id="editorTitle">
         नवीन समाचार
@@ -342,9 +553,9 @@
       <button
         type="button"
         class="btn btn-light"
-        onclick="closeEditor()"
+        id="closeEditorButton"
       >
-        ✕ बन्द करू
+        बन्द करू
       </button>
 
     </div>
@@ -355,6 +566,8 @@
       class="message"
     ></div>
 
+
+    <!-- ONLY NEWS FORM -->
 
     <form id="newsForm">
 
@@ -376,10 +589,10 @@
           </label>
 
           <input
-            id="title"
             type="text"
-            required
+            id="title"
             placeholder="समाचारक शीर्षक लिखू"
+            required
           >
 
         </div>
@@ -437,8 +650,7 @@
 
           <textarea
             id="summary"
-            class="summary-input"
-            placeholder="समाचारक छोट विवरण"
+            placeholder="समाचारक छोट विवरण लिखू"
           ></textarea>
 
         </div>
@@ -454,8 +666,8 @@
 
           <textarea
             id="content"
-            required
             placeholder="पूरा समाचार एतय लिखू..."
+            required
           ></textarea>
 
         </div>
@@ -470,8 +682,8 @@
           </label>
 
           <input
-            id="imageUrl"
             type="url"
+            id="imageUrl"
             placeholder="https://example.com/photo.jpg"
           >
 
@@ -487,8 +699,9 @@
           </label>
 
           <input
-            id="seoTitle"
             type="text"
+            id="seoTitle"
+            placeholder="SEO title"
           >
 
         </div>
@@ -503,8 +716,9 @@
           </label>
 
           <input
-            id="seoDescription"
             type="text"
+            id="seoDescription"
+            placeholder="SEO description"
           >
 
         </div>
@@ -515,7 +729,7 @@
         <div class="form-group">
 
           <label for="featured">
-            Featured News
+            Featured
           </label>
 
           <select id="featured">
@@ -535,7 +749,7 @@
       </div>
 
 
-      <div class="actions">
+      <div class="form-actions">
 
         <button
           type="submit"
@@ -547,7 +761,7 @@
         <button
           type="button"
           class="btn btn-light"
-          onclick="closeEditor()"
+          id="cancelNewsButton"
         >
           Cancel
         </button>
@@ -559,13 +773,13 @@
   </section>
 
 
-  <!-- ======================================
+  <!-- =====================================================
        NEWS LIST
-  ======================================= -->
+  ====================================================== -->
 
   <section class="panel">
 
-    <div class="topbar">
+    <div class="panel-title">
 
       <h3>
         समाचार सूची
@@ -573,8 +787,7 @@
 
       <select
         id="newsFilter"
-        onchange="loadNews()"
-        style="max-width:180px"
+        class="news-filter"
       >
 
         <option value="all">
@@ -594,30 +807,36 @@
     </div>
 
 
-    <div id="newsTable">
+    <div
+      id="newsTable"
+      class="loading"
+    >
       समाचार लोड भ' रहल अछि...
     </div>
 
   </section>
 
 
-  <!-- ======================================
+  <!-- =====================================================
        CATEGORY MANAGEMENT
-  ======================================= -->
+       
+       IMPORTANT:
+       एहि section में कोनो FORM नहि अछि।
+  ====================================================== -->
 
   <section class="panel">
 
-    <h3>
-      श्रेणी प्रबंधन
-    </h3>
+    <div class="panel-title">
+
+      <h3>
+        श्रेणी प्रबंधन
+      </h3>
+
+    </div>
 
 
-    <!-- IMPORTANT:
-         ई FORM नहि अछि।
-         एहि कारण News form trigger नहि होयत।
-    -->
+    <div class="category-add">
 
-    <div class="category-add-box">
 
       <div>
 
@@ -626,8 +845,8 @@
         </label>
 
         <input
-          id="categoryName"
           type="text"
+          id="categoryName"
           placeholder="जैसे: मिथिला"
         >
 
@@ -641,8 +860,8 @@
         </label>
 
         <input
-          id="categoryDescription"
           type="text"
+          id="categoryDescription"
           placeholder="श्रेणीक विवरण"
         >
 
@@ -652,13 +871,13 @@
       <div>
 
         <button
-  id="addCategoryButton"
-  type="button"
-  class="btn btn-primary"
->
-  + श्रेणी जोड़ू
-</button>
-      
+          type="button"
+          class="btn btn-primary"
+          id="addCategoryButton"
+        >
+          + श्रेणी जोड़ू
+        </button>
+
       </div>
 
     </div>
@@ -672,12 +891,15 @@
 
     <div
       id="categoryList"
-      style="margin-top:20px"
+      class="category-list"
     >
-      श्रेणी लोड भ' रहल अछि...
+      <div class="loading">
+        श्रेणी लोड भ' रहल अछि...
+      </div>
     </div>
 
   </section>
+
 
 </main>
 
@@ -685,29 +907,205 @@
 <script>
 
 
-// ======================================================
+// =====================================================
 // GLOBAL
-// ======================================================
+// =====================================================
 
 let categories = [];
 
 
-// ======================================================
-// AUTH CHECK
-// ======================================================
+// =====================================================
+// DOM READY
+// =====================================================
+
+document.addEventListener(
+  "DOMContentLoaded",
+  startDashboard
+);
+
+
+// =====================================================
+// START
+// =====================================================
+
+async function startDashboard() {
+
+  const loggedIn =
+    await checkLogin();
+
+  if (!loggedIn) {
+    return;
+  }
+
+
+  bindEvents();
+
+
+  await loadCategories();
+
+  await loadNews();
+
+}
+
+
+// =====================================================
+// BIND EVENTS
+//
+// IMPORTANT:
+// Category button केवल addCategory() call करत।
+// News form केवल saveNews() call करत।
+// दुनू एक-दोसर सँ अलग अछि।
+// =====================================================
+
+function bindEvents() {
+
+
+  // NEW NEWS
+
+  document
+    .getElementById(
+      "newNewsButton"
+    )
+    .addEventListener(
+      "click",
+      function(event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        newNews();
+
+      }
+    );
+
+
+  // CLOSE EDITOR
+
+  document
+    .getElementById(
+      "closeEditorButton"
+    )
+    .addEventListener(
+      "click",
+      function(event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        closeEditor();
+
+      }
+    );
+
+
+  // CANCEL NEWS
+
+  document
+    .getElementById(
+      "cancelNewsButton"
+    )
+    .addEventListener(
+      "click",
+      function(event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        closeEditor();
+
+      }
+    );
+
+
+  // NEWS FILTER
+
+  document
+    .getElementById(
+      "newsFilter"
+    )
+    .addEventListener(
+      "change",
+      function() {
+
+        loadNews();
+
+      }
+    );
+
+
+  // NEWS FORM
+
+  document
+    .getElementById(
+      "newsForm"
+    )
+    .addEventListener(
+      "submit",
+      saveNews
+    );
+
+
+  // CATEGORY BUTTON
+
+  document
+    .getElementById(
+      "addCategoryButton"
+    )
+    .addEventListener(
+      "click",
+      function(event) {
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        addCategory();
+
+      }
+    );
+
+
+  // LOGOUT
+
+  document
+    .getElementById(
+      "logoutButton"
+    )
+    .addEventListener(
+      "click",
+      function(event) {
+
+        event.preventDefault();
+
+        logout();
+
+      }
+    );
+
+}
+
+
+// =====================================================
+// CHECK LOGIN
+// =====================================================
 
 async function checkLogin() {
 
   try {
 
     const response =
-      await fetch("/api/login", {
-        method: "GET",
-        credentials: "same-origin"
-      });
+      await fetch(
+        "/api/login",
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        }
+      );
+
 
     const data =
       await response.json();
+
 
     if (
       !response.ok ||
@@ -718,55 +1116,47 @@ async function checkLogin() {
         "/admin.html";
 
       return false;
+
     }
 
 
-    document
-      .getElementById("adminName")
-      .textContent =
-        data.user.name +
-        " (" +
-        data.user.role +
-        ")";
+    const adminName =
+      document.getElementById(
+        "adminName"
+      );
+
+
+    adminName.textContent =
+      data.user.name +
+      " (" +
+      data.user.role +
+      ")";
 
 
     return true;
 
+
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "LOGIN CHECK ERROR:",
+      error
+    );
+
 
     window.location.href =
       "/admin.html";
 
     return false;
+
   }
+
 }
 
 
-// ======================================================
-// START DASHBOARD
-// ======================================================
-
-async function loadDashboard() {
-
-  const loggedIn =
-    await checkLogin();
-
-  if (!loggedIn) {
-    return;
-  }
-
-
-  await loadCategories();
-
-  await loadNews();
-}
-
-
-// ======================================================
+// =====================================================
 // LOAD CATEGORIES
-// ======================================================
+// =====================================================
 
 async function loadCategories() {
 
@@ -774,11 +1164,23 @@ async function loadCategories() {
 
     const response =
       await fetch(
-        "/api/categories"
+        "/api/categories",
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        }
       );
+
 
     const data =
       await response.json();
+
+
+    console.log(
+      "CATEGORY GET:",
+      data
+    );
 
 
     if (!data.success) {
@@ -795,17 +1197,22 @@ async function loadCategories() {
       data.categories || [];
 
 
+    // COUNT
+
     document
-      .getElementById("totalCategories")
+      .getElementById(
+        "totalCategories"
+      )
       .textContent =
-        categories.length;
+      categories.length;
 
 
-    // NEWS CATEGORY DROPDOWN
+    // DROPDOWN
 
     const select =
-      document
-        .getElementById("category");
+      document.getElementById(
+        "category"
+      );
 
 
     select.innerHTML =
@@ -816,24 +1223,29 @@ async function loadCategories() {
       `;
 
 
-    categories.forEach(category => {
+    categories.forEach(
+      category => {
 
-      const option =
-        document.createElement(
-          "option"
+        const option =
+          document.createElement(
+            "option"
+          );
+
+
+        option.value =
+          category.id;
+
+
+        option.textContent =
+          category.name;
+
+
+        select.appendChild(
+          option
         );
 
-      option.value =
-        category.id;
-
-      option.textContent =
-        category.name;
-
-      select.appendChild(
-        option
-      );
-
-    });
+      }
+    );
 
 
     renderCategories();
@@ -842,176 +1254,125 @@ async function loadCategories() {
   } catch (error) {
 
     console.error(
-      "CATEGORY ERROR:",
+      "LOAD CATEGORY ERROR:",
       error
     );
 
 
     document
-      .getElementById("categoryList")
-      .innerHTML =
-        `
-          <p>
-            श्रेणी लोड नहि भ' सकल।
-          </p>
-        `;
-
-  }
-}
-
-
-// ======================================================
-// RENDER CATEGORY LIST
-// ======================================================
-
-function renderCategories() {
-
-  const box =
-    document
       .getElementById(
         "categoryList"
-      );
-
-
-  if (!categories.length) {
-
-    box.innerHTML =
+      )
+      .innerHTML =
       `
-        <p>
-          एखन कोनो श्रेणी नहि अछि।
-        </p>
+        <div class="empty">
+          श्रेणी लोड नहि भ' सकल।
+          <br>
+          ${escapeHtml(
+            error.message
+          )}
+        </div>
       `;
 
-    return;
   }
-
-
-  box.innerHTML =
-    categories
-      .map(category => {
-
-        return `
-          <div class="category-row">
-
-            <div>
-
-              <span class="category-name">
-                ${escapeHtml(
-                  category.name
-                )}
-              </span>
-
-              <span class="category-slug">
-                /${escapeHtml(
-                  category.slug
-                )}
-              </span>
-
-              ${
-                category.description
-                  ? `
-                    <div>
-                      <small>
-                        ${escapeHtml(
-                          category.description
-                        )}
-                      </small>
-                    </div>
-                  `
-                  : ""
-              }
-
-            </div>
-
-
-            <button
-              type="button"
-              class="btn btn-danger"
-              onclick="deleteCategory(${category.id})"
-            >
-              Delete
-            </button>
-
-          </div>
-        `;
-
-      })
-      .join("");
 
 }
 
 
-// ======================================================
+// =====================================================
 // ADD CATEGORY
-// ======================================================
+// =====================================================
 
-async function addCategory(event) {
+async function addCategory() {
 
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
+  console.log(
+    "ADD CATEGORY CLICKED"
+  );
+
 
   const name =
-    document.getElementById("categoryName").value.trim();
+    document
+      .getElementById(
+        "categoryName"
+      )
+      .value
+      .trim();
+
 
   const description =
-    document.getElementById("categoryDescription").value.trim();
+    document
+      .getElementById(
+        "categoryDescription"
+      )
+      .value
+      .trim();
+
 
   if (!name) {
+
     showCategoryMessage(
-      "कृपया श्रेणी नाम लिखू।",
+      "श्रेणी नाम लिखू।",
       "error"
     );
+
     return;
+
   }
+
 
   try {
 
-    const response = await fetch("/api/categories", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: name,
-        description: description
-      })
-    });
+    const response =
+      await fetch(
+        "/api/categories",
+        {
+          method: "POST",
 
-    const data = await response.json();
+          credentials:
+            "same-origin",
 
-    console.log("CATEGORY RESPONSE:", data);
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              name:
+                name,
+
+              description:
+                description
+
+            })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      "CATEGORY POST:",
+      data
+    );
+
 
     if (!data.success) {
+
       showCategoryMessage(
-        data.error || "श्रेणी जोड़ल नहि गेल।",
+        data.error ||
+        "श्रेणी जोड़ल नहि गेल।",
         "error"
       );
+
       return;
+
     }
 
-    document.getElementById("categoryName").value = "";
-    document.getElementById("categoryDescription").value = "";
 
-    showCategoryMessage(
-      "श्रेणी सफलतापूर्वक जोड़ल गेल।",
-      "success"
-    );
-
-    await loadCategories();
-
-  } catch (error) {
-
-    console.error("CATEGORY ERROR:", error);
-
-    showCategoryMessage(
-      "Server error: श्रेणी जोड़ल नहि जा सकल।",
-      "error"
-    );
-  }
-}
     document
       .getElementById(
         "categoryName"
@@ -1044,27 +1405,29 @@ async function addCategory(event) {
 
 
     showCategoryMessage(
-      "Server error: श्रेणी जोड़ल नहि जा सकल।",
+      "Server error: " +
+      error.message,
       "error"
     );
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
 // DELETE CATEGORY
-// ======================================================
+// =====================================================
 
 async function deleteCategory(id) {
 
-  const ok =
+  const confirmed =
     confirm(
       "की अहाँ एहि श्रेणी के delete कर' चाहैत छी?"
     );
 
 
-  if (!ok) {
+  if (!confirmed) {
     return;
   }
 
@@ -1096,6 +1459,7 @@ async function deleteCategory(id) {
       );
 
       return;
+
     }
 
 
@@ -1122,12 +1486,98 @@ async function deleteCategory(id) {
     );
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
+// RENDER CATEGORIES
+// =====================================================
+
+function renderCategories() {
+
+  const box =
+    document.getElementById(
+      "categoryList"
+    );
+
+
+  if (!categories.length) {
+
+    box.innerHTML =
+      `
+        <div class="empty">
+          एखन कोनो श्रेणी नहि अछि।
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  box.innerHTML =
+    categories
+      .map(
+        category => {
+
+          return `
+            <div class="category-item">
+
+              <div>
+
+                <div>
+
+                  <span class="category-name">
+                    ${escapeHtml(
+                      category.name
+                    )}
+                  </span>
+
+                  <span class="category-slug">
+                    /${escapeHtml(
+                      category.slug
+                    )}
+                  </span>
+
+                </div>
+
+                ${
+                  category.description
+                    ? `
+                      <div class="category-description">
+                        ${escapeHtml(
+                          category.description
+                        )}
+                      </div>
+                    `
+                    : ""
+                }
+
+              </div>
+
+
+              <button
+                type="button"
+                class="btn btn-danger"
+                onclick="deleteCategory(${Number(category.id)})"
+              >
+                Delete
+              </button>
+
+            </div>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// =====================================================
 // CATEGORY MESSAGE
-// ======================================================
+// =====================================================
 
 function showCategoryMessage(
   text,
@@ -1135,10 +1585,9 @@ function showCategoryMessage(
 ) {
 
   const box =
-    document
-      .getElementById(
-        "categoryMessage"
-      );
+    document.getElementById(
+      "categoryMessage"
+    );
 
 
   box.textContent =
@@ -1150,38 +1599,46 @@ function showCategoryMessage(
     type;
 
 
-  setTimeout(() => {
+  setTimeout(
+    function() {
 
-    box.className =
-      "message";
+      box.className =
+        "message";
 
-  }, 4000);
+    },
+    4000
+  );
 
 }
 
 
-// ======================================================
+// =====================================================
 // LOAD NEWS
-// ======================================================
+// =====================================================
 
 async function loadNews() {
 
+  const filter =
+    document
+      .getElementById(
+        "newsFilter"
+      )
+      .value;
+
+
   try {
-
-    const filter =
-      document
-        .getElementById(
-          "newsFilter"
-        )
-        .value;
-
 
     const response =
       await fetch(
         "/api/news?status=" +
         encodeURIComponent(
           filter
-        )
+        ),
+        {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store"
+        }
       );
 
 
@@ -1189,31 +1646,24 @@ async function loadNews() {
       await response.json();
 
 
+    console.log(
+      "NEWS GET:",
+      data
+    );
+
+
     if (!data.success) {
 
-      document
-        .getElementById(
-          "newsTable"
-        )
-        .innerHTML =
-          `
-            <p>
-              ${escapeHtml(
-                data.error
-              )}
-            </p>
-          `;
+      throw new Error(
+        data.error ||
+        "News loading failed"
+      );
 
-      return;
     }
 
 
-    const news =
-      data.news || [];
-
-
     renderNews(
-      news
+      data.news || []
     );
 
 
@@ -1223,7 +1673,7 @@ async function loadNews() {
   } catch (error) {
 
     console.error(
-      "NEWS ERROR:",
+      "LOAD NEWS ERROR:",
       error
     );
 
@@ -1233,19 +1683,24 @@ async function loadNews() {
         "newsTable"
       )
       .innerHTML =
-        `
-          <p>
-            समाचार लोड नहि भ' सकल।
-          </p>
-        `;
+      `
+        <div class="empty">
+          समाचार लोड नहि भ' सकल।
+          <br>
+          ${escapeHtml(
+            error.message
+          )}
+        </div>
+      `;
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
 // UPDATE STATS
-// ======================================================
+// =====================================================
 
 async function updateStats() {
 
@@ -1253,7 +1708,12 @@ async function updateStats() {
 
     const response =
       await fetch(
-        "/api/news?status=all"
+        "/api/news?status=all",
+        {
+          credentials:
+            "same-origin",
+          cache: "no-store"
+        }
       );
 
 
@@ -1261,9 +1721,7 @@ async function updateStats() {
       await response.json();
 
 
-    if (
-      !data.success
-    ) {
+    if (!data.success) {
       return;
     }
 
@@ -1293,7 +1751,7 @@ async function updateStats() {
         "totalNews"
       )
       .textContent =
-        all.length;
+      all.length;
 
 
     document
@@ -1301,7 +1759,7 @@ async function updateStats() {
         "publishedNews"
       )
       .textContent =
-        published.length;
+      published.length;
 
 
     document
@@ -1309,7 +1767,7 @@ async function updateStats() {
         "draftNews"
       )
       .textContent =
-        drafts.length;
+      drafts.length;
 
   } catch (error) {
 
@@ -1319,46 +1777,43 @@ async function updateStats() {
     );
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
 // RENDER NEWS
-// ======================================================
+// =====================================================
 
 function renderNews(
   news
 ) {
 
   const box =
-    document
-      .getElementById(
-        "newsTable"
-      );
+    document.getElementById(
+      "newsTable"
+    );
 
 
   if (!news.length) {
 
     box.innerHTML =
       `
-        <p>
+        <div class="empty">
           एखन कोनो समाचार नहि अछि।
-        </p>
+        </div>
       `;
 
     return;
+
   }
 
 
   box.innerHTML =
     `
-      <div
-        style="overflow-x:auto"
-      >
+      <div class="table-wrap">
 
-        <table
-          class="news-table"
-        >
+        <table class="news-table">
 
           <thead>
 
@@ -1393,96 +1848,93 @@ function renderNews(
 
             ${
               news
-                .map(item => {
+                .map(
+                  item => {
 
-                  return `
-                    <tr>
+                    const statusClass =
+                      item.status ===
+                      "published"
+                        ? "status-published"
+                        : "status-draft";
 
-                      <td>
 
-                        <strong>
+                    return `
+                      <tr>
+
+                        <td>
+
+                          <div class="news-title">
+                            ${escapeHtml(
+                              item.title
+                            )}
+                          </div>
+
+                          <span class="news-date">
+                            ${formatDate(
+                              item.created_at
+                            )}
+                          </span>
+
+                        </td>
+
+
+                        <td>
                           ${escapeHtml(
-                            item.title
+                            item.category_name ||
+                            "-"
                           )}
-                        </strong>
-
-                        <br>
-
-                        <small>
-                          ${formatDate(
-                            item.created_at
-                          )}
-                        </small>
-
-                      </td>
+                        </td>
 
 
-                      <td>
-                        ${escapeHtml(
-                          item.category_name ||
-                          "-"
-                        )}
-                      </td>
+                        <td>
 
-
-                      <td>
-
-                        <span
-                          class="status ${
-                            item.status ===
-                            "published"
-
-                              ? "status-published"
-
-                              : "status-draft"
-                          }"
-                        >
-                          ${escapeHtml(
-                            item.status
-                          )}
-                        </span>
-
-                      </td>
-
-
-                      <td>
-                        ${Number(
-                          item.views || 0
-                        )}
-                      </td>
-
-
-                      <td>
-
-                        <div
-                          class="actions"
-                        >
-
-                          <button
-                            type="button"
-                            class="btn btn-secondary"
-                            onclick="editNews(${item.id})"
+                          <span
+                            class="status ${statusClass}"
                           >
-                            Edit
-                          </button>
+                            ${escapeHtml(
+                              item.status
+                            )}
+                          </span>
+
+                        </td>
 
 
-                          <button
-                            type="button"
-                            class="btn btn-danger"
-                            onclick="deleteNews(${item.id})"
-                          >
-                            Delete
-                          </button>
+                        <td>
+                          ${Number(
+                            item.views || 0
+                          )}
+                        </td>
 
-                        </div>
 
-                      </td>
+                        <td>
 
-                    </tr>
-                  `;
+                          <div class="action-buttons">
 
-                })
+                            <button
+                              type="button"
+                              class="btn btn-secondary"
+                              onclick="editNews(${Number(item.id)})"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              class="btn btn-danger"
+                              onclick="deleteNews(${Number(item.id)})"
+                            >
+                              Delete
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    `;
+
+                  }
+                )
                 .join("")
             }
 
@@ -1496,20 +1948,17 @@ function renderNews(
 }
 
 
-// ======================================================
+// =====================================================
 // NEW NEWS
-// ======================================================
+// =====================================================
 
 function newNews() {
 
-  const form =
-    document
-      .getElementById(
-        "newsForm"
-      );
-
-
-  form.reset();
+  document
+    .getElementById(
+      "newsForm"
+    )
+    .reset();
 
 
   document
@@ -1553,9 +2002,9 @@ function newNews() {
 }
 
 
-// ======================================================
+// =====================================================
 // EDIT NEWS
-// ======================================================
+// =====================================================
 
 async function editNews(
   id
@@ -1566,7 +2015,12 @@ async function editNews(
     const response =
       await fetch(
         "/api/news?id=" +
-        encodeURIComponent(id)
+        encodeURIComponent(id),
+        {
+          credentials:
+            "same-origin",
+          cache: "no-store"
+        }
       );
 
 
@@ -1582,6 +2036,7 @@ async function editNews(
       );
 
       return;
+
     }
 
 
@@ -1594,7 +2049,7 @@ async function editNews(
         "newsId"
       )
       .value =
-        news.id;
+      news.id;
 
 
     document
@@ -1602,7 +2057,7 @@ async function editNews(
         "title"
       )
       .value =
-        news.title || "";
+      news.title || "";
 
 
     document
@@ -1610,7 +2065,7 @@ async function editNews(
         "summary"
       )
       .value =
-        news.summary || "";
+      news.summary || "";
 
 
     document
@@ -1618,7 +2073,7 @@ async function editNews(
         "content"
       )
       .value =
-        news.content || "";
+      news.content || "";
 
 
     document
@@ -1626,7 +2081,7 @@ async function editNews(
         "imageUrl"
       )
       .value =
-        news.image_url || "";
+      news.image_url || "";
 
 
     document
@@ -1634,7 +2089,7 @@ async function editNews(
         "category"
       )
       .value =
-        news.category_id || "";
+      news.category_id || "";
 
 
     document
@@ -1642,7 +2097,7 @@ async function editNews(
         "status"
       )
       .value =
-        news.status || "draft";
+      news.status || "draft";
 
 
     document
@@ -1650,9 +2105,9 @@ async function editNews(
         "featured"
       )
       .value =
-        news.featured
-          ? "1"
-          : "0";
+      news.featured
+        ? "1"
+        : "0";
 
 
     document
@@ -1660,7 +2115,7 @@ async function editNews(
         "seoTitle"
       )
       .value =
-        news.seo_title || "";
+      news.seo_title || "";
 
 
     document
@@ -1668,7 +2123,7 @@ async function editNews(
         "seoDescription"
       )
       .value =
-        news.seo_description || "";
+      news.seo_description || "";
 
 
     document
@@ -1676,7 +2131,7 @@ async function editNews(
         "editorTitle"
       )
       .textContent =
-        "समाचार Edit करू";
+      "समाचार Edit करू";
 
 
     document
@@ -1698,253 +2153,273 @@ async function editNews(
   } catch (error) {
 
     console.error(
+      "EDIT NEWS ERROR:",
       error
     );
+
 
     alert(
       "समाचार लोड नहि भ' सकल।"
     );
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
 // SAVE NEWS
-// ======================================================
+// =====================================================
 
-document
-  .getElementById(
-    "newsForm"
-  )
-  .addEventListener(
-    "submit",
-    async function(event) {
+async function saveNews(
+  event
+) {
 
-      event.preventDefault();
+  event.preventDefault();
+  event.stopPropagation();
 
 
-      const id =
-        document
-          .getElementById(
-            "newsId"
+  const id =
+    document
+      .getElementById(
+        "newsId"
+      )
+      .value;
+
+
+  const title =
+    document
+      .getElementById(
+        "title"
+      )
+      .value
+      .trim();
+
+
+  const summary =
+    document
+      .getElementById(
+        "summary"
+      )
+      .value
+      .trim();
+
+
+  const content =
+    document
+      .getElementById(
+        "content"
+      )
+      .value
+      .trim();
+
+
+  const imageUrl =
+    document
+      .getElementById(
+        "imageUrl"
+      )
+      .value
+      .trim();
+
+
+  const categoryValue =
+    document
+      .getElementById(
+        "category"
+      )
+      .value;
+
+
+  const status =
+    document
+      .getElementById(
+        "status"
+      )
+      .value;
+
+
+  const featured =
+    document
+      .getElementById(
+        "featured"
+      )
+      .value ===
+      "1";
+
+
+  const seoTitle =
+    document
+      .getElementById(
+        "seoTitle"
+      )
+      .value
+      .trim();
+
+
+  const seoDescription =
+    document
+      .getElementById(
+        "seoDescription"
+      )
+      .value
+      .trim();
+
+
+  if (
+    !title ||
+    !content
+  ) {
+
+    showEditorMessage(
+      "शीर्षक आ समाचार जरूरी अछि।",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const body = {
+
+    title:
+      title,
+
+    summary:
+      summary,
+
+    content:
+      content,
+
+    image_url:
+      imageUrl,
+
+    category_id:
+      categoryValue
+        ? Number(
+            categoryValue
           )
-          .value;
+        : null,
+
+    status:
+      status,
+
+    featured:
+      featured,
+
+    seo_title:
+      seoTitle,
+
+    seo_description:
+      seoDescription
+
+  };
 
 
-      const title =
-        document
-          .getElementById(
-            "title"
-          )
-          .value
-          .trim();
+  try {
+
+    const url =
+      id
+        ? "/api/news?id=" +
+          encodeURIComponent(id)
+        : "/api/news";
 
 
-      const summary =
-        document
-          .getElementById(
-            "summary"
-          )
-          .value
-          .trim();
+    const method =
+      id
+        ? "PUT"
+        : "POST";
 
 
-      const content =
-        document
-          .getElementById(
-            "content"
-          )
-          .value
-          .trim();
+    const response =
+      await fetch(
+        url,
+        {
+          method:
+            method,
 
+          credentials:
+            "same-origin",
 
-      const imageUrl =
-        document
-          .getElementById(
-            "imageUrl"
-          )
-          .value
-          .trim();
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-
-      const categoryValue =
-        document
-          .getElementById(
-            "category"
-          )
-          .value;
-
-
-      const status =
-        document
-          .getElementById(
-            "status"
-          )
-          .value;
-
-
-      const featured =
-        document
-          .getElementById(
-            "featured"
-          )
-          .value ===
-          "1";
-
-
-      const seoTitle =
-        document
-          .getElementById(
-            "seoTitle"
-          )
-          .value
-          .trim();
-
-
-      const seoDescription =
-        document
-          .getElementById(
-            "seoDescription"
-          )
-          .value
-          .trim();
-
-
-      if (
-        !title ||
-        !content
-      ) {
-
-        showEditorMessage(
-          "शीर्षक आ समाचार जरूरी अछि।",
-          "error"
-        );
-
-        return;
-      }
-
-
-      const body = {
-
-        title:
-          title,
-
-        summary:
-          summary,
-
-        content:
-          content,
-
-        image_url:
-          imageUrl,
-
-        category_id:
-          categoryValue
-            ? Number(
-                categoryValue
-              )
-            : null,
-
-        status:
-          status,
-
-        featured:
-          featured,
-
-        seo_title:
-          seoTitle,
-
-        seo_description:
-          seoDescription
-
-      };
-
-
-      try {
-
-        const response =
-          await fetch(
-            id
-              ? "/api/news?id=" +
-                encodeURIComponent(id)
-
-              : "/api/news",
-            {
-              method:
-                id
-                  ? "PUT"
-                  : "POST",
-
-              credentials:
-                "same-origin",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify(
-                  body
-                )
-            }
-          );
-
-
-        const data =
-          await response.json();
-
-
-        if (!data.success) {
-
-          showEditorMessage(
-            data.error ||
-            "समाचार save नहि भ' सकल।",
-            "error"
-          );
-
-          return;
+          body:
+            JSON.stringify(
+              body
+            )
         }
+      );
 
 
-        showEditorMessage(
-          data.message ||
-          "समाचार save भ' गेल।",
-          "success"
-        );
+    const data =
+      await response.json();
 
 
-        await loadNews();
+    console.log(
+      "NEWS SAVE:",
+      data
+    );
 
 
-        setTimeout(
-          closeEditor,
-          700
-        );
+    if (!data.success) {
 
+      showEditorMessage(
+        data.error ||
+        "समाचार save नहि भ' सकल।",
+        "error"
+      );
 
-      } catch (error) {
-
-        console.error(
-          error
-        );
-
-
-        showEditorMessage(
-          "Server error।",
-          "error"
-        );
-
-      }
+      return;
 
     }
-  );
 
 
-// ======================================================
+    showEditorMessage(
+      data.message ||
+      "समाचार save भ' गेल।",
+      "success"
+    );
+
+
+    await loadNews();
+
+
+    setTimeout(
+      function() {
+
+        closeEditor();
+
+      },
+      700
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "SAVE NEWS ERROR:",
+      error
+    );
+
+
+    showEditorMessage(
+      "Server error: " +
+      error.message,
+      "error"
+    );
+
+  }
+
+}
+
+
+// =====================================================
 // DELETE NEWS
-// ======================================================
+// =====================================================
 
 async function deleteNews(
   id
@@ -1981,10 +2456,11 @@ async function deleteNews(
 
       alert(
         data.error ||
-        "Delete नहि भ' सकल।"
+        "समाचार delete नहि भ' सकल।"
       );
 
       return;
+
     }
 
 
@@ -1994,6 +2470,7 @@ async function deleteNews(
   } catch (error) {
 
     console.error(
+      "DELETE NEWS ERROR:",
       error
     );
 
@@ -2003,12 +2480,13 @@ async function deleteNews(
     );
 
   }
+
 }
 
 
-// ======================================================
+// =====================================================
 // CLOSE EDITOR
-// ======================================================
+// =====================================================
 
 function closeEditor() {
 
@@ -2046,9 +2524,9 @@ function closeEditor() {
 }
 
 
-// ======================================================
+// =====================================================
 // EDITOR MESSAGE
-// ======================================================
+// =====================================================
 
 function showEditorMessage(
   text,
@@ -2056,10 +2534,9 @@ function showEditorMessage(
 ) {
 
   const box =
-    document
-      .getElementById(
-        "editorMessage"
-      );
+    document.getElementById(
+      "editorMessage"
+    );
 
 
   box.textContent =
@@ -2072,9 +2549,11 @@ function showEditorMessage(
 
 
   setTimeout(
-    () => {
+    function() {
+
       box.className =
         "message";
+
     },
     4000
   );
@@ -2082,9 +2561,9 @@ function showEditorMessage(
 }
 
 
-// ======================================================
+// =====================================================
 // LOGOUT
-// ======================================================
+// =====================================================
 
 async function logout() {
 
@@ -2099,25 +2578,31 @@ async function logout() {
       }
     );
 
-  } finally {
+  } catch (error) {
 
-    window.location.href =
-      "/admin.html";
+    console.error(
+      error
+    );
 
   }
+
+
+  window.location.href =
+    "/admin.html";
+
 }
 
 
-// ======================================================
+// =====================================================
 // ESCAPE HTML
-// ======================================================
+// =====================================================
 
 function escapeHtml(
   value
 ) {
 
   return String(
-    value || ""
+    value ?? ""
   )
     .replace(
       /&/g,
@@ -2143,9 +2628,9 @@ function escapeHtml(
 }
 
 
-// ======================================================
-// DATE
-// ======================================================
+// =====================================================
+// DATE FORMAT
+// =====================================================
 
 function formatDate(
   value
@@ -2172,20 +2657,13 @@ function formatDate(
 
   } catch {
 
-    return value;
+    return String(
+      value
+    );
 
   }
 
 }
-document
-  .getElementById("addCategoryButton")
-  .addEventListener("click", addCategory);
-
-// ======================================================
-// START
-// ======================================================
-
-loadDashboard();
 
 </script>
 
