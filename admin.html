@@ -3007,6 +3007,38 @@ function switchTab(
 
   }
 
+  if(
+    tab === "menu"
+  ){
+
+    loadMenu();
+
+  }
+
+  if(
+    tab === "comments"
+  ){
+
+    loadComments();
+
+  }
+
+  if(
+    tab === "users"
+  ){
+
+    loadUsers();
+
+  }
+
+  if(
+    tab === "settings"
+  ){
+
+    loadSettings();
+
+  }
+
 }
 
 
@@ -3920,6 +3952,18 @@ document.addEventListener(
 ===================================================== */
 
 async function addNews(){
+
+  const slug =
+    document.getElementById(
+      "newsSlug"
+    );
+
+  if(slug){
+
+    slug.dataset.manual =
+      "false";
+
+  }
 
   const form =
     document.getElementById(
@@ -6826,55 +6870,6 @@ function loadComments(){
    TAB DATA LOADER
 ===================================================== */
 
-const originalSwitchTab =
-  switchTab;
-
-
-switchTab = function(tab){
-
-  originalSwitchTab(
-    tab
-  );
-
-
-  if(
-    tab === "menu"
-  ){
-
-    loadMenu();
-
-  }
-
-
-  if(
-    tab === "comments"
-  ){
-
-    loadComments();
-
-  }
-
-
-  if(
-    tab === "users"
-  ){
-
-    loadUsers();
-
-  }
-
-
-  if(
-    tab === "settings"
-  ){
-
-    loadSettings();
-
-  }
-
-};
-
-
 /* =====================================================
    USERS LOADER
 ===================================================== */
@@ -6979,31 +6974,6 @@ function setupNewsSlug(){
 /* =====================================================
    RESET SLUG WHEN NEW NEWS
 ===================================================== */
-
-const originalAddNews =
-  addNews;
-
-
-addNews = async function(){
-
-  const slug =
-    document.getElementById(
-      "newsSlug"
-    );
-
-
-  if(slug){
-
-    slug.dataset.manual =
-      "false";
-
-  }
-
-
-  await originalAddNews();
-
-};
-
 
 /* =====================================================
    UTILITY — SET TEXT
