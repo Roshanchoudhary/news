@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="mai">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Dashboard - मैथिली समाचार</title>
+
+  <link rel="stylesheet" href="/style.css">
+
+</head>
+
+<body>
+
+<header class="dashboard-header">
+
+  <div class="container">
+
+    <h1>मैथिली समाचार</h1>
+
+    <button onclick="logout()">
+      Logout
+    </button>
+
+  </div>
+
+</header>
+
+<main class="container dashboard">
+
+  <h2>Admin Dashboard</h2>
+
+  <div class="dashboard-grid">
+
+    <div class="dashboard-card">
+      <h3>समाचार</h3>
+      <p id="newsCount">लोड...</p>
+    </div>
+
+    <div class="dashboard-card">
+      <h3>श्रेणी</h3>
+      <p id="categoryCount">लोड...</p>
+    </div>
+
+  </div>
+
+  <section class="panel">
+
+    <h2>ताजा समाचार</h2>
+
+    <div id="newsList">
+      लोड भ' रहल अछि...
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+
+async function checkDashboard() {
+
+  const response =
+    await fetch("/api/login");
+
+  if (!response.ok) {
+
+    window.location.href =
+      "/admin.html";
+
+    return;
+  }
+
+}
+
+async function loadDashboard() {
+
+  try {
+
+    const newsResponse =
+      await fetch("/api/news");
+
+    const newsData =
+      await newsResponse.json();
+
+    if (!newsData.success) {
+
+      window.location.href =
+        "/admin.html";
+
+      return;
+    }
+
+    document.getElementById("newsCount")
+      .textContent =
+      newsData.news.length + " समाचार";
+
+    document.getElementById("newsList")
+      .innerHTML =
+      newsData.news.map(news => `
+        <div class="admin-news">
+          <strong>
+            ${escapeHtml(news.title)}
+          </strong>
+          <span>
+            ${escapeHtml(news.status)}
+          </span>
+        </div>
+      `).join("");
+
+    const categoryResponse =
+      await fetch("/api/categories");
+
+    const categoryData =
+      await categoryResponse.json();
+
+    if (categoryData.success) {
+
+      document.getElementById("categoryCount")
+        .textContent =
+        categoryData.categories.length +
+        " श्रेणी";
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+async function logout() {
+
+  await fetch("/api/login", {
+    method: "DELETE"
+  });
+
+  window.location.href =
+    "/admin.html";
+}
+
+function escapeHtml(value) {
+
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+loadDashboard();
+
+</script>
+
+</body>
+</html>
