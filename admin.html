@@ -2187,69 +2187,164 @@ async function checkAdminSession(){
 
   try{
 
-    const response = await fetch(
-      API + "/login",
-      {
-        method: "GET",
-        credentials: "include",
-        cache: "no-store"
-      }
+    const response =
+      await fetch(
+        API + "/login",
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      "ADMIN SESSION CHECK:",
+      response.status,
+      data
     );
 
-    if (!response.ok){
-
-      window.location.replace("/login.html");
-
-      return false;
-    }
-
-    const data = await response.json();
 
     /*
-     * Login API should return authenticated user.
+     * Server session valid अछि कि नहि
      */
 
-    if (
-      !data ||
-      !data.success ||
-      !data.user ||
-      data.user.role !== "admin" ||
-      data.user.status !== "active"
+    if(
+      !response.ok ||
+      data.success !== true ||
+      !data.user
     ){
 
-      localStorage.removeItem("admin");
+      localStorage.removeItem(
+        "admin"
+      );
 
-      window.location.replace("/login.html");
+
+      window.location.replace(
+        "/login.html"
+      );
+
 
       return false;
+
     }
 
+
     /*
-     * Keep admin information locally only
-     * for displaying name/avatar.
+     * केवल Admin role allow करू।
+     *
+     * status check एखन नहि करू,
+     * कारण /api/login GET response
+     * में status return नहि भ' रहल अछि।
      */
 
-    localStorage.setItem(
-      "admin",
-      JSON.stringify(data.user)
-    );
+    if(
+      String(
+        data.user.role || ""
+      ).toLowerCase() !==
+      "admin"
+    ){
+
+      localStorage.removeItem(
+        "admin"
+      );
+
+
+      window.location.replace(
+        "/login.html"
+      );
+
+
+      return false;
+
+    }
+
+
+    /*
+     * Server verified user information
+     * localStorage में केवल display लेल।
+     */
+
+    try{
+
+      localStorage.setItem(
+        "admin",
+        JSON.stringify(
+          data.user
+        )
+      );
+
+    }catch(error){
+
+      console.warn(
+        "localStorage unavailable:",
+        error
+      );
+
+    }
+
+
+    /*
+     * Header में Admin information
+     */
+
+    const adminInfo =
+      document.getElementById(
+        "adminInfo"
+      );
+
+
+    if(adminInfo){
+
+      adminInfo.textContent =
+        (
+          data.user.name ||
+          "Admin"
+        ) +
+        " (" +
+        (
+          data.user.role ||
+          "admin"
+        ) +
+        ")";
+
+    }
+
 
     return true;
+
 
   }catch(error){
 
     console.error(
-      "ADMIN SESSION CHECK ERROR:",
+      "ADMIN SESSION ERROR:",
       error
     );
 
-    localStorage.removeItem("admin");
 
-    window.location.replace("/login.html");
+    localStorage.removeItem(
+      "admin"
+    );
+
+
+    window.location.replace(
+      "/login.html"
+    );
+
 
     return false;
+
   }
 
+}
 }
 async function init(){
 
