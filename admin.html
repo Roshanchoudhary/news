@@ -3979,6 +3979,115 @@ modal.classList.add(
 
 }
 
+  async function loadNewsEditorTags(){
+
+  const container =
+    document.getElementById(
+      "newsTags"
+    );
+
+  if(!container){
+    return;
+  }
+
+  container.innerHTML =
+    "Tags लोड भ' रहल अछि...";
+
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/tags?status=active",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success
+    ){
+
+      throw new Error(
+        data.error ||
+        "Tags load नहि भ' सकल।"
+      );
+
+    }
+
+
+    const tags =
+      data.tags || [];
+
+
+    if(!tags.length){
+
+      container.innerHTML =
+        `
+          <span
+            style="
+              color:#999;
+              font-size:11px;
+            "
+          >
+            एखन कोनो active tag नहि अछि।
+          </span>
+        `;
+
+      return;
+    }
+
+
+    container.innerHTML =
+      tags.map(
+        tag => `
+          <label class="news-tag">
+
+            <input
+              type="checkbox"
+              name="newsTag"
+              value="${tag.id}"
+            >
+
+            ${escapeHtml(
+              tag.name
+            )}
+
+          </label>
+        `
+      ).join("");
+
+
+  }catch(error){
+
+    console.error(
+      "TAGS LOAD ERROR:",
+      error
+    );
+
+    container.innerHTML =
+      `
+        <span
+          style="
+            color:#b00000;
+            font-size:11px;
+          "
+        >
+          Tags load नहि भ' सकल।
+        </span>
+      `;
+
+  }
+
+}
 function editNews(id){
 
   showToast(
