@@ -1,71 +1,131 @@
 // functions/api/news.js
 
+// ======================================================
+// GET NEWS
+// ======================================================
+
 export async function onRequestGet(context) {
+
   const { request, env } = context;
   const url = new URL(request.url);
+
   const id = url.searchParams.get("id");
+  const slug = url.searchParams.get("slug");
   const status = url.searchParams.get("status");
 
   try {
-    // --------------------------------------------------
-    // SINGLE NEWS
-    // --------------------------------------------------
-    if (id) {
-      const news = await env.DB.prepare(`
-        SELECT
-          n.*,
-          c.name AS category_name,
-          u.name AS author_name
-        FROM news n
-        LEFT JOIN categories c
-          ON c.id = n.category_id
-        LEFT JOIN users u
-          ON u.id = n.author_id
-        WHERE n.id = ?
-        LIMIT 1
-      `).bind(id).first();
+
+    // ==================================================
+    // SINGLE NEWS BY ID OR SLUG
+    // ==================================================
+
+    if (id || slug) {
+
+      let news;
+
+      if (id) {
+
+        news = await env.DB
+          .prepare(`
+            SELECT
+              n.*,
+              c.name AS category_name,
+              u.name AS author_name
+            FROM news n
+            LEFT JOIN categories c
+              ON c.id = n.category_id
+            LEFT JOIN users u
+              ON u.id = n.author_id
+            WHERE n.id = ?
+            LIMIT 1
+          `)
+          .bind(id)
+          .first();
+
+      } else {
+
+        news = await env.DB
+          .prepare(`
+            SELECT
+              n.*,
+              c.name AS category_name,
+              u.name AS author_name
+            FROM news n
+            LEFT JOIN categories c
+              ON c.id = n.category_id
+            LEFT JOIN users u
+              ON u.id = n.author_id
+            WHERE n.slug = ?
+            LIMIT 1
+          `)
+          .bind(slug)
+          .first();
+
+      }
+
 
       if (!news) {
+
         return Response.json({
           success: false,
           error: "समाचार नहि भेटल"
-        }, { status: 404 });
+        }, {
+          status: 404
+        });
+
       }
 
-      // Public visitor के Draft नहि देखाउ
+
+      // Public visitor केँ draft नहि देखाउ
+
       if (
         news.status !== "published" &&
         !(await isAdmin(request, env))
       ) {
+
         return Response.json({
           success: false,
           error: "समाचार उपलब्ध नहि अछि"
-        }, { status: 404 });
+        }, {
+          status: 404
+        });
+
       }
 
-      // ------------------------------------------------
-      // VIEW +1
-      // ------------------------------------------------
+
+      // ==================================================
+      // VIEWS +1
+      // ==================================================
+
       if (news.status === "published") {
-        await env.DB.prepare(`
-          UPDATE news
-          SET views = COALESCE(views, 0) + 1
-          WHERE id = ?
-        `).bind(id).run();
+
+        await env.DB
+          .prepare(`
+            UPDATE news
+            SET views =
+              COALESCE(views, 0) + 1
+            WHERE id = ?
+          `)
+          .bind(news.id)
+          .run();
 
         news.views =
           Number(news.views || 0) + 1;
+
       }
+
 
       return Response.json({
         success: true,
-        news
+        news: news
       });
+
     }
 
-    // --------------------------------------------------
+
+    // ==================================================
     // NEWS LIST
-    // --------------------------------------------------
+    // ==================================================
 
     let query = `
       SELECT
@@ -81,16 +141,20 @@ export async function onRequestGet(context) {
 
     const params = [];
 
+
     if (
       status &&
       status !== "all"
     ) {
+
       query += `
         WHERE n.status = ?
       `;
 
       params.push(status);
+
     }
+
 
     query += `
       ORDER BY
@@ -101,16 +165,19 @@ export async function onRequestGet(context) {
         n.id DESC
     `;
 
+
     const result =
       await env.DB
         .prepare(query)
         .bind(...params)
         .all();
 
+
     return Response.json({
       success: true,
       news: result.results || []
     });
+
 
   } catch (error) {
 
@@ -124,8 +191,12 @@ export async function onRequestGet(context) {
       error:
         error.message ||
         "समाचार लोड नहि भ' सकल"
-    }, { status: 500 });
+    }, {
+      status: 500
+    });
+
   }
+
 }
 
 
@@ -145,112 +216,237 @@ export async function onRequestPost(context) {
         env
       );
 
+
     if (!user) {
+
       return Response.json({
         success: false,
         error: "Unauthorized"
-      }, { status: 401 });
+      }, {
+        status: 401
+      });
+
     }
+
 
     const body =
       await request.json();
 
-    const title =
-      String(body.title || "").trim();
 
-    const summary =
-      String(body.summary || "").trim();
+    const title =
+      String(
+        body.title || ""
+      ).trim();
+
 
     const content =
-      String(body.content || "").trim();
+      String(
+        body.content || ""
+      ).trim();
+
+
+    const summary =
+      String(
+        body.summary || ""
+      ).trim();
+
 
     const image_url =
-      String(body.image_url || "").trim();
+      String(
+        body.image_url || ""
+      ).trim();
+
 
     const category_id =
       body.category_id
         ? Number(body.category_id)
         : null;
 
+
     const status =
       body.status === "published"
         ? "published"
         : "draft";
 
+
     const featured =
-      body.featured ? 1 : 0;
+      body.featured
+        ? 1
+        : 0;
+
 
     const seo_title =
       String(
         body.seo_title || ""
       ).trim();
 
+
     const seo_description =
       String(
         body.seo_description || ""
       ).trim();
 
+
+    // ==================================================
+    // CUSTOM ENGLISH SLUG
+    // ==================================================
+
+    let slug =
+      String(
+        body.slug || ""
+      ).trim()
+      .toLowerCase();
+
+
     if (!title || !content) {
+
       return Response.json({
         success: false,
         error:
           "शीर्षक आ समाचार जरूरी अछि"
-      }, { status: 400 });
+      }, {
+        status: 400
+      });
+
     }
 
-    const slug =
-      await createUniqueSlug(
-        title,
-        env
-      );
+
+    // अगर URL खाली अछि तँ title सँ बनाउ
+
+    if (!slug) {
+
+      slug =
+        slugify(title);
+
+    }
+
+
+    if (!slug) {
+
+      return Response.json({
+        success: false,
+        error:
+          "News URL slug जरूरी अछि"
+      }, {
+        status: 400
+      });
+
+    }
+
+
+    // ==================================================
+    // SLUG VALIDATION
+    // ==================================================
+
+    if (
+      !isValidSlug(slug)
+    ) {
+
+      return Response.json({
+        success: false,
+        error:
+          "News URL केवल English अक्षर, number आ hyphen में होयबाक चाही। उदाहरण: darbhanga-new-medical-college"
+      }, {
+        status: 400
+      });
+
+    }
+
+
+    // ==================================================
+    // DUPLICATE SLUG
+    // ==================================================
+
+    const duplicate =
+      await env.DB
+        .prepare(`
+          SELECT id
+          FROM news
+          WHERE slug = ?
+          LIMIT 1
+        `)
+        .bind(slug)
+        .first();
+
+
+    if (duplicate) {
+
+      return Response.json({
+        success: false,
+        error:
+          "ई News URL पहिले सँ मौजूद अछि। दोसर URL Slug लिखू।"
+      }, {
+        status: 409
+      });
+
+    }
+
+
+    // ==================================================
+    // PUBLISHED DATE
+    // ==================================================
 
     const published_at =
       status === "published"
         ? new Date().toISOString()
         : null;
 
+
+    // ==================================================
+    // INSERT
+    // ==================================================
+
     const result =
-      await env.DB.prepare(`
-        INSERT INTO news (
+      await env.DB
+        .prepare(`
+          INSERT INTO news (
+            title,
+            slug,
+            summary,
+            content,
+            image_url,
+            category_id,
+            author_id,
+            status,
+            featured,
+            views,
+            seo_title,
+            seo_description,
+            published_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?
+          )
+        `)
+        .bind(
           title,
           slug,
-          summary,
+          summary || null,
           content,
-          image_url,
+          image_url || null,
           category_id,
-          author_id,
+          user.id,
           status,
           featured,
-          views,
-          seo_title,
-          seo_description,
+          seo_title || null,
+          seo_description || null,
           published_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
-      `)
-      .bind(
-        title,
-        slug,
-        summary || null,
-        content,
-        image_url || null,
-        category_id,
-        user.id,
-        status,
-        featured,
-        seo_title || null,
-        seo_description || null,
-        published_at
-      )
-      .run();
+        .run();
+
 
     return Response.json({
       success: true,
       message:
         "समाचार सफलतापूर्वक जोड़ल गेल",
       id:
-        result.meta.last_row_id
+        result.meta.last_row_id,
+      slug:
+        slug,
+      url:
+        "/news/" + slug
     });
+
 
   } catch (error) {
 
@@ -264,8 +460,12 @@ export async function onRequestPost(context) {
       error:
         error.message ||
         "समाचार जोड़ल नहि जा सकल"
-    }, { status: 500 });
+    }, {
+      status: 500
+    });
+
   }
+
 }
 
 
@@ -285,143 +485,288 @@ export async function onRequestPut(context) {
         env
       );
 
+
     if (!user) {
+
       return Response.json({
         success: false,
         error: "Unauthorized"
-      }, { status: 401 });
+      }, {
+        status: 401
+      });
+
     }
+
 
     const url =
       new URL(request.url);
 
+
     const id =
       url.searchParams.get("id");
 
+
     if (!id) {
+
       return Response.json({
         success: false,
-        error: "News ID जरूरी अछि"
-      }, { status: 400 });
+        error:
+          "News ID जरूरी अछि"
+      }, {
+        status: 400
+      });
+
     }
+
 
     const body =
       await request.json();
 
-    const title =
-      String(body.title || "").trim();
 
-    const summary =
-      String(body.summary || "").trim();
+    const title =
+      String(
+        body.title || ""
+      ).trim();
+
 
     const content =
-      String(body.content || "").trim();
+      String(
+        body.content || ""
+      ).trim();
+
+
+    const summary =
+      String(
+        body.summary || ""
+      ).trim();
+
 
     const image_url =
-      String(body.image_url || "").trim();
+      String(
+        body.image_url || ""
+      ).trim();
+
 
     const category_id =
       body.category_id
         ? Number(body.category_id)
         : null;
 
+
     const status =
       body.status === "published"
         ? "published"
         : "draft";
 
+
     const featured =
-      body.featured ? 1 : 0;
+      body.featured
+        ? 1
+        : 0;
+
 
     const seo_title =
       String(
         body.seo_title || ""
       ).trim();
 
+
     const seo_description =
       String(
         body.seo_description || ""
       ).trim();
 
+
+    // ==================================================
+    // SLUG
+    // ==================================================
+
+    let slug =
+      String(
+        body.slug || ""
+      ).trim()
+      .toLowerCase();
+
+
     if (!title || !content) {
+
       return Response.json({
         success: false,
         error:
           "शीर्षक आ समाचार जरूरी अछि"
-      }, { status: 400 });
+      }, {
+        status: 400
+      });
+
     }
+
+
+    // पुरान news निकालू
 
     const oldNews =
-      await env.DB.prepare(`
-        SELECT
-          id,
-          slug,
-          published_at
-        FROM news
-        WHERE id = ?
-        LIMIT 1
-      `)
-      .bind(id)
-      .first();
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            slug,
+            published_at
+          FROM news
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(id)
+        .first();
+
 
     if (!oldNews) {
+
       return Response.json({
         success: false,
-        error: "समाचार नहि भेटल"
-      }, { status: 404 });
+        error:
+          "समाचार नहि भेटल"
+      }, {
+        status: 404
+      });
+
     }
+
+
+    // URL खाली अछि तँ पुरान URL राखू
+
+    if (!slug) {
+
+      slug =
+        oldNews.slug ||
+        slugify(title);
+
+    }
+
+
+    if (
+      !isValidSlug(slug)
+    ) {
+
+      return Response.json({
+        success: false,
+        error:
+          "News URL slug सही English format में लिखू"
+      }, {
+        status: 400
+      });
+
+    }
+
+
+    // ==================================================
+    // DUPLICATE SLUG
+    // ==================================================
+
+    const duplicate =
+      await env.DB
+        .prepare(`
+          SELECT id
+          FROM news
+          WHERE slug = ?
+          AND id != ?
+          LIMIT 1
+        `)
+        .bind(
+          slug,
+          id
+        )
+        .first();
+
+
+    if (duplicate) {
+
+      return Response.json({
+        success: false,
+        error:
+          "ई News URL पहिले सँ दोसर समाचार में उपयोग भ' रहल अछि"
+      }, {
+        status: 409
+      });
+
+    }
+
+
+    // ==================================================
+    // PUBLISHED DATE
+    // ==================================================
 
     let published_at =
       oldNews.published_at;
+
 
     if (
       status === "published" &&
       !published_at
     ) {
+
       published_at =
         new Date().toISOString();
+
     }
 
-    if (status === "draft") {
+
+    if (
+      status === "draft"
+    ) {
+
       published_at = null;
+
     }
 
-    await env.DB.prepare(`
-      UPDATE news
-      SET
-        title = ?,
-        summary = ?,
-        content = ?,
-        image_url = ?,
-        category_id = ?,
-        status = ?,
-        featured = ?,
-        seo_title = ?,
-        seo_description = ?,
-        published_at = ?,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `)
-    .bind(
-      title,
-      summary || null,
-      content,
-      image_url || null,
-      category_id,
-      status,
-      featured,
-      seo_title || null,
-      seo_description || null,
-      published_at,
-      id
-    )
-    .run();
+
+    // ==================================================
+    // UPDATE
+    // ==================================================
+
+    await env.DB
+      .prepare(`
+        UPDATE news
+        SET
+          title = ?,
+          slug = ?,
+          summary = ?,
+          content = ?,
+          image_url = ?,
+          category_id = ?,
+          status = ?,
+          featured = ?,
+          seo_title = ?,
+          seo_description = ?,
+          published_at = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `)
+      .bind(
+        title,
+        slug,
+        summary || null,
+        content,
+        image_url || null,
+        category_id,
+        status,
+        featured,
+        seo_title || null,
+        seo_description || null,
+        published_at,
+        id
+      )
+      .run();
+
 
     return Response.json({
       success: true,
       message:
-        "समाचार अपडेट भ' गेल"
+        "समाचार update भ' गेल",
+      slug:
+        slug,
+      url:
+        "/news/" + slug
     });
+
 
   } catch (error) {
 
@@ -434,9 +779,13 @@ export async function onRequestPut(context) {
       success: false,
       error:
         error.message ||
-        "समाचार अपडेट नहि भ' सकल"
-    }, { status: 500 });
+        "समाचार update नहि भ' सकल"
+    }, {
+      status: 500
+    });
+
   }
+
 }
 
 
@@ -456,49 +805,72 @@ export async function onRequestDelete(context) {
         env
       );
 
+
     if (!user) {
+
       return Response.json({
         success: false,
         error: "Unauthorized"
-      }, { status: 401 });
+      }, {
+        status: 401
+      });
+
     }
+
 
     const url =
       new URL(request.url);
 
+
     const id =
       url.searchParams.get("id");
 
+
     if (!id) {
+
       return Response.json({
         success: false,
-        error: "News ID जरूरी अछि"
-      }, { status: 400 });
+        error:
+          "News ID जरूरी अछि"
+      }, {
+        status: 400
+      });
+
     }
 
+
     const result =
-      await env.DB.prepare(`
-        DELETE FROM news
-        WHERE id = ?
-      `)
-      .bind(id)
-      .run();
+      await env.DB
+        .prepare(`
+          DELETE FROM news
+          WHERE id = ?
+        `)
+        .bind(id)
+        .run();
+
 
     if (
       !result.meta ||
       !result.meta.changes
     ) {
+
       return Response.json({
         success: false,
-        error: "समाचार नहि भेटल"
-      }, { status: 404 });
+        error:
+          "समाचार नहि भेटल"
+      }, {
+        status: 404
+      });
+
     }
+
 
     return Response.json({
       success: true,
       message:
         "समाचार delete भ' गेल"
     });
+
 
   } catch (error) {
 
@@ -512,8 +884,12 @@ export async function onRequestDelete(context) {
       error:
         error.message ||
         "समाचार delete नहि भ' सकल"
-    }, { status: 500 });
+    }, {
+      status: 500
+    });
+
   }
+
 }
 
 
@@ -526,61 +902,31 @@ async function requireAdmin(
   env
 ) {
 
-  try {
-
-    const user =
-      await getAuthenticatedUser(
-        request,
-        env
-      );
-
-    if (
-      !user ||
-      user.status !== "active" ||
-      user.role !== "admin"
-    ) {
-      return null;
-    }
-
-    return user;
-
-  } catch (error) {
-
-    console.error(
-      "AUTH ERROR:",
-      error
-    );
-
-    return null;
-  }
-}
-
-
-// ======================================================
-// CHECK ADMIN FOR PUBLIC DETAIL
-// ======================================================
-
-async function isAdmin(
-  request,
-  env
-) {
-
   const user =
     await getAuthenticatedUser(
       request,
       env
     );
 
-  return !!(
-    user &&
-    user.status === "active" &&
-    user.role === "admin"
-  );
+
+  if (
+    !user ||
+    user.status !== "active" ||
+    user.role !== "admin"
+  ) {
+
+    return null;
+
+  }
+
+
+  return user;
+
 }
 
 
 // ======================================================
-// AUTHENTICATED USER
+// GET USER
 // ======================================================
 
 async function getAuthenticatedUser(
@@ -588,40 +934,48 @@ async function getAuthenticatedUser(
   env
 ) {
 
-  if (!env.AUTH_SECRET) {
-    return null;
-  }
+  try {
 
-  const cookieHeader =
-    request.headers.get("Cookie") || "";
+    if (!env.AUTH_SECRET) {
+      return null;
+    }
 
-  const cookies =
-    parseCookies(
-      cookieHeader
-    );
 
-  const token =
-    cookies.session;
+    const cookies =
+      parseCookies(
+        request.headers.get(
+          "Cookie"
+        ) || ""
+      );
 
-  if (!token) {
-    return null;
-  }
 
-  const session =
-    await verifySessionToken(
-      token,
-      env.AUTH_SECRET
-    );
+    const token =
+      cookies.session;
 
-  if (
-    !session ||
-    !session.id
-  ) {
-    return null;
-  }
 
-  const user =
-    await env.DB
+    if (!token) {
+      return null;
+    }
+
+
+    const session =
+      await verifySessionToken(
+        token,
+        env.AUTH_SECRET
+      );
+
+
+    if (
+      !session ||
+      !session.id
+    ) {
+
+      return null;
+
+    }
+
+
+    return await env.DB
       .prepare(`
         SELECT
           id,
@@ -636,69 +990,38 @@ async function getAuthenticatedUser(
       .bind(session.id)
       .first();
 
-  return user || null;
+
+  } catch {
+
+    return null;
+
+  }
+
 }
 
 
 // ======================================================
-// CREATE SLUG
+// PUBLIC ADMIN CHECK
 // ======================================================
 
-async function createUniqueSlug(
-  title,
-  env,
-  currentId = null
+async function isAdmin(
+  request,
+  env
 ) {
 
-  let base =
-    slugify(title);
+  const user =
+    await getAuthenticatedUser(
+      request,
+      env
+    );
 
-  if (!base) {
-    base =
-      "news-" +
-      Date.now();
-  }
 
-  let slug = base;
-  let number = 2;
+  return !!(
+    user &&
+    user.status === "active" &&
+    user.role === "admin"
+  );
 
-  while (true) {
-
-    let query = `
-      SELECT id
-      FROM news
-      WHERE slug = ?
-    `;
-
-    const params = [slug];
-
-    if (currentId) {
-      query += `
-        AND id != ?
-      `;
-
-      params.push(currentId);
-    }
-
-    query += `
-      LIMIT 1
-    `;
-
-    const existing =
-      await env.DB
-        .prepare(query)
-        .bind(...params)
-        .first();
-
-    if (!existing) {
-      return slug;
-    }
-
-    slug =
-      base + "-" + number;
-
-    number++;
-  }
 }
 
 
@@ -706,23 +1029,43 @@ async function createUniqueSlug(
 // SLUGIFY
 // ======================================================
 
-function slugify(value) {
+function slugify(
+  value
+) {
 
-  return String(value || "")
+  return String(
+    value || ""
+  )
     .toLowerCase()
     .trim()
     .replace(
-      /[^\p{L}\p{N}]+/gu,
+      /[^a-z0-9]+/g,
       "-"
     )
     .replace(
       /^-+|-+$/g,
       "");
+
 }
 
 
 // ======================================================
-// COOKIES
+// SLUG VALIDATION
+// ======================================================
+
+function isValidSlug(
+  slug
+) {
+
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+    slug
+  );
+
+}
+
+
+// ======================================================
+// COOKIE PARSER
 // ======================================================
 
 function parseCookies(
@@ -733,35 +1076,44 @@ function parseCookies(
 
   cookieString
     .split(";")
-    .forEach(part => {
+    .forEach(
+      part => {
 
-      const index =
-        part.indexOf("=");
+        const index =
+          part.indexOf("=");
 
-      if (index === -1) {
-        return;
+        if (index === -1) {
+          return;
+        }
+
+        const key =
+          part
+            .slice(
+              0,
+              index
+            )
+            .trim();
+
+        const value =
+          part
+            .slice(
+              index + 1
+            )
+            .trim();
+
+        cookies[key] =
+          value;
+
       }
-
-      const key =
-        part
-          .slice(0, index)
-          .trim();
-
-      const value =
-        part
-          .slice(index + 1)
-          .trim();
-
-      cookies[key] =
-        value;
-    });
+    );
 
   return cookies;
+
 }
 
 
 // ======================================================
-// VERIFY SESSION TOKEN
+// VERIFY SESSION
 // ======================================================
 
 async function verifySessionToken(
@@ -774,11 +1126,15 @@ async function verifySessionToken(
     const parts =
       String(token).split(".");
 
+
     if (
       parts.length !== 2
     ) {
+
       return null;
+
     }
+
 
     const payload =
       parts[0];
@@ -786,11 +1142,13 @@ async function verifySessionToken(
     const signature =
       parts[1];
 
+
     const expected =
       await sign(
         payload,
         secret
       );
+
 
     if (
       !timingSafeEqual(
@@ -798,8 +1156,11 @@ async function verifySessionToken(
         expected
       )
     ) {
+
       return null;
+
     }
+
 
     const data =
       JSON.parse(
@@ -808,6 +1169,7 @@ async function verifySessionToken(
         )
       );
 
+
     if (
       !data.exp ||
       data.exp <
@@ -815,20 +1177,25 @@ async function verifySessionToken(
           Date.now() / 1000
         )
     ) {
+
       return null;
+
     }
+
 
     return data;
 
   } catch {
 
     return null;
+
   }
+
 }
 
 
 // ======================================================
-// SIGN
+// HMAC SIGN
 // ======================================================
 
 async function sign(
@@ -850,6 +1217,7 @@ async function sign(
       ["sign"]
     );
 
+
   const signature =
     await crypto.subtle.sign(
       "HMAC",
@@ -859,11 +1227,13 @@ async function sign(
       )
     );
 
+
   return base64url(
     new Uint8Array(
       signature
     )
   );
+
 }
 
 
@@ -880,16 +1250,29 @@ function base64url(
   for (
     const byte of bytes
   ) {
+
     binary +=
       String.fromCharCode(
         byte
       );
+
   }
 
+
   return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+    .replace(
+      /\+/g,
+      "-"
+    )
+    .replace(
+      /\//g,
+      "_"
+    )
+    .replace(
+      /=/g,
+      ""
+    );
+
 }
 
 
@@ -903,34 +1286,50 @@ function fromBase64url(
 
   let base64 =
     String(value)
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
+
 
   while (
     base64.length % 4
   ) {
+
     base64 += "=";
+
   }
+
 
   const binary =
     atob(base64);
+
 
   const bytes =
     new Uint8Array(
       binary.length
     );
 
+
   for (
     let i = 0;
     i < binary.length;
     i++
   ) {
+
     bytes[i] =
       binary.charCodeAt(i);
+
   }
+
 
   return new TextDecoder()
     .decode(bytes);
+
 }
 
 
@@ -938,29 +1337,36 @@ function fromBase64url(
 // TIMING SAFE
 // ======================================================
 
-function timingSafe(
+function timingSafeEqual(
   a,
   b
 ) {
 
   if (
-    a.length !==
-    b.length
+    a.length !== b.length
   ) {
+
     return false;
+
   }
 
+
   let result = 0;
+
 
   for (
     let i = 0;
     i < a.length;
     i++
   ) {
+
     result |=
       a.charCodeAt(i) ^
       b.charCodeAt(i);
+
   }
 
+
   return result === 0;
+
 }
