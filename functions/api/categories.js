@@ -1,11 +1,7 @@
 // functions/api/categories.js
 
 // ============================================================
-// CATEGORIES API
-// GET    /api/categories
-// POST   /api/categories
-// PUT    /api/categories?id=1
-// DELETE /api/categories?id=1
+// CATEGORY API
 // ============================================================
 
 
@@ -26,22 +22,19 @@ export async function onRequestGet(context) {
           name,
           slug,
           description,
+          menu_visible,
+          menu_order,
+          status,
           created_at
         FROM categories
-        ORDER BY id ASC
+        ORDER BY menu_order ASC, id ASC
       `)
       .all();
 
-
     return Response.json({
-
       success: true,
-
-      categories:
-        result.results || []
-
+      categories: result.results || []
     });
-
 
   } catch (error) {
 
@@ -50,26 +43,16 @@ export async function onRequestGet(context) {
       error
     );
 
-
-    return Response.json(
-      {
-        success: false,
-        error:
-          "श्रेणी लोड नहि भ' सकल"
-      },
-      {
-        status: 500
-      }
-    );
-
+    return Response.json({
+      success: false,
+      error: error.message
+    }, { status: 500 });
   }
-
 }
 
 
 // ============================================================
-// CREATE CATEGORY
-// POST /api/categories
+// ADD CATEGORY
 // ============================================================
 
 export async function onRequestPost(context) {
@@ -78,35 +61,21 @@ export async function onRequestPost(context) {
 
   try {
 
-    // --------------------------------------------------------
-    // ADMIN CHECK
-    // --------------------------------------------------------
-
     const user =
       await requireAdmin(
         request,
         env
       );
 
-
     if (!user) {
 
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        {
-          status: 401
-        }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
 
     }
 
-
-    // --------------------------------------------------------
-    // READ JSON
-    // --------------------------------------------------------
 
     const body =
       await request.json();
@@ -118,149 +87,162 @@ export async function onRequestPost(context) {
       ).trim();
 
 
+    const slug =
+      String(
+        body.slug || ""
+      ).trim()
+      .toLowerCase();
+
+
     const description =
       String(
         body.description || ""
       ).trim();
 
 
-    // --------------------------------------------------------
-    // VALIDATE CATEGORY NAME
-    // --------------------------------------------------------
+    const menuVisible =
+      body.menu_visible === false
+        ? 0
+        : 1;
+
+
+    const menuOrder =
+      Number(
+        body.menu_order || 0
+      );
+
+
+    const status =
+      body.status === "inactive"
+        ? "inactive"
+        : "active";
+
+
+    // -------------------------------
+    // VALIDATION
+    // -------------------------------
 
     if (!name) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "श्रेणी नाम जरूरी अछि"
-        },
-        {
-          status: 400
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "श्रेणी नाम जरूरी अछि"
+      }, { status: 400 });
 
     }
 
 
-    // --------------------------------------------------------
-    // CHECK DUPLICATE NAME
-    // --------------------------------------------------------
+    if (!slug) {
 
-    const existingName =
+      return Response.json({
+        success: false,
+        error:
+          "English URL slug जरूरी अछि"
+      }, { status: 400 });
+
+    }
+
+
+    // -------------------------------
+    // SLUG FORMAT
+    // -------------------------------
+
+    if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+    ) {
+
+      return Response.json({
+        success: false,
+        error:
+          "Slug केवल English अक्षर, number आ hyphen में होयबाक चाही। उदाहरण: mithila-news"
+      }, { status: 400 });
+
+    }
+
+
+    // -------------------------------
+    // DUPLICATE SLUG
+    // -------------------------------
+
+    const existing =
       await env.DB
         .prepare(`
-          SELECT
-            id,
-            name,
-            slug
+          SELECT id
           FROM categories
-          WHERE LOWER(name) = LOWER(?)
+          WHERE slug = ?
           LIMIT 1
         `)
-        .bind(name)
+        .bind(slug)
         .first();
 
 
-    if (existingName) {
+    if (existing) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "ई श्रेणी पहिले सँ मौजूद अछि"
-        },
-        {
-          status: 409
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "ई URL slug पहिले सँ मौजूद अछि"
+      }, { status: 409 });
 
     }
 
 
-    // --------------------------------------------------------
-    // CREATE UNIQUE SLUG
-    // --------------------------------------------------------
-
-    const slug =
-      await createUniqueSlug(
-        name,
-        env
-      );
-
-
-    // --------------------------------------------------------
-    // INSERT CATEGORY
-    // --------------------------------------------------------
+    // -------------------------------
+    // INSERT
+    // -------------------------------
 
     const result =
       await env.DB
         .prepare(`
-          INSERT INTO categories
-          (
+          INSERT INTO categories (
             name,
             slug,
-            description
+            description,
+            menu_visible,
+            menu_order,
+            status
           )
-          VALUES (?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?)
         `)
         .bind(
           name,
           slug,
-          description || null
+          description || null,
+          menuVisible,
+          menuOrder,
+          status
         )
         .run();
 
 
-    // --------------------------------------------------------
-    // RETURN RESULT
-    // --------------------------------------------------------
-
     return Response.json({
-
       success: true,
-
       message:
         "श्रेणी सफलतापूर्वक जोड़ल गेल",
-
       id:
-        result.meta.last_row_id,
-
-      slug:
-        slug
-
+        result.meta.last_row_id
     });
-
 
   } catch (error) {
 
     console.error(
-      "CREATE CATEGORY ERROR:",
+      "ADD CATEGORY ERROR:",
       error
     );
 
-
-    return Response.json(
-      {
-        success: false,
-        error:
-          error.message ||
-          "श्रेणी जोड़ल नहि जा सकल"
-      },
-      {
-        status: 500
-      }
-    );
-
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "श्रेणी जोड़ल नहि जा सकल"
+    }, { status: 500 });
   }
-
 }
 
 
 // ============================================================
 // UPDATE CATEGORY
-// PUT /api/categories?id=1
 // ============================================================
 
 export async function onRequestPut(context) {
@@ -269,67 +251,40 @@ export async function onRequestPut(context) {
 
   try {
 
-    // --------------------------------------------------------
-    // ADMIN CHECK
-    // --------------------------------------------------------
-
     const user =
       await requireAdmin(
         request,
         env
       );
 
-
     if (!user) {
 
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        {
-          status: 401
-        }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
 
     }
 
 
-    // --------------------------------------------------------
-    // GET ID
-    // --------------------------------------------------------
-
     const url =
-      new URL(
-        request.url
-      );
+      new URL(request.url);
 
 
     const id =
-      url.searchParams.get(
-        "id"
-      );
+      url.searchParams.get("id");
 
 
     if (!id) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "Category ID जरूरी अछि"
-        },
-        {
-          status: 400
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "Category ID जरूरी अछि"
+      }, { status: 400 });
 
     }
 
-
-    // --------------------------------------------------------
-    // READ BODY
-    // --------------------------------------------------------
 
     const body =
       await request.json();
@@ -341,39 +296,65 @@ export async function onRequestPut(context) {
       ).trim();
 
 
+    const slug =
+      String(
+        body.slug || ""
+      ).trim()
+      .toLowerCase();
+
+
     const description =
       String(
         body.description || ""
       ).trim();
 
 
-    if (!name) {
+    const menuVisible =
+      body.menu_visible === false
+        ? 0
+        : 1;
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "श्रेणी नाम जरूरी अछि"
-        },
-        {
-          status: 400
-        }
+
+    const menuOrder =
+      Number(
+        body.menu_order || 0
       );
+
+
+    const status =
+      body.status === "inactive"
+        ? "inactive"
+        : "active";
+
+
+    if (!name || !slug) {
+
+      return Response.json({
+        success: false,
+        error:
+          "श्रेणी नाम आ English URL slug जरूरी अछि"
+      }, { status: 400 });
 
     }
 
 
-    // --------------------------------------------------------
-    // CHECK CATEGORY EXISTS
-    // --------------------------------------------------------
+    if (
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)
+    ) {
+
+      return Response.json({
+        success: false,
+        error:
+          "Slug सही English format में लिखू"
+      }, { status: 400 });
+
+    }
+
 
     const existing =
       await env.DB
         .prepare(`
-          SELECT
-            id,
-            name,
-            slug
+          SELECT id
           FROM categories
           WHERE id = ?
           LIMIT 1
@@ -384,36 +365,26 @@ export async function onRequestPut(context) {
 
     if (!existing) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "श्रेणी नहि भेटल"
-        },
-        {
-          status: 404
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "श्रेणी नहि भेटल"
+      }, { status: 404 });
 
     }
 
 
-    // --------------------------------------------------------
-    // CHECK DUPLICATE NAME
-    // --------------------------------------------------------
-
     const duplicate =
       await env.DB
         .prepare(`
-          SELECT
-            id
+          SELECT id
           FROM categories
-          WHERE LOWER(name) = LOWER(?)
+          WHERE slug = ?
           AND id != ?
           LIMIT 1
         `)
         .bind(
-          name,
+          slug,
           id
         )
         .first();
@@ -421,35 +392,14 @@ export async function onRequestPut(context) {
 
     if (duplicate) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "ई नामक श्रेणी पहिले सँ मौजूद अछि"
-        },
-        {
-          status: 409
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "ई URL slug पहिले सँ मौजूद अछि"
+      }, { status: 409 });
 
     }
 
-
-    // --------------------------------------------------------
-    // KEEP EXISTING SLUG
-    // --------------------------------------------------------
-
-    const slug =
-      existing.slug ||
-      await createUniqueSlug(
-        name,
-        env
-      );
-
-
-    // --------------------------------------------------------
-    // UPDATE
-    // --------------------------------------------------------
 
     await env.DB
       .prepare(`
@@ -457,27 +407,29 @@ export async function onRequestPut(context) {
         SET
           name = ?,
           slug = ?,
-          description = ?
+          description = ?,
+          menu_visible = ?,
+          menu_order = ?,
+          status = ?
         WHERE id = ?
       `)
       .bind(
         name,
         slug,
         description || null,
+        menuVisible,
+        menuOrder,
+        status,
         id
       )
       .run();
 
 
     return Response.json({
-
       success: true,
-
       message:
         "श्रेणी अपडेट भ' गेल"
-
     });
-
 
   } catch (error) {
 
@@ -486,27 +438,18 @@ export async function onRequestPut(context) {
       error
     );
 
-
-    return Response.json(
-      {
-        success: false,
-        error:
-          error.message ||
-          "श्रेणी अपडेट नहि भ' सकल"
-      },
-      {
-        status: 500
-      }
-    );
-
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "श्रेणी अपडेट नहि भ' सकल"
+    }, { status: 500 });
   }
-
 }
 
 
 // ============================================================
 // DELETE CATEGORY
-// DELETE /api/categories?id=1
 // ============================================================
 
 export async function onRequestDelete(context) {
@@ -515,107 +458,47 @@ export async function onRequestDelete(context) {
 
   try {
 
-    // --------------------------------------------------------
-    // ADMIN CHECK
-    // --------------------------------------------------------
-
     const user =
       await requireAdmin(
         request,
         env
       );
 
-
     if (!user) {
 
-      return Response.json(
-        {
-          success: false,
-          error: "Unauthorized"
-        },
-        {
-          status: 401
-        }
-      );
+      return Response.json({
+        success: false,
+        error: "Unauthorized"
+      }, { status: 401 });
 
     }
 
 
-    // --------------------------------------------------------
-    // GET ID
-    // --------------------------------------------------------
-
     const url =
-      new URL(
-        request.url
-      );
+      new URL(request.url);
 
 
     const id =
-      url.searchParams.get(
-        "id"
-      );
+      url.searchParams.get("id");
 
 
     if (!id) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "Category ID जरूरी अछि"
-        },
-        {
-          status: 400
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "Category ID जरूरी अछि"
+      }, { status: 400 });
 
     }
 
 
-    // --------------------------------------------------------
-    // CHECK CATEGORY
-    // --------------------------------------------------------
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            name
-          FROM categories
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-
-    if (!existing) {
-
-      return Response.json(
-        {
-          success: false,
-          error:
-            "श्रेणी नहि भेटल"
-        },
-        {
-          status: 404
-        }
-      );
-
-    }
-
-
-    // --------------------------------------------------------
-    // CHECK NEWS USING CATEGORY
-    // --------------------------------------------------------
+    // Check whether news uses this category
 
     const used =
       await env.DB
         .prepare(`
-          SELECT
-            COUNT(*) AS total
+          SELECT COUNT(*) AS total
           FROM news
           WHERE category_id = ?
         `)
@@ -623,33 +506,18 @@ export async function onRequestDelete(context) {
         .first();
 
 
-    const total =
-      Number(
-        used?.total || 0
-      );
+    if (
+      Number(used?.total || 0) > 0
+    ) {
 
-
-    if (total > 0) {
-
-      return Response.json(
-        {
-          success: false,
-          error:
-            "ई श्रेणी " +
-            total +
-            " टा समाचार में उपयोग भ' रहल अछि। पहिले समाचारक श्रेणी बदलू।"
-        },
-        {
-          status: 409
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "ई श्रेणी समाचार में उपयोग भ' रहल अछि। पहिले समाचारक श्रेणी बदलू।"
+      }, { status: 409 });
 
     }
 
-
-    // --------------------------------------------------------
-    // DELETE
-    // --------------------------------------------------------
 
     const result =
       await env.DB
@@ -666,29 +534,20 @@ export async function onRequestDelete(context) {
       !result.meta.changes
     ) {
 
-      return Response.json(
-        {
-          success: false,
-          error:
-            "श्रेणी delete नहि भ' सकल"
-        },
-        {
-          status: 404
-        }
-      );
+      return Response.json({
+        success: false,
+        error:
+          "श्रेणी नहि भेटल"
+      }, { status: 404 });
 
     }
 
 
     return Response.json({
-
       success: true,
-
       message:
         "श्रेणी delete भ' गेल"
-
     });
-
 
   } catch (error) {
 
@@ -697,26 +556,18 @@ export async function onRequestDelete(context) {
       error
     );
 
-
-    return Response.json(
-      {
-        success: false,
-        error:
-          error.message ||
-          "श्रेणी delete नहि भ' सकल"
-      },
-      {
-        status: 500
-      }
-    );
-
+    return Response.json({
+      success: false,
+      error:
+        error.message ||
+        "श्रेणी delete नहि भ' सकल"
+    }, { status: 500 });
   }
-
 }
 
 
 // ============================================================
-// ADMIN AUTHENTICATION
+// ADMIN AUTH
 // ============================================================
 
 async function requireAdmin(
@@ -726,24 +577,10 @@ async function requireAdmin(
 
   try {
 
-    // --------------------------------------------------------
-    // AUTH SECRET
-    // --------------------------------------------------------
-
     if (!env.AUTH_SECRET) {
-
-      console.error(
-        "AUTH_SECRET is missing"
-      );
-
       return null;
-
     }
 
-
-    // --------------------------------------------------------
-    // COOKIE
-    // --------------------------------------------------------
 
     const cookies =
       parseCookies(
@@ -758,15 +595,9 @@ async function requireAdmin(
 
 
     if (!token) {
-
       return null;
-
     }
 
-
-    // --------------------------------------------------------
-    // VERIFY SESSION
-    // --------------------------------------------------------
 
     const session =
       await verifySessionToken(
@@ -779,15 +610,9 @@ async function requireAdmin(
       !session ||
       !session.id
     ) {
-
       return null;
-
     }
 
-
-    // --------------------------------------------------------
-    // GET USER
-    // --------------------------------------------------------
 
     const user =
       await env.DB
@@ -813,128 +638,26 @@ async function requireAdmin(
       user.status !== "active" ||
       user.role !== "admin"
     ) {
-
       return null;
-
     }
 
 
     return user;
 
-
   } catch (error) {
 
     console.error(
-      "ADMIN AUTH ERROR:",
+      "AUTH ERROR:",
       error
     );
 
     return null;
-
   }
-
 }
 
 
 // ============================================================
-// CREATE UNIQUE SLUG
-// ============================================================
-
-async function createUniqueSlug(
-  name,
-  env
-) {
-
-  let base =
-    slugify(name);
-
-
-  // ----------------------------------------------------------
-  // EMPTY SLUG
-  // ----------------------------------------------------------
-
-  if (!base) {
-
-    base =
-      "category-" +
-      Date.now();
-
-  }
-
-
-  let slug =
-    base;
-
-
-  let number =
-    2;
-
-
-  // ----------------------------------------------------------
-  // CHECK EXISTING SLUG
-  // ----------------------------------------------------------
-
-  while (true) {
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT
-            id
-          FROM categories
-          WHERE slug = ?
-          LIMIT 1
-        `)
-        .bind(
-          slug
-        )
-        .first();
-
-
-    if (!existing) {
-
-      return slug;
-
-    }
-
-
-    slug =
-      `${base}-${number}`;
-
-
-    number++;
-
-  }
-
-}
-
-
-// ============================================================
-// SLUGIFY
-// ============================================================
-
-function slugify(
-  value
-) {
-
-  return String(
-    value || ""
-  )
-    .toLowerCase()
-    .trim()
-    .replace(
-      /[^\p{L}\p{N}]+/gu,
-      "-"
-    )
-    .replace(
-      /^-+|-+$/g,
-      "");
-
-}
-
-
-// ============================================================
-// PARSE COOKIES
+// COOKIE PARSER
 // ============================================================
 
 function parseCookies(
@@ -942,7 +665,6 @@ function parseCookies(
 ) {
 
   const cookies = {};
-
 
   cookieString
     .split(";")
@@ -952,45 +674,31 @@ function parseCookies(
         const index =
           part.indexOf("=");
 
-
-        if (
-          index === -1
-        ) {
+        if (index === -1) {
           return;
         }
 
-
         const key =
           part
-            .slice(
-              0,
-              index
-            )
+            .slice(0, index)
             .trim();
-
 
         const value =
           part
-            .slice(
-              index + 1
-            )
+            .slice(index + 1)
             .trim();
-
 
         cookies[key] =
           value;
-
       }
     );
 
-
   return cookies;
-
 }
 
 
 // ============================================================
-// VERIFY SESSION TOKEN
+// VERIFY SESSION
 // ============================================================
 
 async function verifySessionToken(
@@ -1001,23 +709,18 @@ async function verifySessionToken(
   try {
 
     const parts =
-      String(
-        token
-      ).split(".");
+      String(token).split(".");
 
 
     if (
       parts.length !== 2
     ) {
-
       return null;
-
     }
 
 
     const payload =
       parts[0];
-
 
     const signature =
       parts[1];
@@ -1031,14 +734,12 @@ async function verifySessionToken(
 
 
     if (
-      !timingSafeEqualString(
+      !timingSafeEqual(
         signature,
         expected
       )
     ) {
-
       return null;
-
     }
 
 
@@ -1057,26 +758,21 @@ async function verifySessionToken(
           Date.now() / 1000
         )
     ) {
-
       return null;
-
     }
 
 
     return data;
 
-
   } catch {
 
     return null;
-
   }
-
 }
 
 
 // ============================================================
-// HMAC SHA-256
+// SIGN
 // ============================================================
 
 async function sign(
@@ -1109,12 +805,11 @@ async function sign(
     );
 
 
-  return base64urlBytes(
+  return base64url(
     new Uint8Array(
       signature
     )
   );
-
 }
 
 
@@ -1122,12 +817,11 @@ async function sign(
 // BASE64 URL ENCODE
 // ============================================================
 
-function base64urlBytes(
+function base64url(
   bytes
 ) {
 
   let binary = "";
-
 
   for (
     const byte of bytes
@@ -1140,23 +834,10 @@ function base64urlBytes(
 
   }
 
-
-  return btoa(
-    binary
-  )
-    .replace(
-      /\+/g,
-      "-"
-    )
-    .replace(
-      /\//g,
-      "_"
-    )
-    .replace(
-      /=/g,
-      ""
-    );
-
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }
 
 
@@ -1169,17 +850,9 @@ function fromBase64url(
 ) {
 
   let base64 =
-    String(
-      value
-    )
-      .replace(
-        /-/g,
-        "+"
-      )
-      .replace(
-        /_/g,
-        "/"
-      );
+    String(value)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
 
 
   while (
@@ -1192,9 +865,7 @@ function fromBase64url(
 
 
   const binary =
-    atob(
-      base64
-    );
+    atob(base64);
 
 
   const bytes =
@@ -1210,42 +881,33 @@ function fromBase64url(
   ) {
 
     bytes[i] =
-      binary.charCodeAt(
-        i
-      );
+      binary.charCodeAt(i);
 
   }
 
 
   return new TextDecoder()
-    .decode(
-      bytes
-    );
-
+    .decode(bytes);
 }
 
 
 // ============================================================
-// TIMING SAFE STRING COMPARE
+// TIMING SAFE
 // ============================================================
 
-function timingSafeEqualString(
+function timingSafeEqual(
   a,
   b
 ) {
 
   if (
-    a.length !==
-    b.length
+    a.length !== b.length
   ) {
-
     return false;
-
   }
 
 
-  let result =
-    0;
+  let result = 0;
 
 
   for (
@@ -1262,5 +924,4 @@ function timingSafeEqualString(
 
 
   return result === 0;
-
 }
