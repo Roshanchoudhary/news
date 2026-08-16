@@ -8984,17 +8984,16 @@ async function loadAdminComments(){
   try{
 
     const status =
-      statusFilter?.value || "";
+  statusFilter?.value || "";
 
-    let url =
-      API + "/comments";
+let url =
+  API + "/comments?admin=1";
 
-    if(status){
-      url +=
-        "?status=" +
-        encodeURIComponent(status);
-    }
-
+if(status){
+  url +=
+    "&status=" +
+    encodeURIComponent(status);
+}
     const response =
       await fetch(
         url,
