@@ -1,22 +1,24 @@
 // ============================================================
 // COMMENTS API
 //
+// GET    /api/comments
 // GET    /api/comments?news_id=123
+// GET    /api/comments?status=pending
 // POST   /api/comments
 // PUT    /api/comments?id=123
 // DELETE /api/comments?id=123
 //
 // PUBLIC:
-//   GET  -> केवल approved comments
-//   POST -> नया comment pending status में
+//   GET  ?news_id=123 -> approved comments only
+//   POST -> new comment pending
 //
 // ADMIN:
-//   GET  -> सभी comments + email + mobile
-//   PUT  -> approve / reject / pending
-//   DELETE -> comment delete
+//   GET  /api/comments -> all comments
+//   GET  /api/comments?status=pending
+//   PUT  /api/comments?id=123
+//   DELETE /api/comments?id=123
 //
-// IMPORTANT:
-//   email और mobile public response में कभी नहीं भेजे जाएंगे.
+// Email + Mobile public response में कभी नहीं भेजे जाएंगे.
 // ============================================================
 
 
@@ -26,54 +28,69 @@
 
 export async function onRequestGet(context) {
 
-  const { request, env } = context;
+  const {
+    request,
+    env
+  } = context;
+
 
   try {
 
     const url =
       new URL(request.url);
 
+
     const newsId =
-      url.searchParams.get("news_id");
+      url.searchParams.get(
+        "news_id"
+      );
+
 
     const status =
-      url.searchParams.get("status");
+      url.searchParams.get(
+        "status"
+      );
 
-    /*
-     * अगर status दिया गया है तो
-     * यह Admin request मानी जाएगी।
-     */
 
-    const wantsAdminData =
-      !!status ||
-      url.searchParams.get("admin") === "1";
+    const adminParam =
+      url.searchParams.get(
+        "admin"
+      );
 
 
     // ========================================================
-    // ADMIN GET
+    // ADMIN CHECK
+    //
+    // अब /api/comments बिना news_id के आने पर
+    // पहले Admin session check होयत।
     // ========================================================
 
-    if (wantsAdminData) {
+    let adminUser = null;
 
-      const user =
+
+    if (
+      !newsId ||
+      status ||
+      adminParam === "1"
+    ) {
+
+      adminUser =
         await requireAdmin(
           request,
           env
         );
 
+    }
 
-      if (!user) {
 
-        return json(
-          {
-            success: false,
-            error: "Unauthorized"
-          },
-          401
-        );
+    // ========================================================
+    // ADMIN GET
+    //
+    // /api/comments
+    // /api/comments?status=pending
+    // ========================================================
 
-      }
-
+    if (adminUser) {
 
       let query = `
         SELECT
@@ -84,8 +101,11 @@ export async function onRequestGet(context) {
           c.mobile,
           c.comment,
           c.status,
-          c.created_at
+          c.created_at,
+          n.title AS news_title
         FROM comments c
+        LEFT JOIN news n
+          ON n.id = c.news_id
       `;
 
 
@@ -96,12 +116,36 @@ export async function onRequestGet(context) {
 
       if (newsId) {
 
+        const numericNewsId =
+          Number(newsId);
+
+
+        if (
+          !Number.isInteger(
+            numericNewsId
+          ) ||
+          numericNewsId <= 0
+        ) {
+
+          return json(
+            {
+              success: false,
+              error:
+                "News ID सही नहि अछि"
+            },
+            400
+          );
+
+        }
+
+
         conditions.push(
           "c.news_id = ?"
         );
 
+
         params.push(
-          Number(newsId)
+          numericNewsId
         );
 
       }
@@ -138,6 +182,7 @@ export async function onRequestGet(context) {
           "c.status = ?"
         );
 
+
         params.push(
           status
         );
@@ -145,7 +190,9 @@ export async function onRequestGet(context) {
       }
 
 
-      if (conditions.length) {
+      if (
+        conditions.length
+      ) {
 
         query +=
           " WHERE " +
@@ -187,8 +234,17 @@ export async function onRequestGet(context) {
     // ========================================================
 
     /*
-     * Public request में news_id जरूरी है।
+     * Public website पर news_id जरूरी अछि।
+     *
+     * Example:
+     *
+     * /api/comments?news_id=12
+     *
+     * केवल approved comments वापस होयत।
+     *
+     * Email और mobile SELECT में नहीं अछि।
      */
+
 
     if (!newsId) {
 
@@ -197,6 +253,29 @@ export async function onRequestGet(context) {
           success: false,
           error:
             "News ID जरूरी अछि"
+        },
+        400
+      );
+
+    }
+
+
+    const numericNewsId =
+      Number(newsId);
+
+
+    if (
+      !Number.isInteger(
+        numericNewsId
+      ) ||
+      numericNewsId <= 0
+    ) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "News ID सही नहि अछि"
         },
         400
       );
@@ -222,21 +301,10 @@ export async function onRequestGet(context) {
             id ASC
         `)
         .bind(
-          Number(newsId)
+          numericNewsId
         )
         .all();
 
-
-    /*
-     * ध्यान दें:
-     *
-     * email
-     * mobile
-     *
-     * यहाँ SELECT में ही नहीं हैं।
-     *
-     * इसलिए public API से leak नहीं हो सकते।
-     */
 
     return json({
 
@@ -276,9 +344,14 @@ export async function onRequestGet(context) {
 // POST /api/comments
 // ============================================================
 
-export async function onRequestPost(context) {
+export async function onRequestPost(
+  context
+) {
 
-  const { request, env } = context;
+  const {
+    request,
+    env
+  } = context;
 
 
   try {
@@ -302,8 +375,9 @@ export async function onRequestPost(context) {
     const email =
       String(
         body.email || ""
-      ).trim()
-      .toLowerCase();
+      )
+        .trim()
+        .toLowerCase();
 
 
     const mobile =
@@ -369,10 +443,6 @@ export async function onRequestPost(context) {
     }
 
 
-    /*
-     * Basic email validation
-     */
-
     if (
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
         .test(email)
@@ -404,26 +474,16 @@ export async function onRequestPost(context) {
     }
 
 
-    /*
-     * India mobile:
-     *
-     * 10 digits
-     * optional +91
-     */
-
     const cleanMobile =
-      mobile
-        .replace(
-          /[\s-]/g,
-          ""
-        );
+      mobile.replace(
+        /[\s-]/g,
+        ""
+      );
 
 
     if (
       !/^(\+91)?[6-9]\d{9}$/
-        .test(
-          cleanMobile
-        )
+        .test(cleanMobile)
     ) {
 
       return json(
@@ -452,11 +512,9 @@ export async function onRequestPost(context) {
     }
 
 
-    /*
-     * बहुत लंबा data रोकू।
-     */
-
-    if (name.length > 100) {
+    if (
+      name.length > 100
+    ) {
 
       return json(
         {
@@ -470,7 +528,9 @@ export async function onRequestPost(context) {
     }
 
 
-    if (email.length > 150) {
+    if (
+      email.length > 150
+    ) {
 
       return json(
         {
@@ -484,7 +544,9 @@ export async function onRequestPost(context) {
     }
 
 
-    if (cleanMobile.length > 15) {
+    if (
+      cleanMobile.length > 15
+    ) {
 
       return json(
         {
@@ -498,7 +560,9 @@ export async function onRequestPost(context) {
     }
 
 
-    if (comment.length > 5000) {
+    if (
+      comment.length > 5000
+    ) {
 
       return json(
         {
@@ -545,11 +609,6 @@ export async function onRequestPost(context) {
 
     }
 
-
-    /*
-     * केवल published news पर
-     * public comment allow करू।
-     */
 
     if (
       news.status !==
@@ -643,7 +702,9 @@ export async function onRequestPost(context) {
 // PUT /api/comments?id=123
 // ============================================================
 
-export async function onRequestPut(context) {
+export async function onRequestPut(
+  context
+) {
 
   const {
     request,
@@ -653,10 +714,9 @@ export async function onRequestPut(context) {
 
   try {
 
-    /*
-     * केवल Admin comment moderate
-     * कर सकता है।
-     */
+    // ========================================================
+    // ADMIN AUTH
+    // ========================================================
 
     const user =
       await requireAdmin(
@@ -713,8 +773,8 @@ export async function onRequestPut(context) {
       String(
         body.status || ""
       )
-      .trim()
-      .toLowerCase();
+        .trim()
+        .toLowerCase();
 
 
     const allowedStatuses = [
@@ -771,12 +831,20 @@ export async function onRequestPut(context) {
     }
 
 
+    /*
+     * ध्यान:
+     *
+     * updated_at नहि लिखैत छी।
+     *
+     * अहाँक current comments table में
+     * updated_at column नहि अछि।
+     */
+
     await env.DB
       .prepare(`
         UPDATE comments
         SET
-          status = ?,
-          updated_at = CURRENT_TIMESTAMP
+          status = ?
         WHERE id = ?
       `)
       .bind(
@@ -824,7 +892,9 @@ export async function onRequestPut(context) {
 // DELETE /api/comments?id=123
 // ============================================================
 
-export async function onRequestDelete(context) {
+export async function onRequestDelete(
+  context
+) {
 
   const {
     request,
@@ -969,6 +1039,10 @@ async function requireAdmin(
       !env.AUTH_SECRET
     ) {
 
+      console.error(
+        "AUTH_SECRET missing"
+      );
+
       return null;
 
     }
@@ -1074,6 +1148,9 @@ function json(
       status,
 
       headers: {
+        "Content-Type":
+          "application/json; charset=UTF-8",
+
         "Cache-Control":
           "no-store"
       }
@@ -1145,7 +1222,7 @@ function parseCookies(
 
 
 // ============================================================
-// SESSION TOKEN VERIFY
+// VERIFY SESSION TOKEN
 // ============================================================
 
 async function verifySessionToken(
@@ -1205,15 +1282,12 @@ async function verifySessionToken(
       );
 
 
-    /*
-     * अगर आपके existing login token
-     * में expiry है तो यह check रखें।
-     */
-
     if (
       data.exp &&
       Date.now() >
-        Number(data.exp)
+        Number(
+          data.exp
+        )
     ) {
 
       return null;
@@ -1250,16 +1324,21 @@ async function sign(
   const key =
     await crypto.subtle.importKey(
       "raw",
+
       new TextEncoder().encode(
         secret
       ),
+
       {
         name:
           "HMAC",
+
         hash:
           "SHA-256"
       },
+
       false,
+
       [
         "sign"
       ]
@@ -1269,7 +1348,9 @@ async function sign(
   const signature =
     await crypto.subtle.sign(
       "HMAC",
+
       key,
+
       new TextEncoder().encode(
         payload
       )
@@ -1352,9 +1433,10 @@ function fromBase64url(
   const padded =
     base64 +
     "=".repeat(
-      (4 -
-        base64.length % 4) %
-        4
+      (
+        4 -
+        base64.length % 4
+      ) % 4
     );
 
 
@@ -1400,11 +1482,15 @@ function timingSafeEqual(
 ) {
 
   const first =
-    String(a || "");
+    String(
+      a || ""
+    );
 
 
   const second =
-    String(b || "");
+    String(
+      b || ""
+    );
 
 
   if (
