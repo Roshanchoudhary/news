@@ -2550,50 +2550,569 @@ tr:hover td{
     <!-- =================================================
          USERS
     ================================================= -->
+<!-- =========================================================
+     USER & ROLE MANAGEMENT
+========================================================= -->
 
-    <section
-      class="tab-page"
-      id="tab-users"
-    >
+<section
+  id="userManagement"
+  style="
+    display:none;
+    padding:20px;
+  "
+>
 
-      <div class="card">
+  <div
+    style="
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:20px;
+    "
+  >
 
-        <div class="card-header">
+    <div>
 
-          <div class="card-title">
-            Users & Roles
-          </div>
-
-          <button
-            class="btn primary"
-            onclick="addUser()"
-          >
-            + User
-          </button>
-
-        </div>
-
-
-        <div class="card-body">
-
-          <div class="empty">
-
-            👥
-
-            <br><br>
-
-            User & Role Management
-            अगिला चरण में जोड़ल जाएत।
-
-          </div>
-
-        </div>
-
+      <div
+        style="
+          color:#8b0000;
+          font-size:10px;
+          font-weight:800;
+          letter-spacing:1px;
+        "
+      >
+        USERS
       </div>
 
-    </section>
+      <h2
+        style="
+          margin:4px 0 0;
+          font-size:22px;
+        "
+      >
+        User & Role Management
+      </h2>
+
+    </div>
 
 
+    <button
+      type="button"
+      onclick="openAddUserModal()"
+      style="
+        background:#8b0000;
+        color:#fff;
+        border:0;
+        border-radius:8px;
+        padding:10px 16px;
+        cursor:pointer;
+        font-size:11px;
+        font-weight:800;
+      "
+    >
+      + नया User
+    </button>
+
+  </div>
+
+
+  <!-- FILTER -->
+
+  <div
+    style="
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:10px;
+      padding:12px;
+      margin-bottom:15px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    "
+  >
+
+    <input
+      id="userSearch"
+      type="search"
+      placeholder="नाम या Email खोजू..."
+      oninput="filterUsers()"
+      style="
+        height:38px;
+        flex:1;
+        min-width:220px;
+        border:1px solid #ddd;
+        border-radius:7px;
+        padding:0 12px;
+        font-size:11px;
+      "
+    >
+
+
+    <select
+      id="userRoleFilter"
+      onchange="filterUsers()"
+      style="
+        height:38px;
+        border:1px solid #ddd;
+        border-radius:7px;
+        padding:0 10px;
+        font-size:11px;
+        background:#fff;
+      "
+    >
+
+      <option value="">
+        सभ Role
+      </option>
+
+      <option value="admin">
+        Admin
+      </option>
+
+      <option value="editor">
+        Editor
+      </option>
+
+      <option value="author">
+        Author
+      </option>
+
+    </select>
+
+
+    <select
+      id="userStatusFilter"
+      onchange="filterUsers()"
+      style="
+        height:38px;
+        border:1px solid #ddd;
+        border-radius:7px;
+        padding:0 10px;
+        font-size:11px;
+        background:#fff;
+      "
+    >
+
+      <option value="">
+        सभ Status
+      </option>
+
+      <option value="active">
+        Active
+      </option>
+
+      <option value="inactive">
+        Inactive
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <!-- TABLE -->
+
+  <div
+    style="
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      overflow:hidden;
+    "
+  >
+
+    <div
+      id="usersLoading"
+      style="
+        padding:40px;
+        text-align:center;
+        color:#888;
+        font-size:12px;
+      "
+    >
+      Users loading...
+    </div>
+
+
+    <div
+      id="usersEmpty"
+      style="
+        display:none;
+        padding:40px;
+        text-align:center;
+        color:#888;
+        font-size:12px;
+      "
+    >
+      कोनो user नहि भेटल।
+    </div>
+
+
+    <div
+      id="usersTableWrap"
+      style="
+        display:none;
+        overflow-x:auto;
+      "
+    >
+
+      <table
+        style="
+          width:100%;
+          min-width:850px;
+          border-collapse:collapse;
+        "
+      >
+
+        <thead>
+
+          <tr
+            style="
+              background:#fafafa;
+              border-bottom:1px solid #eee;
+            "
+          >
+
+            <th class="user-th">
+              Name
+            </th>
+
+            <th class="user-th">
+              Email
+            </th>
+
+            <th class="user-th">
+              Role
+            </th>
+
+            <th class="user-th">
+              Status
+            </th>
+
+            <th class="user-th">
+              Created
+            </th>
+
+            <th class="user-th">
+              Action
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+        <tbody
+          id="usersTableBody"
+        ></tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =========================================================
+     ADD / EDIT USER MODAL
+========================================================= -->
+
+<div
+  id="userModal"
+  style="
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.5);
+    z-index:9999;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  "
+>
+
+  <div
+    style="
+      width:min(500px,100%);
+      background:#fff;
+      border-radius:14px;
+      padding:22px;
+      box-shadow:0 10px 40px rgba(0,0,0,.2);
+    "
+  >
+
+    <div
+      style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        margin-bottom:18px;
+      "
+    >
+
+      <h3
+        id="userModalTitle"
+        style="
+          margin:0;
+          font-size:18px;
+        "
+      >
+        नया User
+      </h3>
+
+
+      <button
+        type="button"
+        onclick="closeUserModal()"
+        style="
+          border:0;
+          background:none;
+          font-size:22px;
+          cursor:pointer;
+        "
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <form
+      id="userForm"
+      onsubmit="saveUser(event)"
+    >
+
+      <input
+        type="hidden"
+        id="editUserId"
+      >
+
+
+      <label class="user-label">
+        नाम
+      </label>
+
+      <input
+        id="userName"
+        class="user-input"
+        type="text"
+        required
+        maxlength="100"
+        placeholder="User name"
+      >
+
+
+      <label class="user-label">
+        Email
+      </label>
+
+      <input
+        id="userEmail"
+        class="user-input"
+        type="email"
+        required
+        maxlength="150"
+        placeholder="email@example.com"
+      >
+
+
+      <label class="user-label">
+        Role
+      </label>
+
+      <select
+        id="userRole"
+        class="user-input"
+        required
+      >
+
+        <option value="editor">
+          Editor
+        </option>
+
+        <option value="author">
+          Author
+        </option>
+
+        <option value="admin">
+          Admin
+        </option>
+
+      </select>
+
+
+      <label class="user-label">
+        Status
+      </label>
+
+      <select
+        id="userStatus"
+        class="user-input"
+      >
+
+        <option value="active">
+          Active
+        </option>
+
+        <option value="inactive">
+          Inactive
+        </option>
+
+      </select>
+
+
+      <label class="user-label">
+        Password
+      </label>
+
+      <input
+        id="userPassword"
+        class="user-input"
+        type="password"
+        minlength="6"
+        placeholder="नया password"
+      >
+
+      <div
+        style="
+          color:#888;
+          font-size:10px;
+          margin:-5px 0 15px;
+        "
+      >
+        Edit करत समय खाली छोड़ल पर password नहि बदलत।
+      </div>
+
+
+      <div
+        id="userFormMessage"
+        style="
+          display:none;
+          padding:9px;
+          border-radius:7px;
+          font-size:11px;
+          margin-bottom:12px;
+        "
+      ></div>
+
+
+      <button
+        id="userSaveButton"
+        type="submit"
+        style="
+          width:100%;
+          height:42px;
+          border:0;
+          border-radius:8px;
+          background:#8b0000;
+          color:#fff;
+          font-weight:800;
+          cursor:pointer;
+        "
+      >
+        Save User
+      </button>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<style>
+
+.user-th{
+  padding:12px;
+  text-align:left;
+  font-size:10px;
+  color:#666;
+}
+
+.user-td{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  font-size:11px;
+  vertical-align:middle;
+}
+
+.user-label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+
+.user-input{
+  width:100%;
+  height:40px;
+  box-sizing:border-box;
+  border:1px solid #ddd;
+  border-radius:7px;
+  padding:0 10px;
+  font-size:12px;
+  margin-bottom:14px;
+  background:#fff;
+}
+
+.user-input:focus{
+  outline:none;
+  border-color:#8b0000;
+}
+
+.user-role{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:15px;
+  font-size:9px;
+  font-weight:800;
+  background:#f1f1f1;
+}
+
+.user-status{
+  display:inline-block;
+  padding:4px 8px;
+  border-radius:15px;
+  font-size:9px;
+  font-weight:800;
+}
+
+.user-status.active{
+  background:#e5f5e9;
+  color:#176b2c;
+}
+
+.user-status.inactive{
+  background:#f8dede;
+  color:#a00000;
+}
+
+.user-action{
+  border:0;
+  border-radius:6px;
+  padding:6px 9px;
+  font-size:9px;
+  font-weight:700;
+  cursor:pointer;
+  margin:2px;
+}
+
+.user-edit{
+  background:#f1f1f1;
+  color:#333;
+}
+
+.user-toggle{
+  background:#fff1df;
+  color:#8b4a00;
+}
+
+</style>
+    
     <!-- =================================================
          SETTINGS
     ================================================= -->
