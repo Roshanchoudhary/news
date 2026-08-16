@@ -327,7 +327,325 @@ main{
   color:#a00000;
 }
 
+<!-- =========================================================
+     PUBLIC COMMENTS
+========================================================= -->
 
+<section
+  id="publicComments"
+  style="
+    margin-top:40px;
+    padding:24px;
+    background:#fff;
+    border:1px solid #eee;
+    border-radius:14px;
+  "
+>
+
+  <h2
+    style="
+      margin:0 0 20px;
+      font-size:20px;
+      font-weight:800;
+    "
+  >
+    💬 टिप्पणी
+  </h2>
+
+
+  <!-- APPROVED COMMENTS -->
+
+  <div
+    id="publicCommentsList"
+    style="
+      margin-bottom:28px;
+    "
+  >
+    <div
+      style="
+        color:#888;
+        font-size:12px;
+      "
+    >
+      टिप्पणी लोड भ' रहल अछि...
+    </div>
+  </div>
+
+
+  <!-- COMMENT FORM -->
+
+  <div
+    style="
+      border-top:1px solid #eee;
+      padding-top:24px;
+    "
+  >
+
+    <h3
+      style="
+        margin:0 0 16px;
+        font-size:16px;
+      "
+    >
+      अपन टिप्पणी लिखू
+    </h3>
+
+
+    <form
+      id="publicCommentForm"
+      onsubmit="submitPublicComment(event)"
+    >
+
+      <!-- NAME -->
+
+      <div
+        style="
+          margin-bottom:14px;
+        "
+      >
+
+        <label
+          style="
+            display:block;
+            margin-bottom:6px;
+            font-size:12px;
+            font-weight:700;
+          "
+        >
+          नाम
+          <span style="color:#b00000;">
+            *
+          </span>
+        </label>
+
+
+        <input
+          id="commentName"
+          type="text"
+          required
+          maxlength="100"
+          placeholder="अपन नाम लिखू"
+          style="
+            width:100%;
+            height:42px;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:0 12px;
+            font-size:13px;
+          "
+        >
+
+      </div>
+
+
+      <!-- EMAIL -->
+
+      <div
+        style="
+          margin-bottom:14px;
+        "
+      >
+
+        <label
+          style="
+            display:block;
+            margin-bottom:6px;
+            font-size:12px;
+            font-weight:700;
+          "
+        >
+          ईमेल
+          <span style="color:#b00000;">
+            *
+          </span>
+        </label>
+
+
+        <input
+          id="commentEmail"
+          type="email"
+          required
+          maxlength="150"
+          placeholder="example@email.com"
+          style="
+            width:100%;
+            height:42px;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:0 12px;
+            font-size:13px;
+          "
+        >
+
+
+        <div
+          style="
+            margin-top:5px;
+            color:#888;
+            font-size:10px;
+          "
+        >
+          ईमेल केवल Admin देख सकत छथि।
+        </div>
+
+      </div>
+
+
+      <!-- MOBILE -->
+
+      <div
+        style="
+          margin-bottom:14px;
+        "
+      >
+
+        <label
+          style="
+            display:block;
+            margin-bottom:6px;
+            font-size:12px;
+            font-weight:700;
+          "
+        >
+          मोबाइल नंबर
+          <span style="color:#b00000;">
+            *
+          </span>
+        </label>
+
+
+        <input
+          id="commentMobile"
+          type="tel"
+          required
+          maxlength="15"
+          inputmode="numeric"
+          placeholder="9876543210"
+          style="
+            width:100%;
+            height:42px;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:0 12px;
+            font-size:13px;
+          "
+        >
+
+
+        <div
+          style="
+            margin-top:5px;
+            color:#888;
+            font-size:10px;
+          "
+        >
+          मोबाइल नंबर केवल Admin देख सकत छथि।
+        </div>
+
+      </div>
+
+
+      <!-- COMMENT -->
+
+      <div
+        style="
+          margin-bottom:16px;
+        "
+      >
+
+        <label
+          style="
+            display:block;
+            margin-bottom:6px;
+            font-size:12px;
+            font-weight:700;
+          "
+        >
+          टिप्पणी
+          <span style="color:#b00000;">
+            *
+          </span>
+        </label>
+
+
+        <textarea
+          id="commentText"
+          required
+          maxlength="5000"
+          rows="5"
+          placeholder="अपन टिप्पणी लिखू..."
+          style="
+            width:100%;
+            box-sizing:border-box;
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:12px;
+            font-size:13px;
+            resize:vertical;
+          "
+        ></textarea>
+
+      </div>
+
+
+      <!-- PRIVACY -->
+
+      <div
+        style="
+          margin-bottom:16px;
+          color:#777;
+          font-size:10px;
+          line-height:1.5;
+        "
+      >
+        ईमेल आ मोबाइल नंबर सार्वजनिक रूप सँ
+        प्रदर्शित नहि कएल जाएत।
+        टिप्पणी Admin approval के बाद प्रकाशित होयत।
+      </div>
+
+
+      <!-- BUTTON -->
+
+      <button
+        id="commentSubmitButton"
+        type="submit"
+        style="
+          height:42px;
+          padding:0 20px;
+          border:0;
+          border-radius:8px;
+          background:#8b0000;
+          color:#fff;
+          cursor:pointer;
+          font-size:12px;
+          font-weight:800;
+        "
+      >
+        टिप्पणी भेजू
+      </button>
+
+
+      <!-- MESSAGE -->
+
+      <div
+        id="commentFormMessage"
+        style="
+          display:none;
+          margin-top:12px;
+          padding:10px 12px;
+          border-radius:8px;
+          font-size:11px;
+        "
+      ></div>
+
+    </form>
+
+  </div>
+
+</section>
 /* =====================================================
    FOOTER
 ===================================================== */
@@ -520,6 +838,493 @@ footer p{
 
 
 <script>
+
+  /* =========================================================
+   PUBLIC COMMENTS
+========================================================= */
+
+async function loadPublicComments(newsId){
+
+  const container =
+    document.getElementById(
+      "publicCommentsList"
+    );
+
+
+  if(!container){
+
+    return;
+
+  }
+
+
+  if(!newsId){
+
+    container.innerHTML = `
+      <div
+        style="
+          color:#888;
+          font-size:12px;
+        "
+      >
+        टिप्पणी उपलब्ध नहि अछि।
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        "/api/comments?news_id=" +
+        encodeURIComponent(
+          newsId
+        ),
+        {
+          method:"GET",
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Comment load नहि भ' सकल"
+      );
+
+    }
+
+
+    const comments =
+      Array.isArray(
+        data.comments
+      )
+        ? data.comments
+        : [];
+
+
+    if(!comments.length){
+
+      container.innerHTML = `
+        <div
+          style="
+            padding:18px;
+            background:#fafafa;
+            border-radius:8px;
+            color:#888;
+            font-size:12px;
+            text-align:center;
+          "
+        >
+          एखन धरि कोनो स्वीकृत टिप्पणी नहि अछि।
+        </div>
+      `;
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      comments
+        .map(
+          comment => `
+
+            <div
+              style="
+                padding:16px 0;
+                border-bottom:1px solid #eee;
+              "
+            >
+
+              <div
+                style="
+                  display:flex;
+                  justify-content:space-between;
+                  gap:10px;
+                  margin-bottom:7px;
+                "
+              >
+
+                <strong
+                  style="
+                    font-size:13px;
+                  "
+                >
+                  ${escapeHtml(
+                    comment.name ||
+                    "Anonymous"
+                  )}
+                </strong>
+
+
+                <span
+                  style="
+                    color:#999;
+                    font-size:10px;
+                  "
+                >
+                  ${formatPublicCommentDate(
+                    comment.created_at
+                  )}
+                </span>
+
+              </div>
+
+
+              <div
+                style="
+                  color:#444;
+                  font-size:12px;
+                  line-height:1.7;
+                  white-space:pre-wrap;
+                "
+              >
+                ${escapeHtml(
+                  comment.comment ||
+                  ""
+                )}
+              </div>
+
+            </div>
+
+          `
+        )
+        .join("");
+
+
+  }catch(error){
+
+    console.error(
+      "PUBLIC COMMENTS ERROR:",
+      error
+    );
+
+
+    container.innerHTML = `
+      <div
+        style="
+          color:#b00000;
+          font-size:11px;
+        "
+      >
+        टिप्पणी लोड नहि भ' सकल।
+      </div>
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   SUBMIT COMMENT
+========================================================= */
+
+async function submitPublicComment(
+  event
+){
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      "publicCommentForm"
+    );
+
+
+  const button =
+    document.getElementById(
+      "commentSubmitButton"
+    );
+
+
+  const message =
+    document.getElementById(
+      "commentFormMessage"
+    );
+
+
+  /*
+   * News ID:
+   *
+   * अगर आपके page में current news
+   * variable "news" के नाम से है,
+   * तो news.id इस्तेमाल होगा।
+   */
+
+  const newsId =
+    window.currentNewsId ||
+    loadPublicComments(
+    window.newsId ||
+    (
+      typeof news !==
+      "undefined"
+        ? news?.id
+        : null
+    );
+
+
+  if(!newsId){
+
+    showCommentMessage(
+      "समाचार ID नहि भेटल।",
+      true
+    );
+
+    return;
+
+  }
+
+
+  const name =
+    document.getElementById(
+      "commentName"
+    )?.value.trim();
+
+
+  const email =
+    document.getElementById(
+      "commentEmail"
+    )?.value.trim();
+
+
+  const mobile =
+    document.getElementById(
+      "commentMobile"
+    )?.value.trim();
+
+
+  const comment =
+    document.getElementById(
+      "commentText"
+    )?.value.trim();
+
+
+  if(
+    !name ||
+    !email ||
+    !mobile ||
+    !comment
+  ){
+
+    showCommentMessage(
+      "सभ field भरब जरूरी अछि।",
+      true
+    );
+
+    return;
+
+  }
+
+
+  try{
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "भेजल जा रहल अछि...";
+
+
+    const response =
+      await fetch(
+        "/api/comments",
+        {
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              news_id:
+                Number(
+                  newsId
+                ),
+
+              name,
+
+              email,
+
+              mobile,
+
+              comment
+
+            })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Comment भेजल नहि जा सकल।"
+      );
+
+    }
+
+
+    /*
+     * Form clear
+     */
+
+    form.reset();
+
+
+    showCommentMessage(
+      data.message ||
+      "अहाँक टिप्पणी प्राप्त भ' गेल। Admin approval के बाद प्रकाशित होयत।",
+      false
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "SUBMIT COMMENT ERROR:",
+      error
+    );
+
+
+    showCommentMessage(
+      error.message ||
+      "Comment भेजल नहि जा सकल।",
+      true
+    );
+
+
+  }finally{
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      "टिप्पणी भेजू";
+
+  }
+
+}
+
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+function showCommentMessage(
+  text,
+  isError
+){
+
+  const message =
+    document.getElementById(
+      "commentFormMessage"
+    );
+
+
+  if(!message){
+
+    return;
+
+  }
+
+
+  message.textContent =
+    text;
+
+
+  message.style.display =
+    "block";
+
+
+  message.style.background =
+    isError
+      ? "#fff0f0"
+      : "#edf8ef";
+
+
+  message.style.color =
+    isError
+      ? "#b00020"
+      : "#176b2c";
+
+}
+
+
+/* =========================================================
+   DATE
+========================================================= */
+
+function formatPublicCommentDate(
+  value
+){
+
+  if(!value){
+
+    return "";
+
+  }
+
+
+  const date =
+    new Date(
+      value
+    );
+
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return "";
+
+  }
+
+
+  return date.toLocaleDateString(
+    "hi-IN",
+    {
+      day:"numeric",
+      month:"short",
+      year:"numeric"
+    }
+  );
+
+}
 
 /* =====================================================
    START
