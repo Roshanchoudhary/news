@@ -5433,92 +5433,444 @@ function renderCategories(
 /* =====================================================
    ADD CATEGORY
 ===================================================== */
+/* =====================================================
+   CATEGORY MODAL
+===================================================== */
 
-async function addCategory(){
+function openCategoryModal(category = null){
 
-  const name =
-    window.prompt(
-      "नव category केर नाम लिखू:"
-    );
+  const isEdit = !!category;
 
+  const oldModal =
+    document.getElementById("categoryModal");
 
-  if(!name){
-
-    return;
-
+  if(oldModal){
+    oldModal.remove();
   }
 
+  const modal =
+    document.createElement("div");
 
-  try{
+  modal.id = "categoryModal";
 
-    const response =
-      await fetch(
-        API +
-        "/categories",
-        {
-          method:"POST",
+  modal.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(0,0,0,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  `;
 
-          credentials:"include",
+  modal.innerHTML = `
 
-          headers:{
-            "Content-Type":
-              "application/json",
+    <div
+      style="
+        width:100%;
+        max-width:600px;
+        background:#fff;
+        border-radius:14px;
+        overflow:hidden;
+        box-shadow:0 25px 80px rgba(0,0,0,.25);
+      "
+    >
 
-            "Accept":
-              "application/json"
-          },
+      <!-- HEADER -->
 
-          body:
-            JSON.stringify({
+      <div
+        style="
+          padding:20px 22px;
+          border-bottom:1px solid #eee;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+        "
+      >
 
-              name:
-                name.trim(),
+        <div>
 
-              status:
-                "active"
+          <div
+            style="
+              color:#8b0000;
+              font-size:10px;
+              font-weight:800;
+              letter-spacing:1px;
+            "
+          >
+            CATEGORY
+          </div>
 
-            })
+          <div
+            style="
+              font-size:20px;
+              font-weight:800;
+              margin-top:4px;
+            "
+          >
+            ${
+              isEdit
+                ? "श्रेणी Edit करू"
+                : "नई श्रेणी"
+            }
+          </div>
 
-          }
-        );
+        </div>
+
+        <button
+          type="button"
+          onclick="closeCategoryModal()"
+          style="
+            width:36px;
+            height:36px;
+            border:0;
+            border-radius:8px;
+            background:#f2f2f2;
+            font-size:22px;
+            cursor:pointer;
+          "
+        >
+          ×
+        </button>
+
+      </div>
 
 
-    const data =
-      await response.json();
+      <!-- BODY -->
+
+      <div style="padding:22px;">
+
+        <input
+          type="hidden"
+          id="categoryFormId"
+          value="${
+            isEdit
+              ? Number(category.id)
+              : ""
+          }"
+        >
 
 
-    if(
-      !response.ok ||
-      data.success !== true
-    ){
+        <!-- NAME -->
 
-      throw new Error(
-        data.error ||
-        "Category create नहि भ' सकल।"
-      );
+        <div style="margin-bottom:16px;">
 
-    }
+          <label
+            style="
+              display:block;
+              font-size:12px;
+              font-weight:800;
+              margin-bottom:7px;
+            "
+          >
+            श्रेणी नाम
+            <span style="color:#b00000;">*</span>
+          </label>
+
+          <input
+            id="categoryFormName"
+            type="text"
+            value="${
+              escapeHtml(
+                category?.name || ""
+              )
+            }"
+            placeholder="जैसे: सिनेमा"
+            style="
+              width:100%;
+              height:42px;
+              border:1px solid #ddd;
+              border-radius:8px;
+              padding:0 12px;
+              font-size:13px;
+              outline:none;
+            "
+          >
+
+        </div>
 
 
-    showToast(
-      "Category सफलतापूर्वक बनि गेल।"
+        <!-- SLUG -->
+
+        <div style="margin-bottom:16px;">
+
+          <label
+            style="
+              display:block;
+              font-size:12px;
+              font-weight:800;
+              margin-bottom:7px;
+            "
+          >
+            English URL / Slug
+            <span style="color:#b00000;">*</span>
+          </label>
+
+          <div
+            style="
+              display:flex;
+              gap:8px;
+            "
+          >
+
+            <input
+              id="categoryFormSlug"
+              type="text"
+              value="${
+                escapeHtml(
+                  category?.slug || ""
+                )
+              }"
+              placeholder="sinema"
+              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              style="
+                flex:1;
+                height:42px;
+                border:1px solid #ddd;
+                border-radius:8px;
+                padding:0 12px;
+                font-size:13px;
+                outline:none;
+              "
+            >
+
+            <button
+              type="button"
+              onclick="generateCategorySlug()"
+              style="
+                height:42px;
+                padding:0 12px;
+                border:1px solid #ddd;
+                background:#f7f7f7;
+                border-radius:8px;
+                cursor:pointer;
+                font-size:11px;
+                font-weight:700;
+              "
+            >
+              Generate
+            </button>
+
+          </div>
+
+
+          <div
+            id="categorySlugError"
+            style="
+              display:none;
+              color:#c62828;
+              font-size:10px;
+              margin-top:5px;
+            "
+          >
+            English URL केवल a-z, 0-9 और hyphen
+            में होय।
+          </div>
+
+
+          <div
+            style="
+              margin-top:7px;
+              color:#888;
+              font-size:10px;
+            "
+          >
+            URL:
+            <strong
+              id="categoryUrlPreview"
+              style="color:#8b0000;"
+            >
+              /category/${
+                category?.slug || ""
+              }
+            </strong>
+          </div>
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+
+        <div style="margin-bottom:16px;">
+
+          <label
+            style="
+              display:block;
+              font-size:12px;
+              font-weight:800;
+              margin-bottom:7px;
+            "
+          >
+            विवरण
+          </label>
+
+          <textarea
+            id="categoryFormDescription"
+            rows="3"
+            placeholder="श्रेणी केर विवरण..."
+            style="
+              width:100%;
+              border:1px solid #ddd;
+              border-radius:8px;
+              padding:10px 12px;
+              font-size:12px;
+              resize:vertical;
+              outline:none;
+            "
+          >${
+            escapeHtml(
+              category?.description || ""
+            )
+          }</textarea>
+
+        </div>
+
+
+        <!-- OPTIONS -->
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+            margin-bottom:20px;
+          "
+        >
+
+          <label
+            style="
+              display:flex;
+              align-items:center;
+              gap:7px;
+              font-size:11px;
+              font-weight:700;
+            "
+          >
+
+            <input
+              id="categoryFormMenu"
+              type="checkbox"
+              ${
+                category?.menu_visible !== 0
+                  ? "checked"
+                  : ""
+              }
+            >
+
+            Menu में दिखाउ
+
+          </label>
+
+
+          <label
+            style="
+              display:flex;
+              align-items:center;
+              gap:7px;
+              font-size:11px;
+              font-weight:700;
+            "
+          >
+
+            <input
+              id="categoryFormActive"
+              type="checkbox"
+              ${
+                !category ||
+                category?.status === "active"
+                  ? "checked"
+                  : ""
+              }
+            >
+
+            Active
+
+          </label>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <div
+          style="
+            display:flex;
+            justify-content:flex-end;
+            gap:8px;
+            border-top:1px solid #eee;
+            padding-top:16px;
+          "
+        >
+
+          <button
+            type="button"
+            onclick="closeCategoryModal()"
+            style="
+              height:38px;
+              padding:0 16px;
+              border:0;
+              border-radius:7px;
+              background:#eee;
+              cursor:pointer;
+              font-size:11px;
+              font-weight:700;
+            "
+          >
+            Cancel
+          </button>
+
+
+          <button
+            type="button"
+            onclick="saveCategory()"
+            style="
+              height:38px;
+              padding:0 18px;
+              border:0;
+              border-radius:7px;
+              background:#8b0000;
+              color:#fff;
+              cursor:pointer;
+              font-size:11px;
+              font-weight:700;
+            "
+          >
+            ${
+              isEdit
+                ? "Update Category"
+                : "Save Category"
+            }
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+
+  document.body.appendChild(
+    modal
+  );
+
+
+  /*
+   * Slug preview
+   */
+
+  const slugInput =
+    document.getElementById(
+      "categoryFormSlug"
     );
 
 
-    await loadCategories();
+  if(slugInput){
 
-
-  }catch(error){
-
-    console.error(
-      "ADD CATEGORY ERROR:",
-      error
-    );
-
-
-    showToast(
-      error.message ||
-      "Category create नहि भ' सकल।"
+    slugInput.addEventListener(
+      "input",
+      updateCategorySlugPreview
     );
 
   }
@@ -5527,12 +5879,21 @@ async function addCategory(){
 
 
 /* =====================================================
+   ADD CATEGORY
+===================================================== */
+
+function addCategory(){
+
+  openCategoryModal();
+
+}
+
+
+/* =====================================================
    EDIT CATEGORY
 ===================================================== */
 
-async function editCategory(
-  id
-){
+function editCategory(id){
 
   const category =
     categoriesCache.find(
@@ -5545,40 +5906,281 @@ async function editCategory(
   if(!category){
 
     showToast(
-      "Category नहि भेटल।"
+      "Category नहि भेटल।",
+      "error"
     );
 
     return;
 
   }
+
+
+  openCategoryModal(
+    category
+  );
+
+}
+
+
+/* =====================================================
+   CLOSE CATEGORY MODAL
+===================================================== */
+
+function closeCategoryModal(){
+
+  const modal =
+    document.getElementById(
+      "categoryModal"
+    );
+
+
+  if(modal){
+
+    modal.remove();
+
+  }
+
+}
+
+
+/* =====================================================
+   GENERATE SLUG
+===================================================== */
+
+function generateCategorySlug(){
+
+  const name =
+    document.getElementById(
+      "categoryFormName"
+    )?.value || "";
+
+
+  /*
+   * English name हो त automatic slug बनेत।
+   * Maithili/Devanagari name के English
+   * transliteration backend पर निर्भर रहत।
+   */
+
+  const slug =
+    name
+      .toLowerCase()
+      .trim()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      );
+
+
+  const input =
+    document.getElementById(
+      "categoryFormSlug"
+    );
+
+
+  if(input){
+
+    input.value =
+      slug;
+
+    updateCategorySlugPreview();
+
+  }
+
+}
+
+
+/* =====================================================
+   SLUG PREVIEW
+===================================================== */
+
+function updateCategorySlugPreview(){
+
+  const input =
+    document.getElementById(
+      "categoryFormSlug"
+    );
+
+
+  const preview =
+    document.getElementById(
+      "categoryUrlPreview"
+    );
+
+
+  const error =
+    document.getElementById(
+      "categorySlugError"
+    );
+
+
+  if(!input){
+
+    return;
+
+  }
+
+
+  const slug =
+    input.value.trim();
+
+
+  const valid =
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+      slug
+    );
+
+
+  if(preview){
+
+    preview.textContent =
+      "/category/" +
+      slug;
+
+  }
+
+
+  if(error){
+
+    error.style.display =
+      slug && !valid
+        ? "block"
+        : "none";
+
+  }
+
+}
+
+
+/* =====================================================
+   SAVE CATEGORY
+===================================================== */
+
+async function saveCategory(){
+
+  const id =
+    document.getElementById(
+      "categoryFormId"
+    )?.value.trim();
 
 
   const name =
-    window.prompt(
-      "Category केर नाम बदलू:",
-      category.name || ""
+    document.getElementById(
+      "categoryFormName"
+    )?.value.trim();
+
+
+  const slug =
+    document.getElementById(
+      "categoryFormSlug"
+    )?.value.trim()
+      .toLowerCase();
+
+
+  const description =
+    document.getElementById(
+      "categoryFormDescription"
+    )?.value.trim();
+
+
+  const menuVisible =
+    document.getElementById(
+      "categoryFormMenu"
+    )?.checked
+      ? 1
+      : 0;
+
+
+  const active =
+    document.getElementById(
+      "categoryFormActive"
+    )?.checked;
+
+
+  if(!name){
+
+    showToast(
+      "श्रेणी नाम जरूरी अछि।",
+      "error"
     );
-
-
-  if(
-    name === null ||
-    !name.trim()
-  ){
 
     return;
 
   }
+
+
+  if(!slug){
+
+    showToast(
+      "English URL / Slug जरूरी अछि।",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  if(
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
+      slug
+    )
+  ){
+
+    showToast(
+      "English URL केवल a-z, 0-9 आ hyphen में लिखू।",
+      "error"
+    );
+
+    return;
+
+  }
+
+
+  const payload = {
+
+    name,
+
+    slug,
+
+    description,
+
+    menu_visible:
+      menuVisible,
+
+    status:
+      active
+        ? "active"
+        : "inactive"
+
+  };
+
+
+  const url =
+    id
+      ? API +
+        "/categories?id=" +
+        encodeURIComponent(id)
+      : API +
+        "/categories";
+
+
+  const method =
+    id
+      ? "PUT"
+      : "POST";
 
 
   try{
 
     const response =
       await fetch(
-        API +
-        "/categories?id=" +
-        encodeURIComponent(id),
+        url,
         {
-          method:"PUT",
+          method,
 
           credentials:"include",
 
@@ -5591,15 +6193,11 @@ async function editCategory(
           },
 
           body:
-            JSON.stringify({
-
-              name:
-                name.trim()
-
-            })
-
-          }
-        );
+            JSON.stringify(
+              payload
+            )
+        }
+      );
 
 
     const data =
@@ -5613,38 +6211,57 @@ async function editCategory(
 
       throw new Error(
         data.error ||
-        "Category update नहि भ' सकल।"
+        "Category save नहि भ' सकल।"
       );
 
     }
 
 
+    closeCategoryModal();
+
+
     showToast(
-      "Category update भ' गेल।"
+      id
+        ? "Category update भ' गेल।"
+        : "Category save भ' गेल।"
     );
 
 
     await loadCategories();
 
 
+    /*
+     * News editor में category list भी
+     * refresh करू।
+     */
+
+    if(
+      typeof loadNewsEditorCategories ===
+      "function"
+    ){
+
+      await loadNewsEditorCategories();
+
+    }
+
+
   }catch(error){
 
     console.error(
-      "EDIT CATEGORY ERROR:",
+      "SAVE CATEGORY ERROR:",
       error
     );
 
 
     showToast(
       error.message ||
-      "Category update नहि भ' सकल।"
+      "Category save नहि भ' सकल।",
+      "error"
     );
 
   }
 
 }
-
-
 /* =====================================================
    DELETE CATEGORY
 ===================================================== */
