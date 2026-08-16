@@ -4094,59 +4094,40 @@ async function saveNews(event){
   event.preventDefault();
 
   const title =
-    document.getElementById(
-      "newsTitle"
-    ).value.trim();
-
-  const slug =
-    document.getElementById(
-      "newsSlug"
-    ).value.trim();
+    document.getElementById("newsTitle")
+      .value.trim();
 
   const content =
-    document.getElementById(
-      "newsContent"
-    ).value.trim();
+    document.getElementById("newsContent")
+      .value.trim();
 
+  const slug =
+    document.getElementById("newsSlug")
+      .value.trim();
 
   if(!title){
-
-    showToast(
-      "समाचार शीर्षक जरूरी अछि।"
-    );
-
+    showToast("समाचार शीर्षक जरूरी अछि।");
     return;
   }
-
 
   if(!content){
-
-    showToast(
-      "समाचार सामग्री जरूरी अछि।"
-    );
-
+    showToast("समाचार सामग्री जरूरी अछि।");
     return;
   }
-
 
   if(!slug){
-
-    showToast(
-      "News URL जरूरी अछि।"
-    );
-
+    showToast("News URL जरूरी अछि।");
     return;
   }
 
 
-  const tags =
+  const selectedTags =
     Array.from(
       document.querySelectorAll(
         'input[name="newsTag"]:checked'
       )
     ).map(
-      input =>
-        Number(input.value)
+      input => Number(input.value)
     );
 
 
@@ -4182,7 +4163,7 @@ async function saveNews(event){
     status:
       document.getElementById(
         "newsStatus"
-      ).value,
+      ).value || "draft",
 
     featured:
       document.getElementById(
@@ -4199,12 +4180,17 @@ async function saveNews(event){
         "newsSeoDescription"
       ).value.trim(),
 
-    tags: tags
+    tags: selectedTags
 
   };
 
 
   try{
+
+    showToast(
+      "समाचार save भ' रहल अछि..."
+    );
+
 
     const response =
       await fetch(
@@ -4223,9 +4209,7 @@ async function saveNews(event){
           },
 
           body:
-            JSON.stringify(
-              payload
-            )
+            JSON.stringify(payload)
         }
       );
 
@@ -4247,12 +4231,12 @@ async function saveNews(event){
     }
 
 
+    closeNewsEditor();
+
+
     showToast(
       "समाचार सफलतापूर्वक save भ' गेल।"
     );
-
-
-    closeNewsEditor();
 
 
     if(
@@ -4290,7 +4274,6 @@ async function saveNews(event){
   }
 
 }
-
   document
   .getElementById("newsTitle")
   ?.addEventListener(
