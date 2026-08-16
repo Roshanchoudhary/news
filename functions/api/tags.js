@@ -1,49 +1,54 @@
 // functions/api/tags.js
 
-// ======================================================
-// GET TAGS
-// ======================================================
+export async function onRequest(context) {
 
-export async function onRequestGet(context) {
-
-  const { env } = context;
+  const { request, env } = context;
 
   try {
 
-    const result = await env.DB
-      .prepare(`
-        SELECT
-          id,
-          name,
-          slug,
-          description,
-          status,
-          created_at
-        FROM tags
-        ORDER BY name COLLATE NOCASE ASC, id ASC
-      `)
-      .all();
+    const method =
+      request.method.toUpperCase();
 
-    return Response.json({
-      success: true,
-      tags: result.results || []
-    });
+    // Make sure required tables exist
+    await ensureTables(env);
+
+    if (method === "GET") {
+      return await getTags(request, env);
+    }
+
+    if (method === "POST") {
+      return await createTag(request, env);
+    }
+
+    if (
+      method === "PUT" ||
+      method === "PATCH"
+    ) {
+      return await updateTag(request, env);
+    }
+
+    if (method === "DELETE") {
+      return await deleteTag(request, env);
+    }
+
+    return json({
+      success: false,
+      error: "Method not allowed"
+    }, 405);
 
   } catch (error) {
 
     console.error(
-      "GET TAGS ERROR:",
+      "TAGS API ERROR:",
       error
     );
 
-    return Response.json({
+    return json({
       success: false,
       error:
         error.message ||
-        "Tag load नहि भ' सकल"
-    }, {
-      status: 500
-    });
+        "Tag API में त्रुटि भेल"
+    }, 500);
 
   }
 
@@ -51,187 +56,460 @@ export async function onRequestGet(context) {
 
 
 // ======================================================
-// ADD TAG
+// CREATE REQUIRED TABLES
 // ======================================================
 
-export async function onRequestPost(context) {
+async function ensureTables(env) {
 
-  const { request, env } = context;
-
-  try {
-
-    const user =
-      await requireAdmin(
-        request,
-        env
-      );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, {
-        status: 401
-      });
-
-    }
+  await env.DB
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `)
+    .run();
 
 
-    const body =
-      await request.json();
+  await env.DB
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS news_tags (
+        news_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
 
+        PRIMARY KEY (
+          news_id,
+          tag_id
+        ),
 
-    const name =
-      String(
-        body.name || ""
-      ).trim();
-
-
-    let slug =
-      String(
-        body.slug || ""
-      ).trim()
-      .toLowerCase();
-
-
-    const description =
-      String(
-        body.description || ""
-      ).trim();
-
-
-    const status =
-      body.status === "inactive"
-        ? "inactive"
-        : "active";
-
-
-    if (!name) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag name जरूरी अछि"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    // Slug खाली होय तँ name सँ बनाउ
-
-    if (!slug) {
-
-      slug =
-        slugify(name);
-
-    }
-
-
-    if (!slug) {
-
-      return Response.json({
-        success: false,
-        error:
-          "English URL slug जरूरी अछि"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    if (!isValidSlug(slug)) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag URL केवल English अक्षर, number आ hyphen में होयबाक चाही। उदाहरण: darbhanga"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    // Duplicate slug
-
-    const existing =
-      await env.DB
-        .prepare(`
-          SELECT
-            id
-          FROM tags
-          WHERE slug = ?
-          LIMIT 1
-        `)
-        .bind(slug)
-        .first();
-
-
-    if (existing) {
-
-      return Response.json({
-        success: false,
-        error:
-          "ई Tag URL पहिले सँ मौजूद अछि"
-      }, {
-        status: 409
-      });
-
-    }
-
-
-    const result =
-      await env.DB
-        .prepare(`
-          INSERT INTO tags (
-            name,
-            slug,
-            description,
-            status
-          )
-          VALUES (?, ?, ?, ?)
-        `)
-        .bind(
-          name,
-          slug,
-          description || null,
-          status
+        FOREIGN KEY (
+          news_id
         )
-        .run();
+        REFERENCES news(id)
+        ON DELETE CASCADE,
+
+        FOREIGN KEY (
+          tag_id
+        )
+        REFERENCES tags(id)
+        ON DELETE CASCADE
+      )
+    `)
+    .run();
 
 
-    return Response.json({
+  await env.DB
+    .prepare(`
+      CREATE INDEX IF NOT EXISTS
+      idx_news_tags_news
+      ON news_tags(news_id)
+    `)
+    .run();
+
+
+  await env.DB
+    .prepare(`
+      CREATE INDEX IF NOT EXISTS
+      idx_news_tags_tag
+      ON news_tags(tag_id)
+    `)
+    .run();
+
+}
+
+
+// ======================================================
+// GET TAGS
+// ======================================================
+
+async function getTags(
+  request,
+  env
+) {
+
+  const url =
+    new URL(request.url);
+
+
+  const id =
+    url.searchParams.get("id");
+
+
+  const slug =
+    url.searchParams.get("slug");
+
+
+  const status =
+    url.searchParams.get("status");
+
+
+  const search =
+    url.searchParams.get("search");
+
+
+  // --------------------------------------------------
+  // Single tag
+  // --------------------------------------------------
+
+  if (id || slug) {
+
+    let tag;
+
+
+    if (slug) {
+
+      tag =
+        await env.DB
+          .prepare(`
+            SELECT
+              t.*,
+              COUNT(nt.news_id) AS news_count
+            FROM tags t
+            LEFT JOIN news_tags nt
+              ON nt.tag_id = t.id
+            WHERE t.slug = ?
+            GROUP BY t.id
+            LIMIT 1
+          `)
+          .bind(slug)
+          .first();
+
+    } else {
+
+      tag =
+        await env.DB
+          .prepare(`
+            SELECT
+              t.*,
+              COUNT(nt.news_id) AS news_count
+            FROM tags t
+            LEFT JOIN news_tags nt
+              ON nt.tag_id = t.id
+            WHERE t.id = ?
+            GROUP BY t.id
+            LIMIT 1
+          `)
+          .bind(id)
+          .first();
+
+    }
+
+
+    if (!tag) {
+
+      return json({
+        success: false,
+        error:
+          "Tag नहि भेटल"
+      }, 404);
+
+    }
+
+
+    return json({
       success: true,
-      message:
-        "Tag सफलतापूर्वक जोड़ल गेल",
-      id:
-        result.meta.last_row_id,
-      slug:
-        slug
-    });
 
+      tag:
+        normalizeTag(tag)
 
-  } catch (error) {
-
-    console.error(
-      "ADD TAG ERROR:",
-      error
-    );
-
-    return Response.json({
-      success: false,
-      error:
-        error.message ||
-        "Tag जोड़ल नहि जा सकल"
-    }, {
-      status: 500
     });
 
   }
+
+
+  // --------------------------------------------------
+  // Tag list
+  // --------------------------------------------------
+
+  let where = [];
+  let bindings = [];
+
+
+  if (
+    status &&
+    status !== "all"
+  ) {
+
+    where.push(
+      "t.status = ?"
+    );
+
+    bindings.push(
+      status
+    );
+
+  }
+
+
+  if (search) {
+
+    where.push(`
+      (
+        t.name LIKE ?
+        OR t.slug LIKE ?
+        OR t.description LIKE ?
+      )
+    `);
+
+    const q =
+      `%${search}%`;
+
+    bindings.push(
+      q,
+      q,
+      q
+    );
+
+  }
+
+
+  const whereSQL =
+    where.length
+      ? "WHERE " +
+        where.join(" AND ")
+      : "";
+
+
+  const result =
+    await env.DB
+      .prepare(`
+        SELECT
+          t.*,
+          COUNT(nt.news_id) AS news_count
+
+        FROM tags t
+
+        LEFT JOIN news_tags nt
+          ON nt.tag_id = t.id
+
+        ${whereSQL}
+
+        GROUP BY t.id
+
+        ORDER BY
+          t.name COLLATE NOCASE ASC,
+          t.id ASC
+      `)
+      .bind(...bindings)
+      .all();
+
+
+  const tags =
+    (
+      result.results || []
+    ).map(
+      normalizeTag
+    );
+
+
+  return json({
+    success: true,
+    tags
+  });
+
+}
+
+
+// ======================================================
+// CREATE TAG
+// ======================================================
+
+async function createTag(
+  request,
+  env
+) {
+
+  const user =
+    await requireAdmin(
+      request,
+      env
+    );
+
+
+  if (!user) {
+
+    return json({
+      success: false,
+      error: "Unauthorized"
+    }, 401);
+
+  }
+
+
+  const body =
+    await request.json();
+
+
+  const name =
+    cleanString(
+      body.name
+    );
+
+
+  let slug =
+    cleanString(
+      body.slug
+    )
+      .toLowerCase();
+
+
+  const description =
+    cleanString(
+      body.description
+    );
+
+
+  const status =
+    normalizeStatus(
+      body.status
+    );
+
+
+  if (!name) {
+
+    return json({
+      success: false,
+      error:
+        "Tag name जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  // Auto generate English slug
+  if (!slug) {
+
+    slug =
+      makeSlug(name);
+
+  }
+
+
+  if (!slug) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!validSlug(slug)) {
+
+    return json({
+      success: false,
+      error:
+        "URL slug केवल English अक्षर, number आ hyphen में होयबाक चाही"
+    }, 400);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate name
+  // --------------------------------------------------
+
+  const duplicateName =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM tags
+        WHERE LOWER(name) = LOWER(?)
+        LIMIT 1
+      `)
+      .bind(name)
+      .first();
+
+
+  if (duplicateName) {
+
+    return json({
+      success: false,
+      error:
+        "ई Tag पहिले सँ मौजूद अछि"
+    }, 409);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate slug
+  // --------------------------------------------------
+
+  const duplicateSlug =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM tags
+        WHERE slug = ?
+        LIMIT 1
+      `)
+      .bind(slug)
+      .first();
+
+
+  if (duplicateSlug) {
+
+    return json({
+      success: false,
+      error:
+        "ई English URL slug पहिले सँ मौजूद अछि"
+    }, 409);
+
+  }
+
+
+  const result =
+    await env.DB
+      .prepare(`
+        INSERT INTO tags (
+          name,
+          slug,
+          description,
+          status
+        )
+        VALUES (?, ?, ?, ?)
+      `)
+      .bind(
+        name,
+        slug,
+        description || null,
+        status
+      )
+      .run();
+
+
+  const tagId =
+    result.meta.last_row_id;
+
+
+  return json({
+    success: true,
+
+    message:
+      "Tag सफलतापूर्वक जोड़ल गेल",
+
+    tag: {
+      id: tagId,
+      name,
+      slug,
+      description:
+        description || null,
+      status,
+      news_count: 0,
+      url:
+        `/tag/${slug}`
+    }
+
+  });
 
 }
 
@@ -240,218 +518,259 @@ export async function onRequestPost(context) {
 // UPDATE TAG
 // ======================================================
 
-export async function onRequestPut(context) {
+async function updateTag(
+  request,
+  env
+) {
 
-  const { request, env } = context;
-
-  try {
-
-    const user =
-      await requireAdmin(
-        request,
-        env
-      );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, {
-        status: 401
-      });
-
-    }
+  const user =
+    await requireAdmin(
+      request,
+      env
+    );
 
 
-    const url =
-      new URL(request.url);
+  if (!user) {
+
+    return json({
+      success: false,
+      error: "Unauthorized"
+    }, 401);
+
+  }
 
 
-    const id =
-      url.searchParams.get("id");
+  const url =
+    new URL(request.url);
 
 
-    if (!id) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag ID जरूरी अछि"
-      }, {
-        status: 400
-      });
-
-    }
+  const id =
+    url.searchParams.get("id");
 
 
-    const body =
-      await request.json();
+  const body =
+    await request.json();
 
 
-    const name =
-      String(
-        body.name || ""
-      ).trim();
+  const tagId =
+    id ||
+    body.id;
 
 
-    let slug =
-      String(
-        body.slug || ""
-      ).trim()
-      .toLowerCase();
+  if (!tagId) {
+
+    return json({
+      success: false,
+      error:
+        "Tag ID जरूरी अछि"
+    }, 400);
+
+  }
 
 
-    const description =
-      String(
-        body.description || ""
-      ).trim();
-
-
-    const status =
-      body.status === "inactive"
-        ? "inactive"
-        : "active";
-
-
-    if (!name) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag name जरूरी अछि"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    const oldTag =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            slug
-          FROM tags
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(id)
-        .first();
-
-
-    if (!oldTag) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag नहि भेटल"
-      }, {
-        status: 404
-      });
-
-    }
-
-
-    if (!slug) {
-
-      slug =
-        oldTag.slug ||
-        slugify(name);
-
-    }
-
-
-    if (!isValidSlug(slug)) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag URL सही English format में लिखू"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    const duplicate =
-      await env.DB
-        .prepare(`
-          SELECT
-            id
-          FROM tags
-          WHERE slug = ?
-            AND id != ?
-          LIMIT 1
-        `)
-        .bind(
-          slug,
-          id
-        )
-        .first();
-
-
-    if (duplicate) {
-
-      return Response.json({
-        success: false,
-        error:
-          "ई Tag URL दोसर Tag में उपयोग भ' रहल अछि"
-      }, {
-        status: 409
-      });
-
-    }
-
-
+  const oldTag =
     await env.DB
       .prepare(`
-        UPDATE tags
-        SET
-          name = ?,
-          slug = ?,
-          description = ?,
-          status = ?
+        SELECT *
+        FROM tags
         WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(tagId)
+      .first();
+
+
+  if (!oldTag) {
+
+    return json({
+      success: false,
+      error:
+        "Tag नहि भेटल"
+    }, 404);
+
+  }
+
+
+  const name =
+    body.name !== undefined
+      ? cleanString(body.name)
+      : oldTag.name;
+
+
+  let slug =
+    body.slug !== undefined
+      ? cleanString(body.slug)
+          .toLowerCase()
+      : oldTag.slug;
+
+
+  const description =
+    body.description !== undefined
+      ? cleanString(
+          body.description
+        )
+      : oldTag.description;
+
+
+  const status =
+    body.status !== undefined
+      ? normalizeStatus(
+          body.status
+        )
+      : normalizeStatus(
+          oldTag.status
+        );
+
+
+  if (!name) {
+
+    return json({
+      success: false,
+      error:
+        "Tag name जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!slug) {
+
+    slug =
+      makeSlug(name);
+
+  }
+
+
+  if (!validSlug(slug)) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug सही नहि अछि"
+    }, 400);
+
+  }
+
+
+  // --------------------------------------------------
+  // Duplicate name
+  // --------------------------------------------------
+
+  const duplicateName =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM tags
+        WHERE LOWER(name) = LOWER(?)
+          AND id != ?
+        LIMIT 1
       `)
       .bind(
         name,
-        slug,
-        description || null,
-        status,
-        id
+        tagId
       )
-      .run();
+      .first();
 
 
-    return Response.json({
-      success: true,
-      message:
-        "Tag update भ' गेल",
-      slug:
-        slug
-    });
+  if (duplicateName) {
 
-
-  } catch (error) {
-
-    console.error(
-      "UPDATE TAG ERROR:",
-      error
-    );
-
-    return Response.json({
+    return json({
       success: false,
       error:
-        error.message ||
-        "Tag update नहि भ' सकल"
-    }, {
-      status: 500
-    });
+        "ई Tag नाम दोसर Tag में मौजूद अछि"
+    }, 409);
 
   }
+
+
+  // --------------------------------------------------
+  // Duplicate slug
+  // --------------------------------------------------
+
+  const duplicateSlug =
+    await env.DB
+      .prepare(`
+        SELECT
+          id
+        FROM tags
+        WHERE slug = ?
+          AND id != ?
+        LIMIT 1
+      `)
+      .bind(
+        slug,
+        tagId
+      )
+      .first();
+
+
+  if (duplicateSlug) {
+
+    return json({
+      success: false,
+      error:
+        "ई English URL slug दोसर Tag में उपयोग भ' रहल अछि"
+    }, 409);
+
+  }
+
+
+  await env.DB
+    .prepare(`
+      UPDATE tags
+
+      SET
+        name = ?,
+        slug = ?,
+        description = ?,
+        status = ?
+
+      WHERE id = ?
+    `)
+    .bind(
+      name,
+      slug,
+      description || null,
+      status,
+      tagId
+    )
+    .run();
+
+
+  const count =
+    await getTagNewsCount(
+      env,
+      tagId
+    );
+
+
+  return json({
+    success: true,
+
+    message:
+      "Tag सफलतापूर्वक update भ' गेल",
+
+    tag: {
+      id:
+        Number(tagId),
+
+      name,
+      slug,
+
+      description:
+        description || null,
+
+      status,
+
+      news_count:
+        count,
+
+      url:
+        `/tag/${slug}`
+    }
+
+  });
 
 }
 
@@ -460,132 +779,168 @@ export async function onRequestPut(context) {
 // DELETE TAG
 // ======================================================
 
-export async function onRequestDelete(context) {
+async function deleteTag(
+  request,
+  env
+) {
 
-  const { request, env } = context;
-
-  try {
-
-    const user =
-      await requireAdmin(
-        request,
-        env
-      );
-
-    if (!user) {
-
-      return Response.json({
-        success: false,
-        error: "Unauthorized"
-      }, {
-        status: 401
-      });
-
-    }
-
-
-    const url =
-      new URL(request.url);
-
-
-    const id =
-      url.searchParams.get("id");
-
-
-    if (!id) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag ID जरूरी अछि"
-      }, {
-        status: 400
-      });
-
-    }
-
-
-    // news_tags में इस्तेमाल अछि कि नहि
-
-    const used =
-      await env.DB
-        .prepare(`
-          SELECT
-            COUNT(*) AS total
-          FROM news_tags
-          WHERE tag_id = ?
-        `)
-        .bind(id)
-        .first();
-
-
-    if (
-      Number(
-        used?.total || 0
-      ) > 0
-    ) {
-
-      return Response.json({
-        success: false,
-        error:
-          "ई Tag समाचार में उपयोग भ' रहल अछि। पहिले समाचार सँ Tag हटाउ।"
-      }, {
-        status: 409
-      });
-
-    }
-
-
-    const result =
-      await env.DB
-        .prepare(`
-          DELETE FROM tags
-          WHERE id = ?
-        `)
-        .bind(id)
-        .run();
-
-
-    if (
-      !result.meta ||
-      !result.meta.changes
-    ) {
-
-      return Response.json({
-        success: false,
-        error:
-          "Tag नहि भेटल"
-      }, {
-        status: 404
-      });
-
-    }
-
-
-    return Response.json({
-      success: true,
-      message:
-        "Tag delete भ' गेल"
-    });
-
-
-  } catch (error) {
-
-    console.error(
-      "DELETE TAG ERROR:",
-      error
+  const user =
+    await requireAdmin(
+      request,
+      env
     );
 
-    return Response.json({
+
+  if (!user) {
+
+    return json({
       success: false,
-      error:
-        error.message ||
-        "Tag delete नहि भ' सकल"
-    }, {
-      status: 500
-    });
+      error: "Unauthorized"
+    }, 401);
 
   }
+
+
+  const url =
+    new URL(request.url);
+
+
+  const id =
+    url.searchParams.get("id");
+
+
+  if (!id) {
+
+    return json({
+      success: false,
+      error:
+        "Tag ID जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  const tag =
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          name,
+          slug
+        FROM tags
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(id)
+      .first();
+
+
+  if (!tag) {
+
+    return json({
+      success: false,
+      error:
+        "Tag नहि भेटल"
+    }, 404);
+
+  }
+
+
+  const count =
+    await getTagNewsCount(
+      env,
+      id
+    );
+
+
+  // Don't silently remove a tag
+  // that is being used by news.
+  if (count > 0) {
+
+    return json({
+      success: false,
+
+      error:
+        `ई Tag ${count} समाचार में उपयोग भ' रहल अछि। पहिले समाचार सँ Tag हटाउ, तकर बाद delete करू।`
+
+    }, 409);
+
+  }
+
+
+  await env.DB
+    .prepare(`
+      DELETE FROM tags
+      WHERE id = ?
+    `)
+    .bind(id)
+    .run();
+
+
+  return json({
+    success: true,
+
+    message:
+      "Tag delete भ' गेल"
+  });
+
+}
+
+
+// ======================================================
+// TAG NEWS COUNT
+// ======================================================
+
+async function getTagNewsCount(
+  env,
+  tagId
+) {
+
+  const result =
+    await env.DB
+      .prepare(`
+        SELECT
+          COUNT(*) AS total
+        FROM news_tags
+        WHERE tag_id = ?
+      `)
+      .bind(tagId)
+      .first();
+
+
+  return Number(
+    result?.total || 0
+  );
+
+}
+
+
+// ======================================================
+// NORMALIZE TAG
+// ======================================================
+
+function normalizeTag(
+  tag
+) {
+
+  return {
+    ...tag,
+
+    id:
+      Number(tag.id),
+
+    news_count:
+      Number(
+        tag.news_count || 0
+      ),
+
+    status:
+      tag.status ||
+      "active",
+
+    url:
+      `/tag/${tag.slug}`
+  };
 
 }
 
@@ -599,150 +954,109 @@ async function requireAdmin(
   env
 ) {
 
-  try {
-
-    if (!env.AUTH_SECRET) {
-      return null;
-    }
+  const secret =
+    env.AUTH_SECRET;
 
 
-    const cookieHeader =
-      request.headers.get(
-        "Cookie"
-      ) || "";
-
-
-    const cookies =
-      parseCookies(
-        cookieHeader
-      );
-
-
-    const token =
-      cookies.session;
-
-
-    if (!token) {
-      return null;
-    }
-
-
-    const session =
-      await verifySessionToken(
-        token,
-        env.AUTH_SECRET
-      );
-
-
-    if (
-      !session ||
-      !session.id
-    ) {
-
-      return null;
-
-    }
-
-
-    const user =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            name,
-            email,
-            role,
-            status
-          FROM users
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(
-          session.id
-        )
-        .first();
-
-
-    if (
-      !user ||
-      user.status !== "active" ||
-      user.role !== "admin"
-    ) {
-
-      return null;
-
-    }
-
-
-    return user;
-
-  } catch (error) {
+  if (!secret) {
 
     console.error(
-      "TAG AUTH ERROR:",
-      error
+      "AUTH_SECRET missing"
     );
 
     return null;
 
   }
 
-}
+
+  const cookieHeader =
+    request.headers.get(
+      "Cookie"
+    ) || "";
 
 
-// ======================================================
-// COOKIE PARSER
-// ======================================================
-
-function parseCookies(
-  cookieString
-) {
-
-  const cookies = {};
-
-  cookieString
-    .split(";")
-    .forEach(
-      part => {
-
-        const index =
-          part.indexOf("=");
-
-        if (index === -1) {
-          return;
-        }
-
-        const key =
-          part
-            .slice(
-              0,
-              index
-            )
-            .trim();
-
-        const value =
-          part
-            .slice(
-              index + 1
-            )
-            .trim();
-
-        cookies[key] =
-          value;
-
-      }
+  const cookies =
+    parseCookies(
+      cookieHeader
     );
 
-  return cookies;
+
+  const token =
+    cookies.session;
+
+
+  if (!token) {
+
+    return null;
+
+  }
+
+
+  const session =
+    await verifySession(
+      token,
+      secret
+    );
+
+
+  if (
+    !session ||
+    !session.id
+  ) {
+
+    return null;
+
+  }
+
+
+  const user =
+    await env.DB
+      .prepare(`
+        SELECT
+          id,
+          name,
+          email,
+          role,
+          status
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+      `)
+      .bind(
+        session.id
+      )
+      .first();
+
+
+  if (
+    !user ||
+    user.status !== "active"
+  ) {
+
+    return null;
+
+  }
+
+
+  if (
+    user.role !== "admin"
+  ) {
+
+    return null;
+
+  }
+
+
+  return user;
 
 }
 
 
 // ======================================================
-// VERIFY SESSION
+// SESSION VERIFY
 // ======================================================
 
-async function verifySessionToken(
+async function verifySession(
   token,
   secret
 ) {
@@ -750,7 +1064,8 @@ async function verifySessionToken(
   try {
 
     const parts =
-      String(token).split(".");
+      String(token)
+        .split(".");
 
 
     if (
@@ -770,14 +1085,14 @@ async function verifySessionToken(
 
 
     const expected =
-      await sign(
+      await hmacSign(
         payload,
         secret
       );
 
 
     if (
-      !timingSafeEqual(
+      !safeEqual(
         signature,
         expected
       )
@@ -790,15 +1105,15 @@ async function verifySessionToken(
 
     const data =
       JSON.parse(
-        fromBase64url(
+        decodeBase64Url(
           payload
         )
       );
 
 
     if (
-      !data.exp ||
-      data.exp <
+      data.exp &&
+      Number(data.exp) <
         Math.floor(
           Date.now() / 1000
         )
@@ -821,10 +1136,10 @@ async function verifySessionToken(
 
 
 // ======================================================
-// SIGN
+// HMAC
 // ======================================================
 
-async function sign(
+async function hmacSign(
   value,
   secret
 ) {
@@ -832,14 +1147,18 @@ async function sign(
   const key =
     await crypto.subtle.importKey(
       "raw",
+
       new TextEncoder().encode(
         secret
       ),
+
       {
         name: "HMAC",
         hash: "SHA-256"
       },
+
       false,
+
       ["sign"]
     );
 
@@ -848,13 +1167,14 @@ async function sign(
     await crypto.subtle.sign(
       "HMAC",
       key,
+
       new TextEncoder().encode(
         value
       )
     );
 
 
-  return base64url(
+  return base64Url(
     new Uint8Array(
       signature
     )
@@ -864,10 +1184,68 @@ async function sign(
 
 
 // ======================================================
-// SLUGIFY
+// COOKIE PARSER
 // ======================================================
 
-function slugify(
+function parseCookies(
+  header
+) {
+
+  const result = {};
+
+
+  header
+    .split(";")
+    .forEach(
+      part => {
+
+        const index =
+          part.indexOf("=");
+
+
+        if (
+          index === -1
+        ) {
+
+          return;
+
+        }
+
+
+        const key =
+          part
+            .slice(
+              0,
+              index
+            )
+            .trim();
+
+
+        const value =
+          part
+            .slice(
+              index + 1
+            )
+            .trim();
+
+
+        result[key] =
+          value;
+
+      }
+    );
+
+
+  return result;
+
+}
+
+
+// ======================================================
+// SLUG
+// ======================================================
+
+function makeSlug(
   value
 ) {
 
@@ -888,10 +1266,10 @@ function slugify(
 
 
 // ======================================================
-// VALIDATE SLUG
+// VALID SLUG
 // ======================================================
 
-function isValidSlug(
+function validSlug(
   slug
 ) {
 
@@ -903,14 +1281,96 @@ function isValidSlug(
 
 
 // ======================================================
+// STATUS
+// ======================================================
+
+function normalizeStatus(
+  value
+) {
+
+  const status =
+    String(
+      value || "active"
+    )
+      .toLowerCase();
+
+
+  return [
+    "active",
+    "inactive"
+  ].includes(status)
+
+    ? status
+
+    : "active";
+
+}
+
+
+// ======================================================
+// STRING
+// ======================================================
+
+function cleanString(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return "";
+  }
+
+
+  return String(
+    value
+  ).trim();
+
+}
+
+
+// ======================================================
+// JSON RESPONSE
+// ======================================================
+
+function json(
+  data,
+  status = 200
+) {
+
+  return new Response(
+    JSON.stringify(
+      data
+    ),
+
+    {
+      status,
+
+      headers: {
+        "Content-Type":
+          "application/json; charset=UTF-8",
+
+        "Cache-Control":
+          "no-store"
+      }
+    }
+  );
+
+}
+
+
+// ======================================================
 // BASE64 URL
 // ======================================================
 
-function base64url(
+function base64Url(
   bytes
 ) {
 
   let binary = "";
+
 
   for (
     const byte of bytes
@@ -924,7 +1384,9 @@ function base64url(
   }
 
 
-  return btoa(binary)
+  return btoa(
+    binary
+  )
     .replace(
       /\+/g,
       "-"
@@ -944,7 +1406,7 @@ function base64url(
 // BASE64 URL DECODE
 // ======================================================
 
-function fromBase64url(
+function decodeBase64Url(
   value
 ) {
 
@@ -992,23 +1454,26 @@ function fromBase64url(
 
 
   return new TextDecoder()
-    .decode(bytes);
+    .decode(
+      bytes
+    );
 
 }
 
 
 // ======================================================
-// TIMING SAFE
+// SAFE EQUAL
 // ======================================================
 
-function timingSafeEqual(
+function safeEqual(
   a,
   b
 ) {
 
   if (
-    a.length !==
-    b.length
+    !a ||
+    !b ||
+    a.length !== b.length
   ) {
 
     return false;
