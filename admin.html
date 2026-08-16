@@ -4105,20 +4105,28 @@ async function saveNews(event){
     document.getElementById("newsSlug")
       .value.trim();
 
+
   if(!title){
     showToast("समाचार शीर्षक जरूरी अछि।");
     return;
   }
+
 
   if(!content){
     showToast("समाचार सामग्री जरूरी अछि।");
     return;
   }
 
+
   if(!slug){
     showToast("News URL जरूरी अछि।");
     return;
   }
+
+
+  const newsId =
+    document.getElementById("newsId")
+      .value.trim();
 
 
   const selectedTags =
@@ -4185,14 +4193,6 @@ async function saveNews(event){
   };
 
 
-  try{
-
-  const newsId =
-    document.getElementById(
-      "newsId"
-    ).value.trim();
-
-
   const requestUrl =
     newsId
       ? API +
@@ -4207,26 +4207,21 @@ async function saveNews(event){
       : "POST";
 
 
-  const response =
-    await fetch(
-      requestUrl,
-      {
-        method: requestMethod,
+  try{
 
-        credentials: "include",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          "Accept":
-            "application/json"
-        },
-
-        body:
-          JSON.stringify(payload)
-      }
+    showToast(
+      newsId
+        ? "समाचार update भ' रहल अछि..."
+        : "समाचार save भ' रहल अछि..."
     );
+
+
+    const response =
+      await fetch(
+        requestUrl,
+        {
+          method: requestMethod,
+
           credentials: "include",
 
           headers: {
@@ -4254,7 +4249,11 @@ async function saveNews(event){
 
       throw new Error(
         data.error ||
-        "समाचार save नहि भ' सकल।"
+        (
+          newsId
+            ? "समाचार update नहि भ' सकल।"
+            : "समाचार save नहि भ' सकल।"
+        )
       );
 
     }
@@ -4264,7 +4263,9 @@ async function saveNews(event){
 
 
     showToast(
-      "समाचार सफलतापूर्वक save भ' गेल।"
+      newsId
+        ? "समाचार सफलतापूर्वक update भ' गेल।"
+        : "समाचार सफलतापूर्वक save भ' गेल।"
     );
 
 
@@ -4291,9 +4292,10 @@ async function saveNews(event){
   }catch(error){
 
     console.error(
-      "SAVE NEWS ERROR:",
+      "SAVE/UPDATE NEWS ERROR:",
       error
     );
+
 
     showToast(
       error.message ||
@@ -4303,6 +4305,7 @@ async function saveNews(event){
   }
 
 }
+  
   document
   .getElementById("newsTitle")
   ?.addEventListener(
