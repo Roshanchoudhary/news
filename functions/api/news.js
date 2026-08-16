@@ -1,16 +1,15 @@
 // functions/api/news.js
 
 export async function onRequest(context) {
+
   const { request, env } = context;
 
   try {
-    // --------------------------------------------------
-    // Ensure tag relation tables exist
-    // --------------------------------------------------
 
     await ensureTagTables(env);
 
-    const method = request.method.toUpperCase();
+    const method =
+      request.method.toUpperCase();
 
     if (method === "GET") {
       return await getNews(request, env);
@@ -35,44 +34,75 @@ export async function onRequest(context) {
 
   } catch (error) {
 
-    console.error("NEWS API ERROR:", error);
+    console.error(
+      "NEWS API ERROR:",
+      error
+    );
 
     return json({
       success: false,
       error:
-        error.message ||
+        error?.message ||
         "समाचार API में त्रुटि भेल"
     }, 500);
+
   }
+
 }
 
 
-// ======================================================
-// GET NEWS
-// ======================================================
+/* ======================================================
+   GET NEWS
+====================================================== */
 
-async function getNews(request, env) {
+async function getNews(
+  request,
+  env
+) {
 
   const url =
     new URL(request.url);
 
+
   const id =
     url.searchParams.get("id");
 
+
   const slug =
-    url.searchParams.get("slug");
+    cleanString(
+      url.searchParams.get("slug")
+    );
+
 
   const status =
-    url.searchParams.get("status");
+    cleanString(
+      url.searchParams.get("status")
+    );
+
 
   const categoryId =
-    url.searchParams.get("category_id");
+    url.searchParams.get(
+      "category_id"
+    );
+
 
   const tagSlug =
-    url.searchParams.get("tag");
+    cleanString(
+      url.searchParams.get("tag")
+    ).toLowerCase();
+
+
+  const tagId =
+    url.searchParams.get(
+      "tag_id"
+    );
+
 
   const search =
-    url.searchParams.get("search");
+    cleanString(
+      url.searchParams.get("search")
+    );
+
 
   const page =
     Math.max(
@@ -81,6 +111,7 @@ async function getNews(request, env) {
         url.searchParams.get("page") || 1
       )
     );
+
 
   const limit =
     Math.min(
@@ -93,17 +124,19 @@ async function getNews(request, env) {
       )
     );
 
+
   const offset =
     (page - 1) * limit;
 
 
-  // --------------------------------------------------
-  // Single news by ID or SLUG
-  // --------------------------------------------------
+  /* ====================================================
+     SINGLE NEWS
+  ==================================================== */
 
   if (id || slug) {
 
     let news;
+
 
     if (slug) {
 
@@ -160,19 +193,52 @@ async function getNews(request, env) {
     }
 
 
-    const tags =
+    /*
+     * Draft / archived news केवल admin देख सकत।
+     */
+
+    if (
+      news.status !== "published"
+    ) {
+
+      const admin =
+        await requireAdmin(
+          request,
+          env
+        );
+
+
+      if (!admin) {
+
+        return json({
+          success: false,
+          error: "समाचार नहि भेटल"
+        }, 404);
+
+      }
+
+    }
+
+
+    news.tags =
       await getNewsTags(
         env,
         news.id
       );
 
-    news.tags = tags;
+
+    /*
+     * Public view count
+     */
+
+    const noView =
+      url.searchParams.get(
+        "no_view"
+      ) === "1";
 
 
-    // Views only when requested from public page.
-    // Admin calls can use ?no_view=1.
     if (
-      url.searchParams.get("no_view") !== "1" &&
+      !noView &&
       news.status === "published"
     ) {
 
@@ -186,26 +252,35 @@ async function getNews(request, env) {
         .bind(news.id)
         .run();
 
+
       news.views =
-        Number(news.views || 0) + 1;
+        Number(
+          news.views || 0
+        ) + 1;
+
     }
 
 
     return json({
       success: true,
-      news: news
+      news
     });
 
   }
 
 
-  // --------------------------------------------------
-  // List news
-  // --------------------------------------------------
+  /* ====================================================
+     LIST NEWS
+  ==================================================== */
 
   let where = [];
+
   let bindings = [];
 
+
+  /*
+   * Status
+   */
 
   if (status) {
 
@@ -220,6 +295,10 @@ async function getNews(request, env) {
   }
 
 
+  /*
+   * Category
+   */
+
   if (categoryId) {
 
     where.push(
@@ -233,6 +312,10 @@ async function getNews(request, env) {
   }
 
 
+  /*
+   * Search
+   */
+
   if (search) {
 
     where.push(`
@@ -240,6 +323,7 @@ async function getNews(request, env) {
         n.title LIKE ?
         OR n.summary LIKE ?
         OR n.content LIKE ?
+        OR n.slug LIKE ?
       )
     `);
 
@@ -249,13 +333,20 @@ async function getNews(request, env) {
     bindings.push(
       q,
       q,
+      q,
       q
     );
 
   }
 
 
-  // Tag filter
+  /*
+   * Tag slug
+   *
+   * Example:
+   * /api/news?tag=bihar
+   */
+
   if (tagSlug) {
 
     where.push(`
@@ -264,8 +355,7 @@ async function getNews(request, env) {
         FROM news_tags nt
         INNER JOIN tags t
           ON t.id = nt.tag_id
-        WHERE
-          nt.news_id = n.id
+        WHERE nt.news_id = n.id
           AND t.slug = ?
           AND t.status = 'active'
       )
@@ -278,11 +368,60 @@ async function getNews(request, env) {
   }
 
 
+  /*
+   * Tag ID
+   *
+   * Example:
+   * /api/news?tag_id=5
+   */
+
+  if (
+    tagId !== null &&
+    tagId !== undefined &&
+    tagId !== ""
+  ) {
+
+    const numericTagId =
+      Number(tagId);
+
+
+    if (
+      Number.isFinite(
+        numericTagId
+      )
+    ) {
+
+      where.push(`
+        EXISTS (
+          SELECT 1
+          FROM news_tags nt
+          INNER JOIN tags t
+            ON t.id = nt.tag_id
+          WHERE nt.news_id = n.id
+            AND t.id = ?
+            AND t.status = 'active'
+        )
+      `);
+
+      bindings.push(
+        numericTagId
+      );
+
+    }
+
+  }
+
+
   const whereSQL =
     where.length
-      ? "WHERE " + where.join(" AND ")
+      ? "WHERE " +
+        where.join(" AND ")
       : "";
 
+
+  /* ====================================================
+     COUNT
+  ==================================================== */
 
   const countQuery = `
     SELECT COUNT(*) AS total
@@ -304,12 +443,20 @@ async function getNews(request, env) {
     );
 
 
+  /* ====================================================
+     NEWS QUERY
+  ==================================================== */
+
   const query = `
     SELECT
       n.*,
+
       c.name AS category_name,
+
       c.slug AS category_slug,
+
       u.name AS author_name
+
     FROM news n
 
     LEFT JOIN categories c
@@ -321,6 +468,7 @@ async function getNews(request, env) {
     ${whereSQL}
 
     ORDER BY
+
       CASE
         WHEN n.featured = 1
         THEN 0
@@ -335,6 +483,7 @@ async function getNews(request, env) {
       n.id DESC
 
     LIMIT ?
+
     OFFSET ?
   `;
 
@@ -354,7 +503,10 @@ async function getNews(request, env) {
     result.results || [];
 
 
-  // Add tags to every news item
+  /*
+   * Tags add करू
+   */
+
   for (
     const item of news
   ) {
@@ -369,38 +521,40 @@ async function getNews(request, env) {
 
 
   return json({
+
     success: true,
 
-    news: news,
+    news,
 
     pagination: {
-      page: page,
-      limit: limit,
-      total: total,
+
+      page,
+
+      limit,
+
+      total,
+
       pages:
         Math.ceil(
           total / limit
         )
+
     }
+
   });
 
 }
 
 
-// ======================================================
-// CREATE NEWS
-// ======================================================
+/* ======================================================
+   CREATE NEWS
+====================================================== */
 
 async function createNews(
   request,
   env
 ) {
 
-  const body =
-    await request.json();
-
-
-  // Authentication
   const user =
     await requireAdmin(
       request,
@@ -418,33 +572,39 @@ async function createNews(
   }
 
 
+  const body =
+    await request.json();
+
+
   const title =
     cleanString(
       body.title
     );
+
 
   const summary =
     cleanString(
       body.summary
     );
 
+
   const content =
     String(
       body.content || ""
     ).trim();
+
 
   const imageUrl =
     cleanString(
       body.image_url
     );
 
+
   const categoryId =
     nullableNumber(
       body.category_id
     );
 
-  const authorId =
-    user.id;
 
   let slug =
     cleanString(
@@ -468,28 +628,27 @@ async function createNews(
       body.seo_title
     );
 
+
   const seoDescription =
     cleanString(
       body.seo_description
     );
 
 
-  const publishedAt =
-    body.published_at
-      ? body.published_at
-      : (
-          status === "published"
-            ? new Date().toISOString()
-            : null
-        );
+  let publishedAt =
+    body.published_at ||
+    null;
 
+
+  /* ====================================================
+     VALIDATION
+  ==================================================== */
 
   if (!title) {
 
     return json({
       success: false,
-      error:
-        "शीर्षक जरूरी अछि"
+      error: "शीर्षक जरूरी अछि"
     }, 400);
 
   }
@@ -499,14 +658,17 @@ async function createNews(
 
     return json({
       success: false,
-      error:
-        "समाचार जरूरी अछि"
+      error: "समाचार जरूरी अछि"
     }, 400);
 
   }
 
 
-  // Generate slug automatically
+  /*
+   * URL slug automatically only if
+   * title itself contains English.
+   */
+
   if (!slug) {
 
     slug =
@@ -528,7 +690,9 @@ async function createNews(
   }
 
 
-  if (!validSlug(slug)) {
+  if (
+    !validSlug(slug)
+  ) {
 
     return json({
       success: false,
@@ -539,7 +703,10 @@ async function createNews(
   }
 
 
-  // Check duplicate slug
+  /* ====================================================
+     DUPLICATE SLUG
+  ==================================================== */
+
   const existing =
     await env.DB
       .prepare(`
@@ -563,13 +730,18 @@ async function createNews(
   }
 
 
-  // Check category
+  /* ====================================================
+     CATEGORY CHECK
+  ==================================================== */
+
   if (categoryId) {
 
     const category =
       await env.DB
         .prepare(`
-          SELECT id
+          SELECT
+            id,
+            status
           FROM categories
           WHERE id = ?
           LIMIT 1
@@ -591,42 +763,89 @@ async function createNews(
   }
 
 
+  /* ====================================================
+     PUBLISHED DATE
+  ==================================================== */
+
+  if (
+    status === "published" &&
+    !publishedAt
+  ) {
+
+    publishedAt =
+      new Date().toISOString();
+
+  }
+
+
+  /* ====================================================
+     INSERT
+  ==================================================== */
+
   const result =
     await env.DB
       .prepare(`
         INSERT INTO news (
+
           title,
+
           slug,
+
           summary,
+
           content,
+
           image_url,
+
           category_id,
+
           author_id,
+
           status,
+
           featured,
+
           views,
+
           seo_title,
+
           seo_description,
+
           published_at
+
         )
+
         VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?,
-          ?, 0, ?, ?, ?
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, 0, ?, ?, ?
         )
       `)
       .bind(
+
         title,
+
         slug,
+
         summary || null,
+
         content,
+
         imageUrl || null,
+
         categoryId,
-        authorId,
+
+        user.id,
+
         status,
+
         featured,
+
         seoTitle || null,
+
         seoDescription || null,
+
         publishedAt
+
       )
       .run();
 
@@ -635,7 +854,10 @@ async function createNews(
     result.meta.last_row_id;
 
 
-  // Save tags
+  /* ====================================================
+     TAGS
+  ==================================================== */
+
   await saveNewsTags(
     env,
     newsId,
@@ -644,25 +866,31 @@ async function createNews(
 
 
   return json({
+
     success: true,
 
     message:
       "समाचार सफलतापूर्वक जोड़ल गेल",
 
     news: {
+
       id: newsId,
-      slug: slug,
+
+      slug,
+
       url:
         `/news/${slug}`
+
     }
-  });
+
+  }, 201);
 
 }
 
 
-// ======================================================
-// UPDATE NEWS
-// ======================================================
+/* ======================================================
+   UPDATE NEWS
+====================================================== */
 
 async function updateNews(
   request,
@@ -692,17 +920,13 @@ async function updateNews(
     );
 
 
-  const id =
-    url.searchParams.get("id") ||
-    url.searchParams.get("news_id");
-
-
   const body =
     await request.json();
 
 
   const newsId =
-    id ||
+    url.searchParams.get("id") ||
+    url.searchParams.get("news_id") ||
     body.id;
 
 
@@ -741,78 +965,35 @@ async function updateNews(
 
 
   const title =
-    cleanString(
-      body.title
-    );
+    body.title !== undefined
+      ? cleanString(
+          body.title
+        )
+      : oldNews.title;
 
 
   const summary =
-    cleanString(
-      body.summary
-    );
+    body.summary !== undefined
+      ? cleanString(
+          body.summary
+        )
+      : oldNews.summary;
 
 
   const content =
-    String(
-      body.content ??
-      oldNews.content ??
-      ""
-    ).trim();
+    body.content !== undefined
+      ? String(
+          body.content || ""
+        ).trim()
+      : oldNews.content;
 
 
   let slug =
-    cleanString(
-      body.slug
-    )
-    .toLowerCase();
-
-
-  if (!slug) {
-
-    slug =
-      oldNews.slug ||
-      makeSlug(title);
-
-  }
-
-
-  if (!validSlug(slug)) {
-
-    return json({
-      success: false,
-      error:
-        "English URL slug सही नहि अछि"
-    }, 400);
-
-  }
-
-
-  // Duplicate slug except current news
-  const duplicate =
-    await env.DB
-      .prepare(`
-        SELECT id
-        FROM news
-        WHERE slug = ?
-          AND id != ?
-        LIMIT 1
-      `)
-      .bind(
-        slug,
-        newsId
-      )
-      .first();
-
-
-  if (duplicate) {
-
-    return json({
-      success: false,
-      error:
-        "ई News URL दोसर समाचार में उपयोग भ' रहल अछि"
-    }, 409);
-
-  }
+    body.slug !== undefined
+      ? cleanString(
+          body.slug
+        ).toLowerCase()
+      : oldNews.slug;
 
 
   const categoryId =
@@ -828,7 +1009,9 @@ async function updateNews(
       ? normalizeStatus(
           body.status
         )
-      : oldNews.status;
+      : normalizeStatus(
+          oldNews.status
+        );
 
 
   const featured =
@@ -871,6 +1054,122 @@ async function updateNews(
       : oldNews.published_at;
 
 
+  /* ====================================================
+     VALIDATION
+  ==================================================== */
+
+  if (!title) {
+
+    return json({
+      success: false,
+      error:
+        "शीर्षक जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!content) {
+
+    return json({
+      success: false,
+      error:
+        "समाचार जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (!slug) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug जरूरी अछि"
+    }, 400);
+
+  }
+
+
+  if (
+    !validSlug(slug)
+  ) {
+
+    return json({
+      success: false,
+      error:
+        "English URL slug सही नहि अछि"
+    }, 400);
+
+  }
+
+
+  /* ====================================================
+     DUPLICATE SLUG
+  ==================================================== */
+
+  const duplicate =
+    await env.DB
+      .prepare(`
+        SELECT id
+        FROM news
+        WHERE slug = ?
+          AND id != ?
+        LIMIT 1
+      `)
+      .bind(
+        slug,
+        newsId
+      )
+      .first();
+
+
+  if (duplicate) {
+
+    return json({
+      success: false,
+      error:
+        "ई News URL दोसर समाचार में उपयोग भ' रहल अछि"
+    }, 409);
+
+  }
+
+
+  /* ====================================================
+     CATEGORY
+  ==================================================== */
+
+  if (categoryId) {
+
+    const category =
+      await env.DB
+        .prepare(`
+          SELECT id
+          FROM categories
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(categoryId)
+        .first();
+
+
+    if (!category) {
+
+      return json({
+        success: false,
+        error:
+          "चयनित श्रेणी नहि भेटल"
+      }, 400);
+
+    }
+
+  }
+
+
+  /* ====================================================
+     PUBLISHED DATE
+  ==================================================== */
+
   if (
     status === "published" &&
     !publishedAt
@@ -882,42 +1181,82 @@ async function updateNews(
   }
 
 
+  /*
+   * Draft बनाओल गेल तऽ पुरान
+   * published date रहि सकैत अछि।
+   */
+
+
+  /* ====================================================
+     UPDATE
+  ==================================================== */
+
   await env.DB
     .prepare(`
       UPDATE news
+
       SET
+
         title = ?,
+
         slug = ?,
+
         summary = ?,
+
         content = ?,
+
         image_url = ?,
+
         category_id = ?,
+
         status = ?,
+
         featured = ?,
+
         seo_title = ?,
+
         seo_description = ?,
+
         published_at = ?,
+
         updated_at = CURRENT_TIMESTAMP
+
       WHERE id = ?
     `)
     .bind(
-      title || oldNews.title,
+
+      title,
+
       slug,
-      summary,
+
+      summary || null,
+
       content,
+
       imageUrl || null,
+
       categoryId,
+
       status,
+
       featured,
+
       seoTitle || null,
+
       seoDescription || null,
+
       publishedAt || null,
+
       newsId
+
     )
     .run();
 
 
-  // Update tags only when tags field supplied
+  /* ====================================================
+     TAGS
+  ==================================================== */
+
   if (
     body.tags !== undefined
   ) {
@@ -932,25 +1271,31 @@ async function updateNews(
 
 
   return json({
+
     success: true,
 
     message:
       "समाचार सफलतापूर्वक update भ' गेल",
 
     news: {
+
       id: Number(newsId),
-      slug: slug,
+
+      slug,
+
       url:
         `/news/${slug}`
+
     }
+
   });
 
 }
 
 
-// ======================================================
-// DELETE NEWS
-// ======================================================
+/* ======================================================
+   DELETE NEWS
+====================================================== */
 
 async function deleteNews(
   request,
@@ -981,7 +1326,12 @@ async function deleteNews(
 
 
   const id =
-    url.searchParams.get("id");
+    url.searchParams.get(
+      "id"
+    ) ||
+    url.searchParams.get(
+      "news_id"
+    );
 
 
   if (!id) {
@@ -1018,7 +1368,10 @@ async function deleteNews(
   }
 
 
-  // Remove tag relations first
+  /*
+   * Relations delete
+   */
+
   await env.DB
     .prepare(`
       DELETE FROM news_tags
@@ -1028,13 +1381,30 @@ async function deleteNews(
     .run();
 
 
-  await env.DB
-    .prepare(`
-      DELETE FROM comments
-      WHERE news_id = ?
-    `)
-    .bind(id)
-    .run();
+  /*
+   * Comments
+   *
+   * Table मौजूद हो तऽ delete.
+   */
+
+  try {
+
+    await env.DB
+      .prepare(`
+        DELETE FROM comments
+        WHERE news_id = ?
+      `)
+      .bind(id)
+      .run();
+
+  } catch (error) {
+
+    console.warn(
+      "Comments delete skipped:",
+      error
+    );
+
+  }
 
 
   await env.DB
@@ -1047,17 +1417,20 @@ async function deleteNews(
 
 
   return json({
+
     success: true,
+
     message:
       "समाचार delete भ' गेल"
+
   });
 
 }
 
 
-// ======================================================
-// TAG TABLES
-// ======================================================
+/* ======================================================
+   TAG TABLES
+====================================================== */
 
 async function ensureTagTables(
   env
@@ -1066,12 +1439,32 @@ async function ensureTagTables(
   await env.DB
     .prepare(`
       CREATE TABLE IF NOT EXISTS tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        description TEXT,
-        status TEXT DEFAULT 'active',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+
+        id
+          INTEGER
+          PRIMARY KEY
+          AUTOINCREMENT,
+
+        name
+          TEXT
+          NOT NULL,
+
+        slug
+          TEXT
+          UNIQUE
+          NOT NULL,
+
+        description
+          TEXT,
+
+        status
+          TEXT
+          DEFAULT 'active',
+
+        created_at
+          DATETIME
+          DEFAULT CURRENT_TIMESTAMP
+
       )
     `)
     .run();
@@ -1080,22 +1473,32 @@ async function ensureTagTables(
   await env.DB
     .prepare(`
       CREATE TABLE IF NOT EXISTS news_tags (
-        news_id INTEGER NOT NULL,
-        tag_id INTEGER NOT NULL,
+
+        news_id
+          INTEGER
+          NOT NULL,
+
+        tag_id
+          INTEGER
+          NOT NULL,
+
         PRIMARY KEY (
           news_id,
           tag_id
         ),
+
         FOREIGN KEY (
           news_id
         )
         REFERENCES news(id)
         ON DELETE CASCADE,
+
         FOREIGN KEY (
           tag_id
         )
         REFERENCES tags(id)
         ON DELETE CASCADE
+
       )
     `)
     .run();
@@ -1121,9 +1524,9 @@ async function ensureTagTables(
 }
 
 
-// ======================================================
-// GET NEWS TAGS
-// ======================================================
+/* ======================================================
+   GET NEWS TAGS
+====================================================== */
 
 async function getNewsTags(
   env,
@@ -1134,29 +1537,41 @@ async function getNewsTags(
     await env.DB
       .prepare(`
         SELECT
+
           t.id,
+
           t.name,
+
           t.slug,
+
           t.description
+
         FROM tags t
+
         INNER JOIN news_tags nt
           ON nt.tag_id = t.id
+
         WHERE nt.news_id = ?
+
           AND t.status = 'active'
-        ORDER BY t.name COLLATE NOCASE ASC
+
+        ORDER BY
+          t.name COLLATE NOCASE ASC
       `)
       .bind(newsId)
       .all();
 
 
-  return result.results || [];
+  return (
+    result.results || []
+  );
 
 }
 
 
-// ======================================================
-// SAVE NEWS TAGS
-// ======================================================
+/* ======================================================
+   SAVE NEWS TAGS
+====================================================== */
 
 async function saveNewsTags(
   env,
@@ -1177,7 +1592,19 @@ async function saveNewsTags(
   let values = [];
 
 
-  if (Array.isArray(input)) {
+  /*
+   * Accept:
+   *
+   * ["1","2"]
+   * ["bihar","politics"]
+   * [{id:1}]
+   * [{slug:"bihar"}]
+   * "bihar,politics"
+   */
+
+  if (
+    Array.isArray(input)
+  ) {
 
     values =
       input;
@@ -1196,20 +1623,49 @@ async function saveNewsTags(
   }
 
 
-  // Remove duplicates
+  values =
+    values
+      .map(
+        item => {
+
+          if (
+            typeof item === "object" &&
+            item !== null
+          ) {
+
+            return (
+              item.id ??
+              item.slug ??
+              item.name ??
+              ""
+            );
+
+          }
+
+          return String(
+            item
+          ).trim();
+
+        }
+      )
+      .filter(Boolean);
+
+
   values =
     [
       ...new Set(
-        values
-          .map(
-            item =>
-              String(item)
-                .trim()
-          )
-          .filter(Boolean)
+        values.map(
+          item =>
+            String(item)
+              .trim()
+        )
       )
     ];
 
+
+  /*
+   * Existing relation remove
+   */
 
   await env.DB
     .prepare(`
@@ -1224,10 +1680,13 @@ async function saveNewsTags(
     const value of values
   ) {
 
-    let tag;
+    let tag = null;
 
 
-    // Numeric ID
+    /*
+     * Numeric ID
+     */
+
     if (
       /^\d+$/.test(
         String(value)
@@ -1240,6 +1699,7 @@ async function saveNewsTags(
             SELECT id
             FROM tags
             WHERE id = ?
+              AND status = 'active'
             LIMIT 1
           `)
           .bind(
@@ -1247,15 +1707,22 @@ async function saveNewsTags(
           )
           .first();
 
-    } else {
+    }
 
-      // Prefer slug
+
+    /*
+     * Slug
+     */
+
+    if (!tag) {
+
       tag =
         await env.DB
           .prepare(`
             SELECT id
             FROM tags
             WHERE slug = ?
+              AND status = 'active'
             LIMIT 1
           `)
           .bind(
@@ -1264,30 +1731,37 @@ async function saveNewsTags(
           )
           .first();
 
+    }
 
-      // Also allow tag name
-      if (!tag) {
 
-        tag =
-          await env.DB
-            .prepare(`
-              SELECT id
-              FROM tags
-              WHERE name = ?
-              LIMIT 1
-            `)
-            .bind(
-              String(value)
-                .trim()
-            )
-            .first();
+    /*
+     * Name
+     */
 
-      }
+    if (!tag) {
+
+      tag =
+        await env.DB
+          .prepare(`
+            SELECT id
+            FROM tags
+            WHERE name = ?
+              AND status = 'active'
+            LIMIT 1
+          `)
+          .bind(
+            String(value)
+              .trim()
+          )
+          .first();
 
     }
 
 
-    // Unknown tag is ignored
+    /*
+     * Unknown tag ignore
+     */
+
     if (!tag) {
       continue;
     }
@@ -1296,9 +1770,13 @@ async function saveNewsTags(
     await env.DB
       .prepare(`
         INSERT OR IGNORE INTO news_tags (
+
           news_id,
+
           tag_id
+
         )
+
         VALUES (?, ?)
       `)
       .bind(
@@ -1312,22 +1790,14 @@ async function saveNewsTags(
 }
 
 
-// ======================================================
-// ADMIN AUTH
-// ======================================================
+/* ======================================================
+   ADMIN AUTH
+====================================================== */
 
 async function requireAdmin(
   request,
   env
 ) {
-
-  /*
-   * Your current login system should keep
-   * the session cookie as "session".
-   *
-   * AUTH_SECRET must be configured in
-   * Cloudflare Pages Variables.
-   */
 
   const secret =
     env.AUTH_SECRET;
@@ -1361,9 +1831,7 @@ async function requireAdmin(
 
 
   if (!token) {
-
     return null;
-
   }
 
 
@@ -1388,13 +1856,21 @@ async function requireAdmin(
     await env.DB
       .prepare(`
         SELECT
+
           id,
+
           name,
+
           email,
+
           role,
+
           status
+
         FROM users
+
         WHERE id = ?
+
         LIMIT 1
       `)
       .bind(
@@ -1403,9 +1879,17 @@ async function requireAdmin(
       .first();
 
 
+  if (!user) {
+    return null;
+  }
+
+
   if (
-    !user ||
-    user.status !== "active"
+    String(
+      user.status
+    ).toLowerCase()
+    !==
+    "active"
   ) {
 
     return null;
@@ -1414,7 +1898,11 @@ async function requireAdmin(
 
 
   if (
-    user.role !== "admin"
+    String(
+      user.role
+    ).toLowerCase()
+    !==
+    "admin"
   ) {
 
     return null;
@@ -1427,9 +1915,9 @@ async function requireAdmin(
 }
 
 
-// ======================================================
-// SESSION VERIFY
-// ======================================================
+/* ======================================================
+   SESSION VERIFY
+====================================================== */
 
 async function verifySession(
   token,
@@ -1454,6 +1942,7 @@ async function verifySession(
 
     const payload =
       parts[0];
+
 
     const signature =
       parts[1];
@@ -1493,9 +1982,9 @@ async function verifySession(
     if (
       data.exp &&
       Number(data.exp) <
-        Math.floor(
-          Date.now() / 1000
-        )
+      Math.floor(
+        Date.now() / 1000
+      )
     ) {
 
       return null;
@@ -1514,9 +2003,9 @@ async function verifySession(
 }
 
 
-// ======================================================
-// HMAC
-// ======================================================
+/* ======================================================
+   HMAC
+====================================================== */
 
 async function hmacSign(
   value,
@@ -1525,26 +2014,34 @@ async function hmacSign(
 
   const key =
     await crypto.subtle.importKey(
+
       "raw",
-      new TextEncoder().encode(
-        secret
-      ),
+
+      new TextEncoder()
+        .encode(secret),
+
       {
         name: "HMAC",
         hash: "SHA-256"
       },
+
       false,
+
       ["sign"]
+
     );
 
 
   const signature =
     await crypto.subtle.sign(
+
       "HMAC",
+
       key,
-      new TextEncoder().encode(
-        value
-      )
+
+      new TextEncoder()
+        .encode(value)
+
     );
 
 
@@ -1557,9 +2054,9 @@ async function hmacSign(
 }
 
 
-// ======================================================
-// COOKIE
-// ======================================================
+/* ======================================================
+   COOKIE
+====================================================== */
 
 function parseCookies(
   header
@@ -1580,9 +2077,7 @@ function parseCookies(
         if (
           index === -1
         ) {
-
           return;
-
         }
 
 
@@ -1615,9 +2110,9 @@ function parseCookies(
 }
 
 
-// ======================================================
-// SLUG
-// ======================================================
+/* ======================================================
+   SLUG
+====================================================== */
 
 function makeSlug(
   value
@@ -1639,24 +2134,25 @@ function makeSlug(
 }
 
 
-// ======================================================
-// VALID SLUG
-// ======================================================
+/* ======================================================
+   VALID SLUG
+====================================================== */
 
 function validSlug(
   slug
 ) {
 
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-    slug
-  );
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    .test(
+      String(slug || "")
+    );
 
 }
 
 
-// ======================================================
-// STRING
-// ======================================================
+/* ======================================================
+   CLEAN STRING
+====================================================== */
 
 function cleanString(
   value
@@ -1679,9 +2175,9 @@ function cleanString(
 }
 
 
-// ======================================================
-// NUMBER
-// ======================================================
+/* ======================================================
+   NUMBER
+====================================================== */
 
 function nullableNumber(
   value
@@ -1712,18 +2208,22 @@ function nullableNumber(
 }
 
 
-// ======================================================
-// STATUS
-// ======================================================
+/* ======================================================
+   STATUS
+====================================================== */
 
 function normalizeStatus(
   value
 ) {
 
   const allowed = [
+
     "draft",
+
     "published",
+
     "archived"
+
   ];
 
 
@@ -1731,7 +2231,8 @@ function normalizeStatus(
     String(
       value || "draft"
     )
-      .toLowerCase();
+      .toLowerCase()
+      .trim();
 
 
   return allowed.includes(
@@ -1743,9 +2244,9 @@ function normalizeStatus(
 }
 
 
-// ======================================================
-// JSON RESPONSE
-// ======================================================
+/* ======================================================
+   JSON
+====================================================== */
 
 function json(
   data,
@@ -1753,28 +2254,35 @@ function json(
 ) {
 
   return new Response(
+
     JSON.stringify(
       data
     ),
+
     {
-      status: status,
+
+      status,
 
       headers: {
+
         "Content-Type":
           "application/json; charset=UTF-8",
 
         "Cache-Control":
           "no-store"
+
       }
+
     }
+
   );
 
 }
 
 
-// ======================================================
-// BASE64 URL
-// ======================================================
+/* ======================================================
+   BASE64 URL
+====================================================== */
 
 function base64Url(
   bytes
@@ -1813,9 +2321,9 @@ function base64Url(
 }
 
 
-// ======================================================
-// BASE64 URL DECODE
-// ======================================================
+/* ======================================================
+   BASE64 URL DECODE
+====================================================== */
 
 function decodeBase64Url(
   value
@@ -1872,9 +2380,9 @@ function decodeBase64Url(
 }
 
 
-// ======================================================
-// SAFE EQUAL
-// ======================================================
+/* ======================================================
+   SAFE EQUAL
+====================================================== */
 
 function safeEqual(
   a,
@@ -1884,8 +2392,7 @@ function safeEqual(
   if (
     !a ||
     !b ||
-    a.length !==
-      b.length
+    a.length !== b.length
   ) {
 
     return false;
