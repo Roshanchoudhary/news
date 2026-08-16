@@ -14,6 +14,10 @@
 
 <style>
 
+/* =====================================================
+   GLOBAL
+===================================================== */
+
 *{
   box-sizing:border-box;
 }
@@ -881,6 +885,8 @@ tr:hover td{
   }
 
 }
+
+
 /* =====================================================
    NEWS EDITOR
 ===================================================== */
@@ -1092,15 +1098,14 @@ tr:hover td{
   }
 
 }
+
 </style>
 
 </head>
 
-
 <body>
 
 <div class="app">
-
 
 <!-- =====================================================
      SIDEBAR
@@ -1352,9 +1357,6 @@ tr:hover td{
 
 <div class="main">
 
-
-  <!-- TOPBAR -->
-
   <header class="topbar">
 
     <div class="topbar-left">
@@ -1420,7 +1422,6 @@ tr:hover td{
 
   <main class="content">
 
-
     <!-- =================================================
          OVERVIEW
     ================================================= -->
@@ -1433,9 +1434,11 @@ tr:hover td{
       <div class="welcome">
 
         <h1>
-          नमस्कार, <span id="welcomeName">
+          नमस्कार,
+          <span id="welcomeName">
             Admin
-          </span> 👋
+          </span>
+          👋
         </h1>
 
         <p>
@@ -1447,7 +1450,6 @@ tr:hover td{
 
 
       <div class="stats">
-
 
         <div class="stat-card">
 
@@ -1565,9 +1567,6 @@ tr:hover td{
 
       <div class="grid-2">
 
-
-        <!-- RECENT NEWS -->
-
         <div class="card">
 
           <div class="card-header">
@@ -1578,9 +1577,7 @@ tr:hover td{
 
             <button
               class="btn small"
-              onclick="
-                switchTab('news')
-              "
+              onclick="switchTab('news')"
             >
               सभ देखू
             </button>
@@ -1601,8 +1598,6 @@ tr:hover td{
         </div>
 
 
-        <!-- QUICK ACTIONS -->
-
         <div class="card">
 
           <div class="card-header">
@@ -1613,17 +1608,13 @@ tr:hover td{
 
           </div>
 
-
           <div class="card-body">
 
             <div class="quick-actions">
 
-
               <button
                 class="quick-btn"
-                onclick="
-                  switchTab('news')
-                "
+                onclick="switchTab('news')"
               >
 
                 <div class="quick-icon">
@@ -1643,9 +1634,7 @@ tr:hover td{
 
               <button
                 class="quick-btn"
-                onclick="
-                  switchTab('categories')
-                "
+                onclick="switchTab('categories')"
               >
 
                 <div class="quick-icon">
@@ -1665,9 +1654,7 @@ tr:hover td{
 
               <button
                 class="quick-btn"
-                onclick="
-                  switchTab('tags')
-                "
+                onclick="switchTab('tags')"
               >
 
                 <div class="quick-icon">
@@ -1687,9 +1674,7 @@ tr:hover td{
 
               <button
                 class="quick-btn"
-                onclick="
-                  switchTab('menu')
-                "
+                onclick="switchTab('menu')"
               >
 
                 <div class="quick-icon">
@@ -1706,7 +1691,6 @@ tr:hover td{
 
               </button>
 
-
             </div>
 
           </div>
@@ -1716,9 +1700,7 @@ tr:hover td{
       </div>
 
     </section>
-
-
-    <!-- =================================================
+        <!-- =================================================
          NEWS
     ================================================= -->
 
@@ -1734,12 +1716,13 @@ tr:hover td{
           <input
             class="search-input"
             id="newsSearch"
+            type="search"
             placeholder="समाचार खोजू..."
           >
 
           <select
             class="select"
-            id="newsStatus"
+            id="newsStatusFilter"
           >
 
             <option value="">
@@ -1832,17 +1815,17 @@ tr:hover td{
             </thead>
 
 
-            <tbody
-              id="newsTable"
-            >
+            <tbody id="newsTable">
 
               <tr>
+
                 <td
                   colspan="6"
                   class="loading"
                 >
                   लोड भ' रहल अछि...
                 </td>
+
               </tr>
 
             </tbody>
@@ -1924,9 +1907,7 @@ tr:hover td{
             </thead>
 
 
-            <tbody
-              id="categoryTable"
-            >
+            <tbody id="categoryTable">
 
               <tr>
 
@@ -2010,9 +1991,7 @@ tr:hover td{
             </thead>
 
 
-            <tbody
-              id="tagTable"
-            >
+            <tbody id="tagTable">
 
               <tr>
 
@@ -2110,7 +2089,7 @@ tr:hover td{
               "
             >
               Menu item के show/hide आ order
-              अगिला step में manage करू।
+              manage करू।
             </div>
 
           </div>
@@ -2169,8 +2148,8 @@ tr:hover td{
 
             <br><br>
 
-            Comments Management अगिला
-            चरण में activate कएल जाएत।
+            Comments Management
+            अगिला चरण में activate कएल जाएत।
 
           </div>
 
@@ -2308,6 +2287,275 @@ tr:hover td{
 
 </div>
 
+
+<!-- =====================================================
+     NEWS EDITOR MODAL
+===================================================== -->
+
+<div
+  class="news-editor-modal"
+  id="newsEditorModal"
+>
+
+  <div class="news-editor-box">
+
+    <div class="news-editor-header">
+
+      <div>
+
+        <small>
+          MAITHILI NEWS
+        </small>
+
+        <h2 id="newsEditorTitle">
+          नया समाचार
+        </h2>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="news-editor-close"
+        onclick="closeNewsEditor()"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <form
+      id="newsEditorForm"
+      onsubmit="saveNews(event)"
+    >
+
+      <input
+        type="hidden"
+        id="newsId"
+        value=""
+      >
+
+
+      <div class="news-field">
+
+        <label>
+          शीर्षक <b>*</b>
+        </label>
+
+        <input
+          type="text"
+          id="newsTitle"
+          required
+          placeholder="समाचारक शीर्षक लिखू..."
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          URL / Slug <b>*</b>
+          <span>
+            English में SEO friendly URL
+          </span>
+        </label>
+
+        <input
+          type="text"
+          id="newsSlug"
+          required
+          placeholder="news-title"
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          संक्षिप्त विवरण
+        </label>
+
+        <textarea
+          id="newsSummary"
+          rows="3"
+          placeholder="समाचारक छोट विवरण..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="news-grid">
+
+        <div class="news-field">
+
+          <label>
+            श्रेणी
+          </label>
+
+          <select id="newsCategory">
+
+            <option value="">
+              Category चुनू
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="news-field">
+
+          <label>
+            Status
+          </label>
+
+          <select id="newsEditorStatus">
+
+            <option value="draft">
+              Draft
+            </option>
+
+            <option value="published">
+              Published
+            </option>
+
+            <option value="archived">
+              Archived
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          समाचार सामग्री <b>*</b>
+        </label>
+
+        <textarea
+          id="newsContent"
+          class="news-content"
+          required
+          placeholder="समाचारक पूरा सामग्री लिखू..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          Featured Image
+          <span>
+            Image URL
+          </span>
+        </label>
+
+        <input
+          type="url"
+          id="newsImage"
+          placeholder="https://..."
+        >
+
+      </div>
+
+
+      <div class="news-field">
+
+        <label>
+          टैग
+        </label>
+
+        <div
+          class="news-tags"
+          id="newsTags"
+        >
+          Tags लोड भ' रहल अछि...
+        </div>
+
+      </div>
+
+
+      <label class="featured-check">
+
+        <input
+          type="checkbox"
+          id="newsFeatured"
+        >
+
+        Featured समाचार बनाउ
+
+      </label>
+
+
+      <details class="seo-settings">
+
+        <summary>
+          SEO Settings
+        </summary>
+
+
+        <div class="news-field">
+
+          <label>
+            SEO Title
+          </label>
+
+          <input
+            type="text"
+            id="newsSeoTitle"
+            placeholder="SEO title..."
+          >
+
+        </div>
+
+
+        <div class="news-field">
+
+          <label>
+            SEO Description
+          </label>
+
+          <textarea
+            id="newsSeoDescription"
+            rows="3"
+            placeholder="Search engine description..."
+          ></textarea>
+
+        </div>
+
+      </details>
+
+
+      <div class="news-editor-footer">
+
+        <button
+          type="button"
+          onclick="closeNewsEditor()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+        >
+          Save News
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
 </div>
 
 
@@ -2321,7 +2569,11 @@ tr:hover td{
 ></div>
 
 
-<script>
+<!-- =====================================================
+     JAVASCRIPT
+     PART 2 END
+===================================================== -->
+  <script>
 
 /* =====================================================
    CONFIG
@@ -2389,6 +2641,7 @@ document.addEventListener(
   init
 );
 
+
 /* =====================================================
    ADMIN SESSION SECURITY
 ===================================================== */
@@ -2401,10 +2654,10 @@ async function checkAdminSession(){
       await fetch(
         API + "/login",
         {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store",
-          headers: {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
             "Accept":
               "application/json"
           }
@@ -2437,23 +2690,16 @@ async function checkAdminSession(){
         "admin"
       );
 
-
       window.location.replace(
         "/login.html"
       );
 
-
       return false;
-
     }
 
 
     /*
-     * केवल Admin role allow करू।
-     *
-     * status check एखन नहि करू,
-     * कारण /api/login GET response
-     * में status return नहि भ' रहल अछि।
+     * केवल Admin role allow करू
      */
 
     if(
@@ -2467,14 +2713,11 @@ async function checkAdminSession(){
         "admin"
       );
 
-
       window.location.replace(
         "/login.html"
       );
 
-
       return false;
-
     }
 
 
@@ -2503,28 +2746,52 @@ async function checkAdminSession(){
 
 
     /*
-     * Header में Admin information
+     * Admin information
      */
 
-    const adminInfo =
+    const adminName =
       document.getElementById(
-        "adminInfo"
+        "adminName"
+      );
+
+    const welcomeName =
+      document.getElementById(
+        "welcomeName"
+      );
+
+    const adminAvatar =
+      document.getElementById(
+        "adminAvatar"
       );
 
 
-    if(adminInfo){
+    if(adminName){
 
-      adminInfo.textContent =
+      adminName.textContent =
+        data.user.name ||
+        "Admin";
+
+    }
+
+
+    if(welcomeName){
+
+      welcomeName.textContent =
+        data.user.name ||
+        "Admin";
+
+    }
+
+
+    if(adminAvatar){
+
+      adminAvatar.textContent =
         (
           data.user.name ||
-          "Admin"
-        ) +
-        " (" +
-        (
-          data.user.role ||
-          "admin"
-        ) +
-        ")";
+          "A"
+        )
+          .charAt(0)
+          .toUpperCase();
 
     }
 
@@ -2552,10 +2819,15 @@ async function checkAdminSession(){
 
     return false;
 
-  
+  }
 
 }
-}
+
+
+/* =====================================================
+   INITIALIZE DASHBOARD
+===================================================== */
+
 async function init(){
 
   /*
@@ -2589,6 +2861,7 @@ async function init(){
   await loadOverview();
 
 }
+
 
 /* =====================================================
    NAVIGATION
@@ -2665,24 +2938,39 @@ function switchTab(
     ];
 
 
-  document
-    .getElementById(
+  const pageTitle =
+    document.getElementById(
       "pageTitle"
-    )
-    .textContent =
-    info[0];
+    );
 
-
-  document
-    .getElementById(
+  const pageSubtitle =
+    document.getElementById(
       "pageSubtitle"
-    )
-    .textContent =
-    info[1];
+    );
+
+
+  if(pageTitle){
+
+    pageTitle.textContent =
+      info[0];
+
+  }
+
+
+  if(pageSubtitle){
+
+    pageSubtitle.textContent =
+      info[1];
+
+  }
 
 
   closeMobileMenu();
 
+
+  /*
+   * Tab अनुसार data load करू।
+   */
 
   if(
     tab === "overview"
@@ -2723,7 +3011,7 @@ function switchTab(
 
 
 /* =====================================================
-   MOBILE
+   MOBILE MENU
 ===================================================== */
 
 function setupMobileMenu(){
@@ -2739,6 +3027,16 @@ function setupMobileMenu(){
     );
 
 
+  if(
+    !toggle ||
+    !overlay
+  ){
+
+    return;
+
+  }
+
+
   toggle.addEventListener(
     "click",
     () => {
@@ -2750,6 +3048,7 @@ function setupMobileMenu(){
         .classList.toggle(
           "open"
         );
+
 
       overlay.classList.toggle(
         "show"
@@ -2769,22 +3068,33 @@ function setupMobileMenu(){
 
 function closeMobileMenu(){
 
-  document
-    .getElementById(
+  const sidebar =
+    document.getElementById(
       "sidebar"
-    )
-    .classList.remove(
+    );
+
+  const overlay =
+    document.getElementById(
+      "overlay"
+    );
+
+
+  if(sidebar){
+
+    sidebar.classList.remove(
       "open"
     );
 
+  }
 
-  document
-    .getElementById(
-      "overlay"
-    )
-    .classList.remove(
+
+  if(overlay){
+
+    overlay.classList.remove(
       "show"
     );
+
+  }
 
 }
 
@@ -2797,7 +3107,7 @@ function loadAdminInfo(){
 
   /*
    * Existing login/session systems के
-   * साथ basic compatibility.
+   * साथ compatibility.
    */
 
   try{
@@ -2809,7 +3119,9 @@ function loadAdminInfo(){
 
 
     if(!saved){
+
       return;
+
     }
 
 
@@ -2823,36 +3135,56 @@ function loadAdminInfo(){
       user.name
     ){
 
-      document
-        .getElementById(
+      const adminName =
+        document.getElementById(
           "adminName"
-        )
-        .textContent =
-        user.name;
+        );
 
-
-      document
-        .getElementById(
+      const welcomeName =
+        document.getElementById(
           "welcomeName"
-        )
-        .textContent =
-        user.name;
+        );
 
-
-      document
-        .getElementById(
+      const adminAvatar =
+        document.getElementById(
           "adminAvatar"
-        )
-        .textContent =
-        user.name
-          .charAt(0)
-          .toUpperCase();
+        );
+
+
+      if(adminName){
+
+        adminName.textContent =
+          user.name;
+
+      }
+
+
+      if(welcomeName){
+
+        welcomeName.textContent =
+          user.name;
+
+      }
+
+
+      if(adminAvatar){
+
+        adminAvatar.textContent =
+          user.name
+            .charAt(0)
+            .toUpperCase();
+
+      }
 
     }
 
-  }catch{
 
-    /* ignore */
+  }catch(error){
+
+    console.warn(
+      "Admin info error:",
+      error
+    );
 
   }
 
@@ -2860,6 +3192,9 @@ function loadAdminInfo(){
 
 
 /* =====================================================
+   PART 3 END
+===================================================== */
+    /* =====================================================
    OVERVIEW
 ===================================================== */
 
@@ -2869,8 +3204,12 @@ async function loadOverview(){
 
     const response =
       await fetch(
-        API +
-        "/news?limit=100"
+        API + "/news?limit=100",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store"
+        }
       );
 
 
@@ -2879,18 +3218,20 @@ async function loadOverview(){
 
 
     if(
+      !response.ok ||
       !data.success
     ){
+
       throw new Error(
         data.error ||
         "News load error"
       );
+
     }
 
 
     const news =
-      data.news ||
-      [];
+      data.news || [];
 
 
     const total =
@@ -2962,6 +3303,12 @@ async function loadOverview(){
     );
 
 
+    setText(
+      "newsTotalLabel",
+      total
+    );
+
+
     renderRecentNews(
       news.slice(
         0,
@@ -2973,6 +3320,7 @@ async function loadOverview(){
   }catch(error){
 
     console.error(
+      "OVERVIEW ERROR:",
       error
     );
 
@@ -3016,6 +3364,13 @@ function renderRecentNews(
     );
 
 
+  if(!container){
+
+    return;
+
+  }
+
+
   if(
     !news.length
   ){
@@ -3047,13 +3402,16 @@ function renderRecentNews(
                 ${index + 1}
               </div>
 
+
               <div class="recent-content">
 
                 <div class="recent-title">
                   ${escapeHtml(
-                    item.title
+                    item.title ||
+                    "Untitled"
                   )}
                 </div>
+
 
                 <div class="recent-meta">
 
@@ -3073,9 +3431,23 @@ function renderRecentNews(
 
               </div>
 
-              ${statusBadge(
-                item.status
-              )}
+
+              <span
+                class="badge ${
+                  item.status ===
+                  "published"
+                    ? "success"
+                    : item.status ===
+                      "draft"
+                    ? "warning"
+                    : "gray"
+                }"
+              >
+                ${escapeHtml(
+                  item.status ||
+                  "unknown"
+                )}
+              </span>
 
             </div>
           `;
@@ -3088,18 +3460,28 @@ function renderRecentNews(
 
 
 /* =====================================================
-   NEWS
+   NEWS LIST
 ===================================================== */
+
+let newsCache = [];
+
 
 async function loadNews(){
 
-  const tbody =
+  const table =
     document.getElementById(
       "newsTable"
     );
 
 
-  tbody.innerHTML =
+  if(!table){
+
+    return;
+
+  }
+
+
+  table.innerHTML =
     `
       <tr>
         <td
@@ -3114,33 +3496,14 @@ async function loadNews(){
 
   try{
 
-    const status =
-      document
-        .getElementById(
-          "newsStatus"
-        )
-        .value;
-
-
-    let url =
-      API +
-      "/news?limit=100";
-
-
-    if(status){
-
-      url +=
-        "&status=" +
-        encodeURIComponent(
-          status
-        );
-
-    }
-
-
     const response =
       await fetch(
-        url
+        API + "/news?limit=100",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store"
+        }
       );
 
 
@@ -3149,25 +3512,36 @@ async function loadNews(){
 
 
     if(
+      !response.ok ||
       !data.success
     ){
 
       throw new Error(
         data.error ||
-        "News load error"
+        "News load नहि भ' सकल।"
       );
 
     }
 
 
+    newsCache =
+      data.news || [];
+
+
     renderNewsTable(
-      data.news || []
+      newsCache
     );
 
 
   }catch(error){
 
-    tbody.innerHTML =
+    console.error(
+      "NEWS LOAD ERROR:",
+      error
+    );
+
+
+    table.innerHTML =
       `
         <tr>
           <td
@@ -3175,7 +3549,8 @@ async function loadNews(){
             class="error"
           >
             ${escapeHtml(
-              error.message
+              error.message ||
+              "समाचार load नहि भ' सकल।"
             )}
           </td>
         </tr>
@@ -3186,79 +3561,77 @@ async function loadNews(){
 }
 
 
+/* =====================================================
+   NEWS TABLE
+===================================================== */
+
 function renderNewsTable(
   news
 ){
 
-  const tbody =
+  const table =
     document.getElementById(
       "newsTable"
     );
 
 
-  const search =
-    document
-      .getElementById(
-        "newsSearch"
-      )
-      .value
-      .trim()
-      .toLowerCase();
-
-
-  if(search){
-
-    news =
-      news.filter(
-        item =>
-          String(
-            item.title || ""
-          )
-            .toLowerCase()
-            .includes(
-              search
-            )
-      );
-
-  }
-
-
-  setText(
-    "newsTotalLabel",
-    news.length +
-    " News"
-  );
-
-
-  if(
-    !news.length
-  ){
-
-    tbody.innerHTML =
-      `
-        <tr>
-          <td
-            colspan="6"
-            class="empty"
-          >
-            कोनो समाचार नहि भेटल।
-          </td>
-        </tr>
-      `;
+  if(!table){
 
     return;
 
   }
 
 
-  tbody.innerHTML =
+  if(!news.length){
+
+    table.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="6"
+            class="empty"
+          >
+            एखन कोनो समाचार नहि अछि।
+          </td>
+        </tr>
+      `;
+
+
+    setText(
+      "newsTotalLabel",
+      0
+    );
+
+
+    return;
+
+  }
+
+
+  setText(
+    "newsTotalLabel",
+    news.length
+  );
+
+
+  table.innerHTML =
     news
       .map(
         item => {
 
-          const slug =
-            item.slug ||
-            item.id;
+          const status =
+            item.status ||
+            "draft";
+
+
+          const statusClass =
+            status ===
+            "published"
+              ? "success"
+              : status ===
+                "draft"
+              ? "warning"
+              : "gray";
 
 
           return `
@@ -3266,11 +3639,21 @@ function renderNewsTable(
 
               <td>
 
-                <strong>
+                <div
+                  style="
+                    font-weight:700;
+                    max-width:360px;
+                    overflow:hidden;
+                    text-overflow:ellipsis;
+                    white-space:nowrap;
+                  "
+                >
                   ${escapeHtml(
-                    item.title
+                    item.title ||
+                    "Untitled"
                   )}
-                </strong>
+                </div>
+
 
                 <div
                   style="
@@ -3279,8 +3662,9 @@ function renderNewsTable(
                     margin-top:4px;
                   "
                 >
-                  /news/${escapeHtml(
-                    item.slug || ""
+                  /${escapeHtml(
+                    item.slug ||
+                    ""
                   )}
                 </div>
 
@@ -3288,17 +3672,25 @@ function renderNewsTable(
 
 
               <td>
+
                 ${escapeHtml(
                   item.category_name ||
                   "—"
                 )}
+
               </td>
 
 
               <td>
-                ${statusBadge(
-                  item.status
-                )}
+
+                <span
+                  class="badge ${statusClass}"
+                >
+                  ${escapeHtml(
+                    status
+                  )}
+                </span>
+
               </td>
 
 
@@ -3330,28 +3722,24 @@ function renderNewsTable(
                   <button
                     class="btn small"
                     onclick="
-                      viewNews(
-                        '${encodeURIComponent(
-                          slug
-                        )}'
+                      editNews(
+                        ${Number(item.id)}
                       )
                     "
                   >
-                    👁
+                    Edit
                   </button>
 
 
                   <button
                     class="btn small"
                     onclick="
-                      editNews(
-                        '${encodeURIComponent(
-                          item.id
-                        )}'
+                      previewNews(
+                        ${Number(item.id)}
                       )
                     "
                   >
-                    ✏️
+                    Preview
                   </button>
 
 
@@ -3359,13 +3747,11 @@ function renderNewsTable(
                     class="btn small danger"
                     onclick="
                       deleteNews(
-                        '${encodeURIComponent(
-                          item.id
-                        )}'
+                        ${Number(item.id)}
                       )
                     "
                   >
-                    🗑
+                    Delete
                   </button>
 
                 </div>
@@ -3383,487 +3769,248 @@ function renderNewsTable(
 
 
 /* =====================================================
-   SEARCH NEWS
+   NEWS SEARCH
 ===================================================== */
 
-document
-  .getElementById(
-    "newsSearch"
-  )
-  .addEventListener(
-    "input",
-    () => {
+function filterNews(){
 
-      loadNews();
-
-    }
-  );
-
-
-document
-  .getElementById(
-    "newsStatus"
-  )
-  .addEventListener(
-    "change",
-    () => {
-
-      loadNews();
-
-    }
-  );
-
-
-/* =====================================================
-   CATEGORIES
-===================================================== */
-
-async function loadCategories(){
-
-  const tbody =
+  const searchInput =
     document.getElementById(
-      "categoryTable"
+      "newsSearch"
     );
 
 
-  tbody.innerHTML =
-    `
-      <tr>
-        <td
-          colspan="6"
-          class="loading"
-        >
-          श्रेणी लोड भ' रहल अछि...
-        </td>
-      </tr>
-    `;
+  const statusFilter =
+    document.getElementById(
+      "newsStatusFilter"
+    );
 
 
-  try{
-
-    const response =
-      await fetch(
-        API +
-        "/categories?status=active"
-      );
-
-
-    const data =
-      await response.json();
+  const search =
+    (
+      searchInput?.value ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
 
 
-    if(
-      !data.success
-    ){
-
-      throw new Error(
-        data.error ||
-        "Category load error"
-      );
-
-    }
+  const status =
+    statusFilter?.value ||
+    "";
 
 
-    const categories =
-      data.categories ||
-      [];
+  const filtered =
+    newsCache.filter(
+      item => {
+
+        const title =
+          String(
+            item.title || ""
+          )
+            .toLowerCase();
 
 
-    if(
-      !categories.length
-    ){
-
-      tbody.innerHTML =
-        `
-          <tr>
-            <td
-              colspan="6"
-              class="empty"
-            >
-              एखन कोनो श्रेणी नहि अछि।
-            </td>
-          </tr>
-        `;
-
-      return;
-
-    }
+        const summary =
+          String(
+            item.summary || ""
+          )
+            .toLowerCase();
 
 
-    tbody.innerHTML =
-      categories
-        .map(
-          item => {
-
-            return `
-              <tr>
-
-                <td>
-                  <strong>
-                    ${escapeHtml(
-                      item.name
-                    )}
-                  </strong>
-                </td>
+        const slug =
+          String(
+            item.slug || ""
+          )
+            .toLowerCase();
 
 
-                <td>
-                  <code>
-                    /category/${escapeHtml(
-                      item.slug || ""
-                    )}
-                  </code>
-                </td>
+        const category =
+          String(
+            item.category_name ||
+            ""
+          )
+            .toLowerCase();
 
 
-                <td>
-                  ${statusBadge(
-                    item.status ||
-                    "active"
-                  )}
-                </td>
+        const matchesSearch =
+          !search ||
+          title.includes(search) ||
+          summary.includes(search) ||
+          slug.includes(search) ||
+          category.includes(search);
 
 
-                <td>
-                  ${
-                    Number(
-                      item.menu_visible ??
-                      item.show_in_menu ??
-                      1
-                    ) === 1
-
-                    ? `
-                      <span class="badge success">
-                        Show
-                      </span>
-                    `
-
-                    : `
-                      <span class="badge gray">
-                        Hidden
-                      </span>
-                    `
-                  }
-                </td>
+        const matchesStatus =
+          !status ||
+          item.status ===
+          status;
 
 
-                <td>
-                  ${Number(
-                    item.menu_order || 0
-                  )}
-                </td>
+        return (
+          matchesSearch &&
+          matchesStatus
+        );
+
+      }
+    );
 
 
-                <td>
-
-                  <button
-                    class="btn small"
-                    onclick="
-                      editCategory(
-                        '${encodeURIComponent(
-                          item.id
-                        )}'
-                      )
-                    "
-                  >
-                    ✏️
-                  </button>
-
-                </td>
-
-              </tr>
-            `;
-
-          }
-        )
-        .join("");
-
-  }catch(error){
-
-    tbody.innerHTML =
-      `
-        <tr>
-          <td
-            colspan="6"
-            class="error"
-          >
-            ${escapeHtml(
-              error.message
-            )}
-          </td>
-        </tr>
-      `;
-
-  }
+  renderNewsTable(
+    filtered
+  );
 
 }
 
 
 /* =====================================================
-   TAGS
+   NEWS FILTER EVENTS
 ===================================================== */
 
-async function loadTags(){
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
 
-  const tbody =
-    document.getElementById(
-      "tagTable"
-    );
-
-
-  tbody.innerHTML =
-    `
-      <tr>
-        <td
-          colspan="5"
-          class="loading"
-        >
-          Tag लोड भ' रहल अछि...
-        </td>
-      </tr>
-    `;
-
-
-  try{
-
-    const response =
-      await fetch(
-        API +
-        "/tags?status=active"
+    const search =
+      document.getElementById(
+        "newsSearch"
       );
 
 
-    const data =
-      await response.json();
+    const status =
+      document.getElementById(
+        "newsStatusFilter"
+      );
 
 
-    if(
-      !data.success
-    ){
+    if(search){
 
-      throw new Error(
-        data.error ||
-        "Tag load error"
+      search.addEventListener(
+        "input",
+        filterNews
       );
 
     }
 
 
-    const tags =
-      data.tags ||
-      [];
+    if(status){
 
-
-    if(
-      !tags.length
-    ){
-
-      tbody.innerHTML =
-        `
-          <tr>
-            <td
-              colspan="5"
-              class="empty"
-            >
-              एखन कोनो Tag नहि अछि।
-            </td>
-          </tr>
-        `;
-
-      return;
+      status.addEventListener(
+        "change",
+        filterNews
+      );
 
     }
 
-
-    tbody.innerHTML =
-      tags
-        .map(
-          item => {
-
-            return `
-              <tr>
-
-                <td>
-                  <strong>
-                    #${escapeHtml(
-                      item.name
-                    )}
-                  </strong>
-                </td>
-
-
-                <td>
-                  <code>
-                    /tag/${escapeHtml(
-                      item.slug || ""
-                    )}
-                  </code>
-                </td>
-
-
-                <td>
-                  ${escapeHtml(
-                    item.description ||
-                    "—"
-                  )}
-                </td>
-
-
-                <td>
-                  ${statusBadge(
-                    item.status ||
-                    "active"
-                  )}
-                </td>
-
-
-                <td>
-
-                  <button
-                    class="btn small"
-                    onclick="
-                      editTag(
-                        '${encodeURIComponent(
-                          item.id
-                        )}'
-                      )
-                    "
-                  >
-                    ✏️
-                  </button>
-
-                </td>
-
-              </tr>
-            `;
-
-          }
-        )
-        .join("");
-
-  }catch(error){
-
-    tbody.innerHTML =
-      `
-        <tr>
-          <td
-            colspan="5"
-            class="error"
-          >
-            ${escapeHtml(
-              error.message
-            )}
-          </td>
-        </tr>
-      `;
-
   }
-
-}
-
-
-/* =====================================================
-   ACTIONS
-===================================================== */
-  function addNews(){
-
-  const modal =
-    document.getElementById(
-      "newsEditorModal"
-    );
-
-  if(!modal){
-
-    showToast(
-      "News Editor उपलब्ध नहि अछि।"
-    );
-
-    return;
-
-  }
-
-
-  document.getElementById(
-    "newsEditorTitle"
-  ).textContent =
-    "नया समाचार";
-
-
-  document.getElementById(
-    "newsId"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsTitle"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsSlug"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsSummary"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsContent"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsImage"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsSeoTitle"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsSeoDescription"
-  ).value =
-    "";
-
-
-  document.getElementById(
-    "newsStatus"
-  ).value =
-    "draft";
-
-
-  document.getElementById(
-    "newsFeatured"
-  ).checked =
-    false;
-
-
-  loadNewsEditorCategories();
-loadNewsEditorTags();
-
-modal.classList.add(
-  "show"
 );
 
-}
 
-  function closeNewsEditor(){
+/* =====================================================
+   PART 4 END
+===================================================== */
+    <script>
+
+/* =====================================================
+   NEWS EDITOR
+===================================================== */
+
+
+/* =====================================================
+   ADD NEW NEWS
+===================================================== */
+
+async function addNews(){
+
+  const form =
+    document.getElementById(
+      "newsEditorForm"
+    );
+
+
+  if(form){
+
+    form.reset();
+
+  }
+
+
+  const newsId =
+    document.getElementById(
+      "newsId"
+    );
+
+  if(newsId){
+
+    newsId.value = "";
+
+  }
+
+
+  const editorTitle =
+    document.getElementById(
+      "newsEditorTitle"
+    );
+
+  if(editorTitle){
+
+    editorTitle.textContent =
+      "नया समाचार";
+
+  }
+
+
+  const status =
+    document.getElementById(
+      "newsEditorStatus"
+    );
+
+  if(status){
+
+    status.value =
+      "draft";
+
+  }
+
 
   const modal =
     document.getElementById(
       "newsEditorModal"
     );
+
+
+  if(modal){
+
+    modal.classList.add(
+      "show"
+    );
+
+  }
+
+
+  /*
+   * Category आ Tags editor खुललाक बाद
+   * load करू।
+   */
+
+  await loadNewsEditorCategories();
+
+  await loadNewsEditorTags();
+
+}
+
+
+/* =====================================================
+   CLOSE NEWS EDITOR
+===================================================== */
+
+function closeNewsEditor(){
+
+  const modal =
+    document.getElementById(
+      "newsEditorModal"
+    );
+
 
   if(modal){
 
@@ -3875,34 +4022,48 @@ modal.classList.add(
 
 }
 
-  async function loadNewsEditorCategories(){
+
+/* =====================================================
+   LOAD CATEGORIES
+===================================================== */
+
+async function loadNewsEditorCategories(){
 
   const select =
     document.getElementById(
       "newsCategory"
     );
 
+
   if(!select){
+
     return;
+
   }
 
 
-  select.innerHTML = `
-    <option value="">
-      Category लोड भ' रहल अछि...
-    </option>
-  `;
+  select.innerHTML =
+    `
+      <option value="">
+        Category लोड भ' रहल अछि...
+      </option>
+    `;
 
 
   try{
 
     const response =
       await fetch(
-        API + "/categories?status=active",
+        API +
+        "/categories?status=active",
         {
           method:"GET",
           credentials:"include",
-          cache:"no-store"
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
         }
       );
 
@@ -3913,7 +4074,7 @@ modal.classList.add(
 
     if(
       !response.ok ||
-      !data.success
+      data.success !== true
     ){
 
       throw new Error(
@@ -3925,14 +4086,16 @@ modal.classList.add(
 
 
     const categories =
-      data.categories || [];
+      data.categories ||
+      [];
 
 
-    select.innerHTML = `
-      <option value="">
-        Category चुनू
-      </option>
-    `;
+    select.innerHTML =
+      `
+        <option value="">
+          Category चुनू
+        </option>
+      `;
 
 
     categories.forEach(
@@ -3943,11 +4106,14 @@ modal.classList.add(
             "option"
           );
 
+
         option.value =
           category.id;
 
+
         option.textContent =
           category.name;
+
 
         select.appendChild(
           option
@@ -3965,44 +4131,64 @@ modal.classList.add(
     );
 
 
-    select.innerHTML = `
-      <option value="">
-        Category load नहि भ' सकल
-      </option>
-    `;
-
-    showToast(
-      error.message
-    );
+    select.innerHTML =
+      `
+        <option value="">
+          Category load नहि भ' सकल
+        </option>
+      `;
 
   }
 
 }
 
-  async function loadNewsEditorTags(){
+
+/* =====================================================
+   LOAD TAGS
+===================================================== */
+
+async function loadNewsEditorTags(){
 
   const container =
     document.getElementById(
       "newsTags"
     );
 
+
   if(!container){
+
     return;
+
   }
 
+
   container.innerHTML =
-    "Tags लोड भ' रहल अछि...";
+    `
+      <span
+        style="
+          color:#999;
+          font-size:11px;
+        "
+      >
+        Tags लोड भ' रहल अछि...
+      </span>
+    `;
 
 
   try{
 
     const response =
       await fetch(
-        API + "/tags?status=active",
+        API +
+        "/tags?status=active",
         {
           method:"GET",
           credentials:"include",
-          cache:"no-store"
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
         }
       );
 
@@ -4013,7 +4199,7 @@ modal.classList.add(
 
     if(
       !response.ok ||
-      !data.success
+      data.success !== true
     ){
 
       throw new Error(
@@ -4025,7 +4211,8 @@ modal.classList.add(
 
 
     const tags =
-      data.tags || [];
+      data.tags ||
+      [];
 
 
     if(!tags.length){
@@ -4043,27 +4230,47 @@ modal.classList.add(
         `;
 
       return;
+
     }
 
 
     container.innerHTML =
-      tags.map(
-        tag => `
-          <label class="news-tag">
+      tags
+        .map(
+          tag => {
 
-            <input
-              type="checkbox"
-              name="newsTag"
-              value="${tag.id}"
-            >
+            return `
+              <label
+                class="news-tag"
+                style="
+                  display:inline-flex;
+                  align-items:center;
+                  gap:5px;
+                  margin:4px 8px 4px 0;
+                  font-size:11px;
+                  cursor:pointer;
+                "
+              >
 
-            ${escapeHtml(
-              tag.name
-            )}
+                <input
+                  type="checkbox"
+                  name="newsTag"
+                  value="${Number(
+                    tag.id
+                  )}"
+                >
 
-          </label>
-        `
-      ).join("");
+                ${escapeHtml(
+                  tag.name ||
+                  ""
+                )}
+
+              </label>
+            `;
+
+          }
+        )
+        .join("");
 
 
   }catch(error){
@@ -4072,6 +4279,7 @@ modal.classList.add(
       "TAGS LOAD ERROR:",
       error
     );
+
 
     container.innerHTML =
       `
@@ -4089,44 +4297,71 @@ modal.classList.add(
 
 }
 
+
+/* =====================================================
+   SAVE / UPDATE NEWS
+===================================================== */
+
 async function saveNews(event){
 
   event.preventDefault();
 
+
   const title =
-    document.getElementById("newsTitle")
-      .value.trim();
+    document.getElementById(
+      "newsTitle"
+    ).value.trim();
+
 
   const content =
-    document.getElementById("newsContent")
-      .value.trim();
+    document.getElementById(
+      "newsContent"
+    ).value.trim();
+
 
   const slug =
-    document.getElementById("newsSlug")
-      .value.trim();
+    document.getElementById(
+      "newsSlug"
+    ).value.trim();
 
 
   if(!title){
-    showToast("समाचार शीर्षक जरूरी अछि।");
+
+    showToast(
+      "समाचार शीर्षक जरूरी अछि।"
+    );
+
     return;
+
   }
 
 
   if(!content){
-    showToast("समाचार सामग्री जरूरी अछि।");
+
+    showToast(
+      "समाचार सामग्री जरूरी अछि।"
+    );
+
     return;
+
   }
 
 
   if(!slug){
-    showToast("News URL जरूरी अछि।");
+
+    showToast(
+      "News URL जरूरी अछि।"
+    );
+
     return;
+
   }
 
 
   const newsId =
-    document.getElementById("newsId")
-      .value.trim();
+    document.getElementById(
+      "newsId"
+    ).value.trim();
 
 
   const selectedTags =
@@ -4134,30 +4369,49 @@ async function saveNews(event){
       document.querySelectorAll(
         'input[name="newsTag"]:checked'
       )
-    ).map(
-      input => Number(input.value)
+    )
+    .map(
+      input =>
+        Number(
+          input.value
+        )
     );
 
 
   const payload = {
 
-    title: title,
+    title:
 
-    slug: slug,
+      title,
+
+
+    slug:
+
+      slug,
+
 
     summary:
+
       document.getElementById(
         "newsSummary"
       ).value.trim(),
 
-    content: content,
+
+    content:
+
+      content,
+
 
     image_url:
+
       document.getElementById(
         "newsImage"
-      ).value.trim() || null,
+      ).value.trim() ||
+      null,
+
 
     category_id:
+
       document.getElementById(
         "newsCategory"
       ).value
@@ -4168,51 +4422,76 @@ async function saveNews(event){
           )
         : null,
 
+
     status:
+
       document.getElementById(
-        "newsStatus"
-      ).value || "draft",
+        "newsEditorStatus"
+      ).value ||
+      "draft",
+
 
     featured:
+
       document.getElementById(
         "newsFeatured"
       ).checked,
 
+
     seo_title:
+
       document.getElementById(
         "newsSeoTitle"
       ).value.trim(),
 
+
     seo_description:
+
       document.getElementById(
         "newsSeoDescription"
       ).value.trim(),
 
-    tags: selectedTags
+
+    tags:
+
+      selectedTags
 
   };
 
 
   const requestUrl =
+
     newsId
+
       ? API +
         "/news?id=" +
-        encodeURIComponent(newsId)
-      : API + "/news";
+        encodeURIComponent(
+          newsId
+        )
+
+      : API +
+        "/news";
 
 
   const requestMethod =
+
     newsId
+
       ? "PUT"
+
       : "POST";
 
 
   try{
 
     showToast(
+
       newsId
+
         ? "समाचार update भ' रहल अछि..."
+
         : "समाचार save भ' रहल अछि..."
+
     );
 
 
@@ -4220,11 +4499,13 @@ async function saveNews(event){
       await fetch(
         requestUrl,
         {
-          method: requestMethod,
+          method:
+            requestMethod,
 
-          credentials: "include",
+          credentials:
+            "include",
 
-          headers: {
+          headers:{
             "Content-Type":
               "application/json",
 
@@ -4233,7 +4514,10 @@ async function saveNews(event){
           },
 
           body:
-            JSON.stringify(payload)
+            JSON.stringify(
+              payload
+            )
+
         }
       );
 
@@ -4244,7 +4528,7 @@ async function saveNews(event){
 
     if(
       !response.ok ||
-      !data.success
+      data.success !== true
     ){
 
       throw new Error(
@@ -4263,30 +4547,20 @@ async function saveNews(event){
 
 
     showToast(
+
       newsId
+
         ? "समाचार सफलतापूर्वक update भ' गेल।"
+
         : "समाचार सफलतापूर्वक save भ' गेल।"
+
     );
 
 
-    if(
-      typeof loadNews ===
-      "function"
-    ){
-
-      await loadNews();
-
-    }
+    await loadNews();
 
 
-    if(
-      typeof loadOverview ===
-      "function"
-    ){
-
-      await loadOverview();
-
-    }
+    await loadOverview();
 
 
   }catch(error){
@@ -4305,82 +4579,34 @@ async function saveNews(event){
   }
 
 }
-  
-  document
-  .getElementById("newsTitle")
-  ?.addEventListener(
-    "input",
-    function(){
-
-      const slug =
-        document.getElementById(
-          "newsSlug"
-        );
-
-      if(!slug){
-        return;
-      }
-
-      /*
-       * अगर user ने manually slug नहीं बदला है,
-       * तो title से automatic slug बनेगा।
-       */
-
-      if(
-        !slug.dataset.manual
-      ){
-
-        slug.value =
-          this.value
-            .toLowerCase()
-            .trim()
-            .replace(
-              /[^a-z0-9]+/g,
-              "-"
-            )
-            .replace(
-              /^-+|-+$/g,
-              ""
-            );
-
-      }
-
-    }
-  );
 
 
-document
-  .getElementById("newsSlug")
-  ?.addEventListener(
-    "input",
-    function(){
+/* =====================================================
+   PART 5 END
+===================================================== */
+    /* =====================================================
+   EDIT NEWS
+===================================================== */
 
-      this.dataset.manual =
-        this.value.trim()
-          ? "1"
-          : "";
-
-      this.value =
-        this.value
-          .toLowerCase()
-          .replace(
-            /[^a-z0-9-]/g,
-            "-"
-          )
-          .replace(
-            /-+/g,
-            "-"
-          )
-          .replace(
-            /^-+|-+$/g,
-            "");
-
-    }
-  );
-  
 async function editNews(id){
 
+  if(!id){
+
+    showToast(
+      "समाचार ID नहि भेटल।"
+    );
+
+    return;
+
+  }
+
+
   try{
+
+    showToast(
+      "समाचार load भ' रहल अछि..."
+    );
+
 
     const response =
       await fetch(
@@ -4388,9 +4614,17 @@ async function editNews(id){
         "/news?id=" +
         encodeURIComponent(id),
         {
-          method: "GET",
-          credentials: "include",
-          cache: "no-store"
+          method:"GET",
+
+          credentials:"include",
+
+          cache:"no-store",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+
         }
       );
 
@@ -4401,7 +4635,7 @@ async function editNews(id){
 
     if(
       !response.ok ||
-      !data.success
+      data.success !== true
     ){
 
       throw new Error(
@@ -4425,72 +4659,131 @@ async function editNews(id){
     }
 
 
-    document.getElementById(
-      "newsEditorTitle"
-    ).textContent =
-      "समाचार Edit करू";
+    /* -----------------------------------------------
+       Editor Title
+    ------------------------------------------------ */
+
+    const editorTitle =
+      document.getElementById(
+        "newsEditorTitle"
+      );
 
 
-    document.getElementById(
-      "newsId"
-    ).value =
-      news.id || "";
+    if(editorTitle){
+
+      editorTitle.textContent =
+        "समाचार Edit करू";
+
+    }
 
 
-    document.getElementById(
-      "newsTitle"
-    ).value =
-      news.title || "";
+    /* -----------------------------------------------
+       Hidden ID
+    ------------------------------------------------ */
+
+    const newsId =
+      document.getElementById(
+        "newsId"
+      );
 
 
-    document.getElementById(
-      "newsSlug"
-    ).value =
-      news.slug || "";
+    if(newsId){
+
+      newsId.value =
+        news.id || "";
+
+    }
 
 
-    document.getElementById(
-      "newsSummary"
-    ).value =
-      news.summary || "";
+    /* -----------------------------------------------
+       Basic Fields
+    ------------------------------------------------ */
+
+    setInputValue(
+      "newsTitle",
+      news.title
+    );
 
 
-    document.getElementById(
-      "newsContent"
-    ).value =
-      news.content || "";
+    setInputValue(
+      "newsSlug",
+      news.slug
+    );
 
 
-    document.getElementById(
-      "newsImage"
-    ).value =
-      news.image_url || "";
+    setInputValue(
+      "newsSummary",
+      news.summary
+    );
 
 
-    document.getElementById(
-      "newsStatus"
-    ).value =
-      news.status || "draft";
+    setInputValue(
+      "newsContent",
+      news.content
+    );
 
 
-    document.getElementById(
-      "newsFeatured"
-    ).checked =
-      Number(news.featured) === 1 ||
-      news.featured === true;
+    setInputValue(
+      "newsImage",
+      news.image_url
+    );
 
 
-    document.getElementById(
-      "newsSeoTitle"
-    ).value =
-      news.seo_title || "";
+    setInputValue(
+      "newsSeoTitle",
+      news.seo_title
+    );
 
 
-    document.getElementById(
-      "newsSeoDescription"
-    ).value =
-      news.seo_description || "";
+    setInputValue(
+      "newsSeoDescription",
+      news.seo_description
+    );
 
+
+    /* -----------------------------------------------
+       Status
+    ------------------------------------------------ */
+
+    const status =
+      document.getElementById(
+        "newsEditorStatus"
+      );
+
+
+    if(status){
+
+      status.value =
+        news.status ||
+        "draft";
+
+    }
+
+
+    /* -----------------------------------------------
+       Featured
+    ------------------------------------------------ */
+
+    const featured =
+      document.getElementById(
+        "newsFeatured"
+      );
+
+
+    if(featured){
+
+      featured.checked =
+        Number(
+          news.featured || 0
+        ) === 1 ||
+        news.featured === true;
+
+    }
+
+
+    /* -----------------------------------------------
+       Categories
+    ------------------------------------------------ */
 
     await loadNewsEditorCategories();
 
@@ -4500,24 +4793,35 @@ async function editNews(id){
         "newsCategory"
       );
 
+
     if(category){
 
       category.value =
-        news.category_id || "";
+        news.category_id ||
+        "";
 
     }
 
 
+    /* -----------------------------------------------
+       Tags
+    ------------------------------------------------ */
+
     await loadNewsEditorTags();
 
 
-    const selectedTagIds =
-      (news.tags || [])
-        .map(
-          tag => Number(
-            tag.id
+    const selectedTags =
+      Array.isArray(
+        news.tags
+      )
+        ? news.tags.map(
+            tag =>
+              Number(
+                tag.id ||
+                tag
+              )
           )
-        );
+        : [];
 
 
     document
@@ -4528,7 +4832,7 @@ async function editNews(id){
         checkbox => {
 
           checkbox.checked =
-            selectedTagIds.includes(
+            selectedTags.includes(
               Number(
                 checkbox.value
               )
@@ -4537,6 +4841,10 @@ async function editNews(id){
         }
       );
 
+
+    /* -----------------------------------------------
+       Open Editor
+    ------------------------------------------------ */
 
     const modal =
       document.getElementById(
@@ -4571,147 +4879,2056 @@ async function editNews(id){
 }
 
 
-function deleteNews(id){
+/* =====================================================
+   PREVIEW NEWS
+===================================================== */
 
-  if(
-    !confirm(
-      "की अहाँ ई समाचार delete करय चाहैत छी?"
-    )
-  ){
+async function previewNews(id){
+
+  if(!id){
+
+    showToast(
+      "समाचार ID नहि भेटल।"
+    );
+
     return;
+
   }
 
 
-  showToast(
-    "Delete action अगिला step में जोड़ब।"
-  );
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/news?id=" +
+        encodeURIComponent(id),
+        {
+          method:"GET",
+
+          credentials:"include",
+
+          cache:"no-store",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "समाचार load नहि भ' सकल।"
+      );
+
+    }
+
+
+    const news =
+      data.news;
+
+
+    if(!news){
+
+      throw new Error(
+        "समाचार नहि भेटल।"
+      );
+
+    }
+
+
+    /*
+     * Published news के website URL।
+     * Draft के preview हेतु admin page खोलने
+     * के बजाय फिलहाल available slug URL खोलू।
+     */
+
+    const slug =
+      news.slug;
+
+
+    if(!slug){
+
+      showToast(
+        "News slug उपलब्ध नहि अछि।"
+      );
+
+      return;
+
+    }
+
+
+    const url =
+      "/news/" +
+      encodeURIComponent(
+        slug
+      );
+
+
+    window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "PREVIEW NEWS ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Preview नहि खुलि सकल।"
+    );
+
+  }
 
 }
 
 
-function viewNews(slug){
+/* =====================================================
+   DELETE NEWS
+===================================================== */
 
-  window.open(
-    "/news/" +
-    decodeURIComponent(
-      slug
-    ),
-    "_blank"
-  );
+async function deleteNews(id){
+
+  if(!id){
+
+    showToast(
+      "समाचार ID नहि भेटल।"
+    );
+
+    return;
+
+  }
+
+
+  const confirmed =
+    window.confirm(
+      "की अहाँ एहि समाचार केँ delete कर' चाहैत छी?\n\nई कार्रवाई वापस नहि कएल जा सकैत अछि।"
+    );
+
+
+  if(!confirmed){
+
+    return;
+
+  }
+
+
+  try{
+
+    showToast(
+      "समाचार delete भ' रहल अछि..."
+    );
+
+
+    const response =
+      await fetch(
+        API +
+        "/news?id=" +
+        encodeURIComponent(id),
+        {
+          method:"DELETE",
+
+          credentials:"include",
+
+          cache:"no-store",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "समाचार delete नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "समाचार सफलतापूर्वक delete भ' गेल।"
+    );
+
+
+    await loadNews();
+
+    await loadOverview();
+
+
+  }catch(error){
+
+    console.error(
+      "DELETE NEWS ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "समाचार delete नहि भ' सकल।"
+    );
+
+  }
 
 }
 
 
-function addCategory(){
+/* =====================================================
+   PART 6 END
+===================================================== */
+    /* =====================================================
+   CATEGORIES MANAGEMENT
+===================================================== */
 
-  showToast(
-    "Category Editor अगिला step में जोड़ब।"
-  );
+let categoriesCache = [];
+
+
+async function loadCategories(){
+
+  const table =
+    document.getElementById(
+      "categoryTable"
+    );
+
+
+  if(!table){
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    `
+      <tr>
+        <td
+          colspan="6"
+          class="loading"
+        >
+          श्रेणी लोड भ' रहल अछि...
+        </td>
+      </tr>
+    `;
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/categories",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Category load नहि भ' सकल।"
+      );
+
+    }
+
+
+    categoriesCache =
+      data.categories ||
+      [];
+
+
+    renderCategories(
+      categoriesCache
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "CATEGORY LOAD ERROR:",
+      error
+    );
+
+
+    table.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="6"
+            class="error"
+          >
+            ${escapeHtml(
+              error.message ||
+              "Category load नहि भ' सकल।"
+            )}
+          </td>
+        </tr>
+      `;
+
+  }
 
 }
 
 
-function editCategory(id){
+/* =====================================================
+   RENDER CATEGORIES
+===================================================== */
 
-  showToast(
-    "Category Editor अगिला step में जोड़ब।"
-  );
+function renderCategories(
+  categories
+){
+
+  const table =
+    document.getElementById(
+      "categoryTable"
+    );
+
+
+  if(!table){
+
+    return;
+
+  }
+
+
+  if(!categories.length){
+
+    table.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="6"
+            class="empty"
+          >
+            एखन कोनो category नहि अछि।
+          </td>
+        </tr>
+      `;
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    categories
+      .map(
+        category => {
+
+          const status =
+            category.status ||
+            "active";
+
+
+          return `
+            <tr>
+
+              <td>
+
+                <strong>
+                  ${escapeHtml(
+                    category.name ||
+                    ""
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td>
+
+                <span
+                  style="
+                    color:#777;
+                    font-size:11px;
+                  "
+                >
+                  ${escapeHtml(
+                    category.slug ||
+                    "—"
+                  )}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <span
+                  class="badge ${
+                    status ===
+                    "active"
+                      ? "success"
+                      : "gray"
+                  }"
+                >
+                  ${escapeHtml(
+                    status
+                  )}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                ${
+                  category.show_in_menu
+                    ? "हाँ"
+                    : "नहि"
+                }
+
+              </td>
+
+
+              <td>
+
+                ${
+                  category.sort_order ??
+                  0
+                }
+
+              </td>
+
+
+              <td>
+
+                <div
+                  style="
+                    display:flex;
+                    gap:5px;
+                  "
+                >
+
+                  <button
+                    class="btn small"
+                    onclick="
+                      editCategory(
+                        ${Number(
+                          category.id
+                        )}
+                      )
+                    "
+                  >
+                    Edit
+                  </button>
+
+
+                  <button
+                    class="btn small danger"
+                    onclick="
+                      deleteCategory(
+                        ${Number(
+                          category.id
+                        )}
+                      )
+                    "
+                  >
+                    Delete
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
 
 }
 
 
-function addTag(){
+/* =====================================================
+   ADD CATEGORY
+===================================================== */
 
-  showToast(
-    "Tag Editor अगिला step में जोड़ब।"
-  );
+async function addCategory(){
+
+  const name =
+    window.prompt(
+      "नव category केर नाम लिखू:"
+    );
+
+
+  if(!name){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/categories",
+        {
+          method:"POST",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              name:
+                name.trim(),
+
+              status:
+                "active"
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Category create नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Category सफलतापूर्वक बनि गेल।"
+    );
+
+
+    await loadCategories();
+
+
+  }catch(error){
+
+    console.error(
+      "ADD CATEGORY ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Category create नहि भ' सकल।"
+    );
+
+  }
 
 }
 
 
-function editTag(id){
+/* =====================================================
+   EDIT CATEGORY
+===================================================== */
 
-  showToast(
-    "Tag Editor अगिला step में जोड़ब।"
-  );
+async function editCategory(
+  id
+){
+
+  const category =
+    categoriesCache.find(
+      item =>
+        Number(item.id) ===
+        Number(id)
+    );
+
+
+  if(!category){
+
+    showToast(
+      "Category नहि भेटल।"
+    );
+
+    return;
+
+  }
+
+
+  const name =
+    window.prompt(
+      "Category केर नाम बदलू:",
+      category.name || ""
+    );
+
+
+  if(
+    name === null ||
+    !name.trim()
+  ){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/categories?id=" +
+        encodeURIComponent(id),
+        {
+          method:"PUT",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              name:
+                name.trim()
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Category update नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Category update भ' गेल।"
+    );
+
+
+    await loadCategories();
+
+
+  }catch(error){
+
+    console.error(
+      "EDIT CATEGORY ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Category update नहि भ' सकल।"
+    );
+
+  }
 
 }
 
+
+/* =====================================================
+   DELETE CATEGORY
+===================================================== */
+
+async function deleteCategory(
+  id
+){
+
+  const confirmed =
+    window.confirm(
+      "की अहाँ एहि category केँ delete कर' चाहैत छी?"
+    );
+
+
+  if(!confirmed){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/categories?id=" +
+        encodeURIComponent(id),
+        {
+          method:"DELETE",
+
+          credentials:"include",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Category delete नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Category delete भ' गेल।"
+    );
+
+
+    await loadCategories();
+
+
+  }catch(error){
+
+    console.error(
+      "DELETE CATEGORY ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Category delete नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   TAGS MANAGEMENT
+===================================================== */
+
+let tagsCache = [];
+
+
+async function loadTags(){
+
+  const table =
+    document.getElementById(
+      "tagTable"
+    );
+
+
+  if(!table){
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    `
+      <tr>
+        <td
+          colspan="5"
+          class="loading"
+        >
+          Tags लोड भ' रहल अछि...
+        </td>
+      </tr>
+    `;
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/tags",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Tags load नहि भ' सकल।"
+      );
+
+    }
+
+
+    tagsCache =
+      data.tags ||
+      [];
+
+
+    renderTags(
+      tagsCache
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "TAGS LOAD ERROR:",
+      error
+    );
+
+
+    table.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="5"
+            class="error"
+          >
+            ${escapeHtml(
+              error.message ||
+              "Tags load नहि भ' सकल।"
+            )}
+          </td>
+        </tr>
+      `;
+
+  }
+
+}
+
+
+/* =====================================================
+   RENDER TAGS
+===================================================== */
+
+function renderTags(
+  tags
+){
+
+  const table =
+    document.getElementById(
+      "tagTable"
+    );
+
+
+  if(!table){
+
+    return;
+
+  }
+
+
+  if(!tags.length){
+
+    table.innerHTML =
+      `
+        <tr>
+          <td
+            colspan="5"
+            class="empty"
+          >
+            एखन कोनो tag नहि अछि।
+          </td>
+        </tr>
+      `;
+
+    return;
+
+  }
+
+
+  table.innerHTML =
+    tags
+      .map(
+        tag => {
+
+          const status =
+            tag.status ||
+            "active";
+
+
+          return `
+            <tr>
+
+              <td>
+
+                <strong>
+                  ${escapeHtml(
+                    tag.name ||
+                    ""
+                  )}
+                </strong>
+
+              </td>
+
+
+              <td>
+
+                ${escapeHtml(
+                  tag.slug ||
+                  "—"
+                )}
+
+              </td>
+
+
+              <td>
+
+                ${escapeHtml(
+                  tag.description ||
+                  "—"
+                )}
+
+              </td>
+
+
+              <td>
+
+                <span
+                  class="badge ${
+                    status ===
+                    "active"
+                      ? "success"
+                      : "gray"
+                  }"
+                >
+                  ${escapeHtml(
+                    status
+                  )}
+                </span>
+
+              </td>
+
+
+              <td>
+
+                <div
+                  style="
+                    display:flex;
+                    gap:5px;
+                  "
+                >
+
+                  <button
+                    class="btn small"
+                    onclick="
+                      editTag(
+                        ${Number(
+                          tag.id
+                        )}
+                      )
+                    "
+                  >
+                    Edit
+                  </button>
+
+
+                  <button
+                    class="btn small danger"
+                    onclick="
+                      deleteTag(
+                        ${Number(
+                          tag.id
+                        )}
+                      )
+                    "
+                  >
+                    Delete
+                  </button>
+
+                </div>
+
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+/* =====================================================
+   ADD TAG
+===================================================== */
+
+async function addTag(){
+
+  const name =
+    window.prompt(
+      "नव tag केर नाम लिखू:"
+    );
+
+
+  if(!name){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/tags",
+        {
+          method:"POST",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              name:
+                name.trim(),
+
+              status:
+                "active"
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Tag create नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Tag सफलतापूर्वक बनि गेल।"
+    );
+
+
+    await loadTags();
+
+
+  }catch(error){
+
+    console.error(
+      "ADD TAG ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Tag create नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   EDIT TAG
+===================================================== */
+
+async function editTag(
+  id
+){
+
+  const tag =
+    tagsCache.find(
+      item =>
+        Number(item.id) ===
+        Number(id)
+    );
+
+
+  if(!tag){
+
+    showToast(
+      "Tag नहि भेटल।"
+    );
+
+    return;
+
+  }
+
+
+  const name =
+    window.prompt(
+      "Tag केर नाम बदलू:",
+      tag.name || ""
+    );
+
+
+  if(
+    name === null ||
+    !name.trim()
+  ){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/tags?id=" +
+        encodeURIComponent(id),
+        {
+          method:"PUT",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              name:
+                name.trim()
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Tag update नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Tag update भ' गेल।"
+    );
+
+
+    await loadTags();
+
+
+  }catch(error){
+
+    console.error(
+      "EDIT TAG ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Tag update नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DELETE TAG
+===================================================== */
+
+async function deleteTag(
+  id
+){
+
+  const confirmed =
+    window.confirm(
+      "की अहाँ एहि tag केँ delete कर' चाहैत छी?"
+    );
+
+
+  if(!confirmed){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/tags?id=" +
+        encodeURIComponent(id),
+        {
+          method:"DELETE",
+
+          credentials:"include",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Tag delete नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Tag delete भ' गेल।"
+    );
+
+
+    await loadTags();
+
+
+  }catch(error){
+
+    console.error(
+      "DELETE TAG ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Tag delete नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   PART 7 END
+===================================================== */
+    /* =====================================================
+   MENU MANAGEMENT
+===================================================== */
+
+async function loadMenu(){
+
+  const container =
+    document.getElementById(
+      "menuContainer"
+    );
+
+
+  if(!container){
+
+    return;
+
+  }
+
+
+  container.innerHTML =
+    `
+      <div class="loading">
+        Menu लोड भ' रहल अछि...
+      </div>
+    `;
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/menu",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Menu load नहि भ' सकल।"
+      );
+
+    }
+
+
+    const items =
+      data.menu ||
+      data.items ||
+      [];
+
+
+    if(!items.length){
+
+      container.innerHTML =
+        `
+          <div class="empty">
+            एखन कोनो menu item नहि अछि।
+          </div>
+        `;
+
+      return;
+
+    }
+
+
+    container.innerHTML =
+      items
+        .map(
+          item => `
+
+            <div
+              class="recent-item"
+              style="
+                border:1px solid #eee;
+                border-radius:8px;
+                padding:12px;
+                margin-bottom:8px;
+              "
+            >
+
+              <div
+                class="recent-number"
+              >
+                ${Number(
+                  item.sort_order ||
+                  item.order ||
+                  0
+                )}
+              </div>
+
+
+              <div
+                class="recent-content"
+              >
+
+                <div
+                  class="recent-title"
+                >
+                  ${escapeHtml(
+                    item.label ||
+                    item.name ||
+                    ""
+                  )}
+                </div>
+
+
+                <div
+                  class="recent-meta"
+                >
+                  ${escapeHtml(
+                    item.url ||
+                    item.path ||
+                    "#"
+                  )}
+                </div>
+
+              </div>
+
+
+              <span
+                class="badge ${
+                  item.status ===
+                  "active"
+                    ? "success"
+                    : "gray"
+                }"
+              >
+                ${escapeHtml(
+                  item.status ||
+                  "active"
+                )}
+              </span>
+
+
+              <button
+                class="btn small"
+                onclick="
+                  editMenuItem(
+                    ${Number(
+                      item.id
+                    )}
+                  )
+                "
+              >
+                Edit
+              </button>
+
+
+              <button
+                class="btn small danger"
+                onclick="
+                  deleteMenuItem(
+                    ${Number(
+                      item.id
+                    )}
+                  )
+                "
+              >
+                Delete
+              </button>
+
+            </div>
+
+          `
+        )
+        .join("");
+
+
+  }catch(error){
+
+    console.error(
+      "MENU LOAD ERROR:",
+      error
+    );
+
+
+    container.innerHTML =
+      `
+        <div class="error">
+          ${escapeHtml(
+            error.message ||
+            "Menu load नहि भ' सकल।"
+          )}
+        </div>
+      `;
+
+  }
+
+}
+
+
+/* =====================================================
+   ADD MENU ITEM
+===================================================== */
+
+async function addMenuItem(){
+
+  const label =
+    window.prompt(
+      "Menu item केर नाम लिखू:"
+    );
+
+
+  if(
+    label === null ||
+    !label.trim()
+  ){
+
+    return;
+
+  }
+
+
+  const url =
+    window.prompt(
+      "Menu URL लिखू:",
+      "#"
+    );
+
+
+  if(url === null){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/menu",
+        {
+          method:"POST",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              label:
+                label.trim(),
+
+              url:
+                url.trim(),
+
+              status:
+                "active"
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Menu item create नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Menu item बनि गेल।"
+    );
+
+
+    await loadMenu();
+
+
+  }catch(error){
+
+    console.error(
+      "ADD MENU ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Menu item create नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   EDIT MENU ITEM
+===================================================== */
+
+async function editMenuItem(
+  id
+){
+
+  const label =
+    window.prompt(
+      "नव Menu name लिखू:"
+    );
+
+
+  if(
+    label === null ||
+    !label.trim()
+  ){
+
+    return;
+
+  }
+
+
+  const url =
+    window.prompt(
+      "नव Menu URL लिखू:"
+    );
+
+
+  if(url === null){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/menu?id=" +
+        encodeURIComponent(id),
+        {
+          method:"PUT",
+
+          credentials:"include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              label:
+                label.trim(),
+
+              url:
+                url.trim()
+
+            })
+
+          }
+        );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Menu update नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Menu update भ' गेल।"
+    );
+
+
+    await loadMenu();
+
+
+  }catch(error){
+
+    console.error(
+      "EDIT MENU ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Menu update नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DELETE MENU ITEM
+===================================================== */
+
+async function deleteMenuItem(
+  id
+){
+
+  if(
+    !window.confirm(
+      "की एहि menu item केँ delete करबाक अछि?"
+    )
+  ){
+
+    return;
+
+  }
+
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/menu?id=" +
+        encodeURIComponent(id),
+        {
+          method:"DELETE",
+
+          credentials:"include",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Menu delete नहि भ' सकल।"
+      );
+
+    }
+
+
+    showToast(
+      "Menu delete भ' गेल।"
+    );
+
+
+    await loadMenu();
+
+
+  }catch(error){
+
+    console.error(
+      "DELETE MENU ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Menu delete नहि भ' सकल।"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   MEDIA
+===================================================== */
 
 function uploadMedia(){
 
   showToast(
-    "Media Library अगिला step में जोड़ब।"
+    "Media upload अगिला चरण में जोड़ल जाएत।"
   );
 
 }
 
 
-function addMenuItem(){
-
-  showToast(
-    "Menu Manager अगिला step में जोड़ब।"
-  );
-
-}
-
+/* =====================================================
+   USERS
+===================================================== */
 
 function addUser(){
 
   showToast(
-    "User Management अगिला step में जोड़ब।"
+    "User management अगिला चरण में जोड़ल जाएत।"
   );
 
 }
 
 
 /* =====================================================
-   WEBSITE
+   SETTINGS
 ===================================================== */
 
-function openWebsite(){
+function loadSettings(){
 
-  window.open(
-    "/",
-    "_blank"
+  console.log(
+    "Settings ready"
   );
 
 }
 
 
 /* =====================================================
-   REFRESH
+   COMMENTS
 ===================================================== */
 
-function refreshCurrentTab(){
+function loadComments(){
 
-  const active =
-    document.querySelector(
-      ".nav-item.active"
-    );
+  console.log(
+    "Comments ready"
+  );
+
+}
 
 
-  if(active){
+/* =====================================================
+   TAB DATA LOADER
+===================================================== */
 
-    switchTab(
-      active.dataset.tab
-    );
+const originalSwitchTab =
+  switchTab;
+
+
+switchTab = function(tab){
+
+  originalSwitchTab(
+    tab
+  );
+
+
+  if(
+    tab === "menu"
+  ){
+
+    loadMenu();
 
   }
 
+
+  if(
+    tab === "comments"
+  ){
+
+    loadComments();
+
+  }
+
+
+  if(
+    tab === "users"
+  ){
+
+    loadUsers();
+
+  }
+
+
+  if(
+    tab === "settings"
+  ){
+
+    loadSettings();
+
+  }
+
+};
+
+
+/* =====================================================
+   USERS LOADER
+===================================================== */
+
+async function loadUsers(){
+
+  console.log(
+    "Users management ready"
+  );
+
 }
 
 
 /* =====================================================
-   LOGOUT
+   PART 8 END
+===================================================== */
+    /* =====================================================
+   AUTO SLUG
 ===================================================== */
 
-function logout(){
+function createSlug(text){
+
+  return String(
+    text || ""
+  )
+    .toLowerCase()
+    .trim()
+    .replace(
+      /[^a-z0-9]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      "");
+}
+
+
+function setupNewsSlug(){
+
+  const title =
+    document.getElementById(
+      "newsTitle"
+    );
+
+  const slug =
+    document.getElementById(
+      "newsSlug"
+    );
+
 
   if(
-    !confirm(
-      "की अहाँ logout करय चाहैत छी?"
-    )
+    !title ||
+    !slug
   ){
 
     return;
@@ -4719,33 +6936,40 @@ function logout(){
   }
 
 
-  /*
-   * Existing login endpoint.
-   */
-
-  fetch(
-    API +
-    "/login",
-    {
-      method:"POST",
-      headers:{
-        "Content-Type":
-          "application/json"
-      },
-      body:JSON.stringify({
-        action:"logout"
-      })
-    }
-  )
-  .finally(
+  title.addEventListener(
+    "input",
     () => {
 
-      localStorage.removeItem(
-        "admin"
-      );
+      /*
+       * यदि user ने slug manually
+       * change नहि कएल अछि,
+       * तखन title सँ बनत।
+       */
 
-      window.location.href =
-        "/login.html";
+      if(
+        slug.dataset.manual !==
+        "true"
+      ){
+
+        slug.value =
+          createSlug(
+            title.value
+          );
+
+      }
+
+    }
+  );
+
+
+  slug.addEventListener(
+    "input",
+    () => {
+
+      slug.dataset.manual =
+        slug.value.trim()
+          ? "true"
+          : "false";
 
     }
   );
@@ -4754,7 +6978,36 @@ function logout(){
 
 
 /* =====================================================
-   HELPERS
+   RESET SLUG WHEN NEW NEWS
+===================================================== */
+
+const originalAddNews =
+  addNews;
+
+
+addNews = async function(){
+
+  const slug =
+    document.getElementById(
+      "newsSlug"
+    );
+
+
+  if(slug){
+
+    slug.dataset.manual =
+      "false";
+
+  }
+
+
+  await originalAddNews();
+
+};
+
+
+/* =====================================================
+   UTILITY — SET TEXT
 ===================================================== */
 
 function setText(
@@ -4771,121 +7024,43 @@ function setText(
   if(element){
 
     element.textContent =
-      value;
+      value ??
+      "";
 
   }
 
 }
 
 
-function formatNumber(
+/* =====================================================
+   UTILITY — SET INPUT
+===================================================== */
+
+function setInputValue(
+  id,
   value
 ){
 
-  return Number(
-    value || 0
-  ).toLocaleString(
-    "en-IN"
-  );
-
-}
-
-
-function formatDate(
-  value
-){
-
-  if(!value){
-    return "—";
-  }
-
-
-  try{
-
-    return new Date(
-      value
-    ).toLocaleDateString(
-      "hi-IN",
-      {
-        day:"numeric",
-        month:"short",
-        year:"numeric"
-      }
+  const element =
+    document.getElementById(
+      id
     );
 
-  }catch{
 
-    return "—";
+  if(element){
+
+    element.value =
+      value ??
+      "";
 
   }
 
 }
 
 
-function statusBadge(
-  status
-){
-
-  const value =
-    String(
-      status ||
-      ""
-    ).toLowerCase();
-
-
-  if(
-    value ===
-    "published"
-  ){
-
-    return `
-      <span class="badge success">
-        Published
-      </span>
-    `;
-
-  }
-
-
-  if(
-    value ===
-    "draft"
-  ){
-
-    return `
-      <span class="badge warning">
-        Draft
-      </span>
-    `;
-
-  }
-
-
-  if(
-    value ===
-    "archived"
-  ){
-
-    return `
-      <span class="badge danger">
-        Archived
-      </span>
-    `;
-
-  }
-
-
-  return `
-    <span class="badge gray">
-      ${escapeHtml(
-        status ||
-        "Active"
-      )}
-    </span>
-  `;
-
-}
-
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHtml(
   value
@@ -4920,12 +7095,90 @@ function escapeHtml(
 
 
 /* =====================================================
+   FORMAT NUMBER
+===================================================== */
+
+function formatNumber(
+  value
+){
+
+  const number =
+    Number(
+      value || 0
+    );
+
+
+  return number.toLocaleString(
+    "en-IN"
+  );
+
+}
+
+
+/* =====================================================
+   FORMAT DATE
+===================================================== */
+
+function formatDate(
+  value
+){
+
+  if(!value){
+
+    return "—";
+
+  }
+
+
+  try{
+
+    const date =
+      new Date(
+        value
+      );
+
+
+    if(
+      Number.isNaN(
+        date.getTime()
+      )
+    ){
+
+      return "—";
+
+    }
+
+
+    return date.toLocaleDateString(
+      "hi-IN",
+      {
+        day:"2-digit",
+        month:"short",
+        year:"numeric"
+      }
+    );
+
+
+  }catch(error){
+
+    return "—";
+
+  }
+
+}
+
+
+/* =====================================================
    TOAST
 ===================================================== */
 
+let toastTimer =
+  null;
+
+
 function showToast(
   message,
-  type="success"
+  type = "success"
 ){
 
   const toast =
@@ -4934,22 +7187,35 @@ function showToast(
     );
 
 
+  if(!toast){
+
+    return;
+
+  }
+
+
   toast.textContent =
-    message;
+    message ||
+    "";
 
 
   toast.className =
     "toast " +
-    type +
+    (
+      type ===
+      "error"
+        ? "error"
+        : "success"
+    ) +
     " show";
 
 
   clearTimeout(
-    window.toastTimer
+    toastTimer
   );
 
 
-  window.toastTimer =
+  toastTimer =
     setTimeout(
       () => {
 
@@ -4963,256 +7229,593 @@ function showToast(
 
 }
 
+
+/* =====================================================
+   WEBSITE
+===================================================== */
+
+function openWebsite(){
+
+  window.open(
+    "/",
+    "_blank",
+    "noopener,noreferrer"
+  );
+
+}
+
+
+/* =====================================================
+   REFRESH CURRENT TAB
+===================================================== */
+
+async function refreshCurrentTab(){
+
+  const active =
+    document.querySelector(
+      ".nav-item.active"
+    );
+
+
+  const tab =
+    active?.dataset?.tab ||
+    "overview";
+
+
+  showToast(
+    "Data refresh भ' रहल अछि..."
+  );
+
+
+  try{
+
+    if(
+      tab ===
+      "overview"
+    ){
+
+      await loadOverview();
+
+    }
+
+
+    else if(
+      tab ===
+      "news"
+    ){
+
+      await loadNews();
+
+    }
+
+
+    else if(
+      tab ===
+      "categories"
+    ){
+
+      await loadCategories();
+
+    }
+
+
+    else if(
+      tab ===
+      "tags"
+    ){
+
+      await loadTags();
+
+    }
+
+
+    else if(
+      tab ===
+      "menu"
+    ){
+
+      await loadMenu();
+
+    }
+
+
+    else if(
+      tab ===
+      "comments"
+    ){
+
+      await loadComments();
+
+    }
+
+
+    else if(
+      tab ===
+      "users"
+    ){
+
+      await loadUsers();
+
+    }
+
+
+    else if(
+      tab ===
+      "settings"
+    ){
+
+      await loadSettings();
+
+    }
+
+
+    showToast(
+      "Refresh सफल भेल।"
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "REFRESH ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "Refresh नहि भ' सकल।",
+      "error"
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+async function logout(){
+
+  const confirmed =
+    window.confirm(
+      "की अहाँ logout कर' चाहैत छी?"
+    );
+
+
+  if(!confirmed){
+
+    return;
+
+  }
+
+
+  try{
+
+    /*
+     * Server session समाप्त करू।
+     */
+
+    const response =
+      await fetch(
+        API +
+        "/login",
+        {
+          method:"DELETE",
+
+          credentials:"include",
+
+          cache:"no-store",
+
+          headers:{
+            "Accept":
+              "application/json"
+          }
+        }
+      );
+
+
+    let data =
+      null;
+
+
+    try{
+
+      data =
+        await response.json();
+
+    }catch(error){
+
+      /*
+       * Empty response सेहो acceptable।
+       */
+
+    }
+
+
+    console.log(
+      "LOGOUT:",
+      response.status,
+      data
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "LOGOUT ERROR:",
+      error
+    );
+
+  }
+
+
+  /*
+   * Local admin information हटाउ।
+   */
+
+  try{
+
+    localStorage.removeItem(
+      "admin"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
+
+  }catch(error){
+
+    console.warn(
+      "Local storage clear error:",
+      error
+    );
+
+  }
+
+
+  /*
+   * Browser history सँ admin page
+   * पर वापस नहि आबय दिअ।
+   */
+
+  window.location.replace(
+    "/login.html"
+  );
+
+}
+
+
+/* =====================================================
+   NEWS TITLE / SLUG INITIALIZATION
+===================================================== */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  setupNewsSlug
+);
+
+
+/* =====================================================
+   CLOSE EDITOR ON ESCAPE
+===================================================== */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if(
+      event.key ===
+      "Escape"
+    ){
+
+      closeNewsEditor();
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   PREVENT MODAL BACKGROUND CLICK
+===================================================== */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const modal =
+      document.getElementById(
+        "newsEditorModal"
+      );
+
+
+    if(
+      !modal ||
+      !modal.classList.contains(
+        "show"
+      )
+    ){
+
+      return;
+
+    }
+
+
+    if(
+      event.target ===
+      modal
+    ){
+
+      closeNewsEditor();
+
+    }
+
+  }
+);
+
+
+/* =====================================================
+   PART 9 END
+===================================================== */
+     /* =====================================================
+    FINAL INITIALIZATION
+ ===================================================== */
+
+ document.addEventListener(
+   "DOMContentLoaded",
+   function(){
+
+     /*
+      * News editor form के accidental
+      * double submit रोकू।
+      */
+
+     const form =
+       document.getElementById(
+         "newsEditorForm"
+       );
+
+
+     if(form){
+
+       form.addEventListener(
+         "submit",
+         function(){
+
+           const button =
+             form.querySelector(
+               'button[type="submit"]'
+             );
+
+
+           if(button){
+
+             button.disabled =
+               true;
+
+
+             button.dataset.originalText =
+               button.textContent;
+
+
+             button.textContent =
+               "Saving...";
+
+
+             /*
+              * Request पूरा भेलाक बाद
+              * button फेर enable होयत।
+              */
+
+             setTimeout(
+               function(){
+
+                 button.disabled =
+                   false;
+
+
+                 button.textContent =
+                   button.dataset.originalText ||
+                   "Save News";
+
+               },
+               5000
+             );
+
+           }
+
+         }
+       );
+
+     }
+
+   }
+ );
+
+
+ /* =====================================================
+    NEWS EDITOR IMAGE PREVIEW
+ ===================================================== */
+
+ function updateNewsImagePreview(){
+
+   const input =
+     document.getElementById(
+       "newsImage"
+     );
+
+
+   if(!input){
+
+     return;
+
+   }
+
+
+   /*
+    * Future image preview support.
+    * अभी image URL मात्र save होइत अछि।
+    */
+
+ }
+
+
+ /* =====================================================
+    BROWSER HISTORY PROTECTION
+ ===================================================== */
+
+ history.replaceState(
+   null,
+   "",
+   location.href
+ );
+
+
+ window.addEventListener(
+   "popstate",
+   function(){
+
+     history.pushState(
+       null,
+       "",
+       location.href
+     );
+
+   }
+ );
+
+
+ /* =====================================================
+    FINAL ERROR HANDLER
+ ===================================================== */
+
+ window.addEventListener(
+   "error",
+   function(event){
+
+     console.error(
+       "ADMIN JS ERROR:",
+       event.error ||
+       event.message
+     );
+
+   }
+ );
+
+
+ window.addEventListener(
+   "unhandledrejection",
+   function(event){
+
+     console.error(
+       "ADMIN PROMISE ERROR:",
+       event.reason
+     );
+
+   }
+ );
+
+
+ /* =====================================================
+    INITIAL PAGE STATE
+ ===================================================== */
+
+ function resetNewsEditor(){
+
+   const form =
+     document.getElementById(
+       "newsEditorForm"
+     );
+
+
+   if(form){
+
+     form.reset();
+
+   }
+
+
+   const newsId =
+     document.getElementById(
+       "newsId"
+     );
+
+
+   if(newsId){
+
+     newsId.value =
+       "";
+
+   }
+
+
+   const editorTitle =
+     document.getElementById(
+       "newsEditorTitle"
+     );
+
+
+   if(editorTitle){
+
+     editorTitle.textContent =
+       "नया समाचार";
+
+   }
+
+
+   const status =
+     document.getElementById(
+       "newsEditorStatus"
+     );
+
+
+   if(status){
+
+     status.value =
+       "draft";
+
+   }
+
+ }
+
+
+ /* =====================================================
+    FINAL MOBILE CLEANUP
+ ===================================================== */
+
+ window.addEventListener(
+   "resize",
+   function(){
+
+     if(
+       window.innerWidth >
+       800
+     ){
+
+       closeMobileMenu();
+
+     }
+
+   }
+ );
+
+
+ /* =====================================================
+    ADMIN DASHBOARD READY
+ ===================================================== */
+
+ console.log(
+   "Maithili News Admin Dashboard loaded."
+ );
+
+
 </script>
-<!-- NEWS EDITOR MODAL -->
 
-<div
-  id="newsEditorModal"
-  class="news-editor-modal"
->
 
-  <div class="news-editor-box">
-
-    <div class="news-editor-header">
-
-      <div>
-        <small>NEWS MANAGEMENT</small>
-
-        <h2 id="newsEditorTitle">
-          नया समाचार
-        </h2>
-      </div>
-
-      <button
-        type="button"
-        class="news-editor-close"
-        onclick="closeNewsEditor()"
-      >
-        ×
-      </button>
-
-    </div>
-
-
-    <form
-  id="newsEditorForm"
-  onsubmit="saveNews(event)"
->
-
-      <input
-        type="hidden"
-        id="newsId"
-      >
-
-
-      <div class="news-field">
-
-        <label>
-          समाचार शीर्षक
-          <b>*</b>
-        </label>
-
-        <input
-          type="text"
-          id="newsTitle"
-          required
-          placeholder="समाचारक शीर्षक लिखू..."
-        >
-
-      </div>
-
-
-      <div class="news-field">
-
-        <label>
-          News URL
-          <span>English में</span>
-        </label>
-
-        <input
-          type="text"
-          id="newsSlug"
-          placeholder="mithila-news-example"
-        >
-
-      </div>
-
-
-      <div class="news-field">
-
-        <label>
-          संक्षिप्त विवरण
-        </label>
-
-        <textarea
-          id="newsSummary"
-          rows="3"
-          placeholder="समाचारक छोट विवरण..."
-        ></textarea>
-
-      </div>
-
-
-      <div class="news-grid">
-
-        <div class="news-field">
-
-          <label>
-            Category
-          </label>
-
-          <select id="newsCategory">
-
-            <option value="">
-              Category चुनू
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <div class="news-field">
-
-          <label>
-            Status
-          </label>
-
-          <select id="newsStatus">
-
-            <option value="draft">
-              Draft
-            </option>
-
-            <option value="published">
-              Published
-            </option>
-
-          </select>
-
-        </div>
-
-      </div>
-
-
-      <div class="news-field">
-
-        <label>
-          Tags
-        </label>
-
-        <div
-          id="newsTags"
-          class="news-tags"
-        >
-          Tags लोड भ' रहल अछि...
-        </div>
-
-      </div>
-
-
-      <div class="news-field">
-
-        <label>
-          Featured Image URL
-        </label>
-
-        <input
-          type="url"
-          id="newsImage"
-          placeholder="https://..."
-        >
-
-      </div>
-
-
-      <div class="news-field">
-
-        <label>
-          समाचार सामग्री
-          <b>*</b>
-        </label>
-
-        <textarea
-          id="newsContent"
-          class="news-content"
-          required
-          placeholder="पूरा समाचार लिखू..."
-        ></textarea>
-
-      </div>
-
-
-      <details class="seo-settings">
-
-        <summary>
-          SEO Settings
-        </summary>
-
-        <div class="news-field">
-
-          <label>
-            SEO Title
-          </label>
-
-          <input
-            type="text"
-            id="newsSeoTitle"
-          >
-
-        </div>
-
-
-        <div class="news-field">
-
-          <label>
-            SEO Description
-          </label>
-
-          <textarea
-            id="newsSeoDescription"
-            rows="3"
-          ></textarea>
-
-        </div>
-
-      </details>
-
-
-      <label class="featured-check">
-
-        <input
-          type="checkbox"
-          id="newsFeatured"
-        >
-
-        Featured समाचार
-
-      </label>
-
-
-      <div class="news-editor-footer">
-
-  <button
-    type="button"
-    onclick="closeNewsEditor()"
-  >
-    Cancel
-  </button>
-
-  <button
-    type="submit"
-  >
-    Save News
-  </button>
-
-</div>
-
-    </form>
-
-  </div>
-
-</div>
 </body>
 
 </html>
