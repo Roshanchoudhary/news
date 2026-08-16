@@ -4191,12 +4191,11 @@ async function saveNews(event){
       "समाचार save भ' रहल अछि..."
     );
 
-
-    const response =
-      await fetch(
-        API + "/news",
-        {
-          method: "POST",
+const response =
+  await fetch(
+    requestUrl,
+    {
+      method: requestMethod,
 
           credentials: "include",
 
@@ -4346,11 +4345,195 @@ document
     }
   );
   
-function editNews(id){
+async function editNews(id){
 
-  showToast(
-    "News Editor अगिला step में जोड़ब।"
-  );
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/news?id=" +
+        encodeURIComponent(id),
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      !data.success
+    ){
+
+      throw new Error(
+        data.error ||
+        "समाचार load नहि भ' सकल।"
+      );
+
+    }
+
+
+    const news =
+      data.news;
+
+
+    if(!news){
+
+      throw new Error(
+        "समाचार नहि भेटल।"
+      );
+
+    }
+
+
+    document.getElementById(
+      "newsEditorTitle"
+    ).textContent =
+      "समाचार Edit करू";
+
+
+    document.getElementById(
+      "newsId"
+    ).value =
+      news.id || "";
+
+
+    document.getElementById(
+      "newsTitle"
+    ).value =
+      news.title || "";
+
+
+    document.getElementById(
+      "newsSlug"
+    ).value =
+      news.slug || "";
+
+
+    document.getElementById(
+      "newsSummary"
+    ).value =
+      news.summary || "";
+
+
+    document.getElementById(
+      "newsContent"
+    ).value =
+      news.content || "";
+
+
+    document.getElementById(
+      "newsImage"
+    ).value =
+      news.image_url || "";
+
+
+    document.getElementById(
+      "newsStatus"
+    ).value =
+      news.status || "draft";
+
+
+    document.getElementById(
+      "newsFeatured"
+    ).checked =
+      Number(news.featured) === 1 ||
+      news.featured === true;
+
+
+    document.getElementById(
+      "newsSeoTitle"
+    ).value =
+      news.seo_title || "";
+
+
+    document.getElementById(
+      "newsSeoDescription"
+    ).value =
+      news.seo_description || "";
+
+
+    await loadNewsEditorCategories();
+
+
+    const category =
+      document.getElementById(
+        "newsCategory"
+      );
+
+    if(category){
+
+      category.value =
+        news.category_id || "";
+
+    }
+
+
+    await loadNewsEditorTags();
+
+
+    const selectedTagIds =
+      (news.tags || [])
+        .map(
+          tag => Number(
+            tag.id
+          )
+        );
+
+
+    document
+      .querySelectorAll(
+        'input[name="newsTag"]'
+      )
+      .forEach(
+        checkbox => {
+
+          checkbox.checked =
+            selectedTagIds.includes(
+              Number(
+                checkbox.value
+              )
+            );
+
+        }
+      );
+
+
+    const modal =
+      document.getElementById(
+        "newsEditorModal"
+      );
+
+
+    if(modal){
+
+      modal.classList.add(
+        "show"
+      );
+
+    }
+
+
+  }catch(error){
+
+    console.error(
+      "EDIT NEWS ERROR:",
+      error
+    );
+
+
+    showToast(
+      error.message ||
+      "समाचार load नहि भ' सकल।"
+    );
+
+  }
 
 }
 
