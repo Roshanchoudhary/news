@@ -9,6 +9,32 @@ export async function onRequestPost(context) {
   try {
     const body = await request.json();
 
+        // ==============================
+    // LOGOUT
+    // ==============================
+    if (body.action === "logout") {
+
+      const headers = new Headers({
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      });
+
+      headers.append(
+        "Set-Cookie",
+        "session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0"
+      );
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Logout successful"
+        }),
+        {
+          status: 200,
+          headers
+        }
+      );
+    }
     // ==============================
     // FIRST ADMIN PASSWORD SETUP
     // ==============================
