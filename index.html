@@ -120,11 +120,12 @@ input:focus-visible{
   display:flex;
   align-items:center;
   gap:4px;
-  overflow-x:auto;
-  overflow-y:hidden;
+  overflow:visible;
   scrollbar-width:none;
   -webkit-overflow-scrolling:touch;
   min-height:46px;
+  position:relative;
+  z-index:1000;
 }
 
 .nav-inner::-webkit-scrollbar{
@@ -160,25 +161,130 @@ input:focus-visible{
 
 
 /* =====================================================
-   MOBILE / SUBCATEGORY MENU
+   CATEGORY / SUBCATEGORY MENU
 ===================================================== */
-.nav-group{position:relative;flex:0 0 auto;}
-.nav-group>.nav-link{display:inline-flex;}
-.nav-submenu{display:none;position:absolute;top:100%;left:0;min-width:190px;background:#fff;color:#222;z-index:1000;border-radius:0 0 8px 8px;box-shadow:0 8px 25px rgba(0,0,0,.18);padding:5px;}
-.nav-group:hover>.nav-submenu{display:block;}
-.nav-submenu a{display:block;padding:9px 11px;color:#222;font-size:13px;white-space:nowrap;border-radius:5px;}
-.nav-submenu a:hover{background:#f2f2f2;color:#8b0000;}
-.mobile-menu-toggle{display:none;border:0;background:#520000;color:#fff;padding:10px 14px;font-size:14px;font-weight:700;}
+.nav-group{
+  position:relative;
+  flex:0 0 auto;
+}
+
+.nav-group>.nav-link{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+
+.nav-submenu{
+  display:none;
+  position:absolute;
+  top:100%;
+  left:0;
+  min-width:210px;
+  background:#fff;
+  color:#222;
+  z-index:99999;
+  border:1px solid #ddd;
+  border-radius:0 0 8px 8px;
+  box-shadow:0 8px 25px rgba(0,0,0,.18);
+  padding:5px;
+  margin:0;
+}
+
+.nav-submenu a{
+  display:block;
+  padding:10px 13px;
+  color:#222;
+  font-size:13px;
+  white-space:nowrap;
+  border-radius:5px;
+  text-decoration:none;
+}
+
+.nav-submenu a:hover{
+  background:#f2f2f2;
+  color:#8b0000;
+}
+
+.mobile-menu-toggle{
+  display:none;
+  border:0;
+  background:#520000;
+  color:#fff;
+  padding:10px 14px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* Desktop: mouse hover opens submenu */
+@media(min-width:601px){
+
+  .nav-group:hover>.nav-submenu,
+  .nav-group:focus-within>.nav-submenu{
+    display:block;
+  }
+
+}
+
+/* Mobile: tap parent category to open submenu */
 @media(max-width:600px){
-  .mobile-menu-toggle{display:block;width:100%;text-align:left;}
-  .nav-inner{display:none;flex-direction:column;align-items:stretch;overflow:visible;padding:6px 0;}
-  .nav-inner.mobile-open{display:flex;}
-  .nav-group{width:100%;}
-  .nav-group>.nav-link{width:100%;justify-content:space-between;}
-  .nav-submenu{position:static;box-shadow:none;background:#520000;padding:0 0 4px 14px;display:none;}
-  .nav-group.open>.nav-submenu{display:block;}
-  .nav-submenu a{color:#fff;font-size:13px;padding:8px 12px;}
-  .nav-submenu a:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+  .mobile-menu-toggle{
+    display:block;
+    width:100%;
+    text-align:left;
+  }
+
+  .nav-inner{
+    display:none;
+    flex-direction:column;
+    align-items:stretch;
+    overflow:visible;
+    padding:6px 0;
+    position:relative;
+    z-index:1000;
+  }
+
+  .nav-inner.mobile-open{
+    display:flex;
+  }
+
+  .nav-group{
+    width:100%;
+  }
+
+  .nav-group>.nav-link{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .nav-submenu{
+    position:static;
+    width:100%;
+    min-width:0;
+    box-shadow:none;
+    border:0;
+    border-radius:0;
+    background:#520000;
+    padding:0 0 4px 14px;
+    display:none;
+  }
+
+  .nav-group.open>.nav-submenu{
+    display:block;
+  }
+
+  .nav-submenu a{
+    color:#fff;
+    font-size:13px;
+    padding:8px 12px;
+  }
+
+  .nav-submenu a:hover{
+    background:rgba(255,255,255,.1);
+    color:#fff;
+  }
+
 }
 
 /* =====================================================
@@ -653,7 +759,7 @@ footer p{
 
   <nav class="nav">
 
-    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu">☰ Menu</button>
+    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">☰ Menu</button>
 
     <div
       class="container nav-inner"
@@ -957,36 +1063,249 @@ async function loadCategories(){
 ====================================================== */
 
 function renderCategoryMenu(){
-  const nav=document.getElementById("categoryNav");
-  const loading=document.getElementById("categoryNavLoading");
-  if(!nav) return;
-  if(loading) loading.remove();
-  const roots=categories.filter(c=>!c.parent_id);
-  const children=categories.filter(c=>Number(c.parent_id)>0);
-  roots.forEach(category=>{
-    if(!category.slug) return;
-    const kids=children.filter(c=>Number(c.parent_id)===Number(category.id));
-    const group=document.createElement("div");
-    group.className="nav-group";
-    const link=document.createElement("a");
-    link.className="nav-link"; link.href="/category/"+encodeURIComponent(category.slug); link.textContent=category.name; link.dataset.category=category.slug;
-    if(kids.length) link.textContent += " ▾";
-    group.appendChild(link);
-    if(kids.length){
-      const sub=document.createElement("div"); sub.className="nav-submenu";
-      kids.sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0)).forEach(child=>{
-        if(!child.slug) return;
-        const a=document.createElement("a"); a.href="/category/"+encodeURIComponent(child.slug); a.textContent=child.name; sub.appendChild(a);
-      });
-      group.appendChild(sub);
-      link.addEventListener("click",e=>{ if(window.innerWidth<=600){e.preventDefault();group.classList.toggle("open");} });
-    }
-    nav.appendChild(group);
-  });
-  const toggle=document.getElementById("mobileMenuToggle");
-  if(toggle && !toggle.dataset.bound){
-    toggle.dataset.bound="1"; toggle.addEventListener("click",()=>nav.classList.toggle("mobile-open"));
+
+  const nav =
+    document.getElementById(
+      "categoryNav"
+    );
+
+  const loading =
+    document.getElementById(
+      "categoryNavLoading"
+    );
+
+  if(!nav){
+    return;
   }
+
+  if(loading){
+    loading.remove();
+  }
+
+  /* Keep the home link. */
+  const homeLink =
+    nav.querySelector(
+      '.nav-link[data-category=""]'
+    );
+
+  nav.innerHTML = "";
+
+  if(homeLink){
+    nav.appendChild(homeLink);
+  }
+
+  /*
+   * Only root categories become
+   * main menu items.
+   */
+  const roots =
+    categories.filter(
+      category => {
+        const parentId =
+          category.parent_id ??
+          category.parentId ??
+          null;
+
+        return (
+          parentId === null ||
+          parentId === undefined ||
+          parentId === "" ||
+          Number(parentId) === 0
+        );
+      }
+    );
+
+  roots.forEach(
+    category => {
+
+      if(!category.slug){
+        return;
+      }
+
+      /* Find children belonging to this parent. */
+      const kids =
+        categories
+          .filter(
+            child =>
+              Number(
+                child.parent_id ??
+                child.parentId ??
+                0
+              ) ===
+              Number(category.id)
+          )
+          .filter(
+            child =>
+              String(
+                child.status ||
+                "active"
+              ).toLowerCase() ===
+              "active"
+          )
+          .filter(
+            child =>
+              Number(
+                child.menu_visible ??
+                child.show_in_menu ??
+                1
+              ) === 1
+          )
+          .sort(
+            (a,b) =>
+              Number(a.menu_order || 0) -
+              Number(b.menu_order || 0)
+          );
+
+      const group =
+        document.createElement(
+          "div"
+        );
+
+      group.className =
+        "nav-group";
+
+      const link =
+        document.createElement(
+          "a"
+        );
+
+      link.className =
+        "nav-link";
+
+      link.href =
+        "/category/" +
+        encodeURIComponent(
+          category.slug
+        );
+
+      link.dataset.category =
+        category.slug;
+
+      link.innerHTML =
+        `<span>${escapeHtml(
+          category.name ||
+          "श्रेणी"
+        )}</span>` +
+        (kids.length
+          ? `<span aria-hidden="true">▾</span>`
+          : "");
+
+      group.appendChild(
+        link
+      );
+
+      if(kids.length){
+
+        const sub =
+          document.createElement(
+            "div"
+          );
+
+        sub.className =
+          "nav-submenu";
+
+        kids.forEach(
+          child => {
+
+            if(!child.slug){
+              return;
+            }
+
+            const childLink =
+              document.createElement(
+                "a"
+              );
+
+            childLink.href =
+              "/category/" +
+              encodeURIComponent(
+                child.slug
+              );
+
+            childLink.textContent =
+              child.name ||
+              "उप-श्रेणी";
+
+            childLink.dataset.category =
+              child.slug;
+
+            sub.appendChild(
+              childLink
+            );
+
+          }
+        );
+
+        group.appendChild(
+          sub
+        );
+
+        /* Mobile only: tap parent to expand. */
+        link.addEventListener(
+          "click",
+          function(event){
+
+            if(
+              window.innerWidth <= 600
+            ){
+
+              event.preventDefault();
+
+              group.classList.toggle(
+                "open"
+              );
+
+            }
+
+          }
+        );
+
+      }
+
+      nav.appendChild(
+        group
+      );
+
+    }
+  );
+
+  /* Mobile main menu button. */
+  const toggle =
+    document.getElementById(
+      "mobileMenuToggle"
+    );
+
+  if(
+    toggle &&
+    !toggle.dataset.bound
+  ){
+
+    toggle.dataset.bound =
+      "1";
+
+    toggle.addEventListener(
+      "click",
+      function(){
+
+        nav.classList.toggle(
+          "mobile-open"
+        );
+
+        const isOpen =
+          nav.classList.contains(
+            "mobile-open"
+          );
+
+        toggle.setAttribute(
+          "aria-expanded",
+          String(isOpen)
+        );
+
+      }
+    );
+
+  }
+
 }
 
 
