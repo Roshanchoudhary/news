@@ -1189,6 +1189,13 @@ tr:hover td{
 
 </style>
 
+<style>
+@media(max-width:800px){
+  #tab-settings > div:first-child{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -3201,77 +3208,218 @@ tr:hover td{
          SETTINGS
     ================================================= -->
 
-    <section
-      class="tab-page"
-      id="tab-settings"
-    >
+    
+<section class="tab-page" id="tab-settings">
 
-      <div class="grid-2">
+  <div style="
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+  ">
 
+    <div class="card">
 
-        <div class="card">
-
-          <div class="card-header">
-
-            <div class="card-title">
-              Website Settings
-            </div>
-
+      <div class="card-header">
+        <div>
+          <div class="card-title">Website Configuration</div>
+          <div style="font-size:10px;color:#888;margin-top:3px;">
+            Website title, description, contact आ social information
           </div>
-
-
-          <div class="card-body">
-
-            <div class="empty">
-
-              ⚙️
-
-              <br><br>
-
-              General, SEO, Social Media
-              आ Website settings अगिला
-              चरण में जोड़ल जाएत।
-
-            </div>
-
-          </div>
-
         </div>
-
-
-        <div class="card">
-
-          <div class="card-header">
-
-            <div class="card-title">
-              Security
-            </div>
-
-          </div>
-
-
-          <div class="card-body">
-
-            <div class="empty">
-
-              🔐
-
-              <br><br>
-
-              Password, Sessions आ
-              Security settings अगिला
-              चरण में जोड़ल जाएत।
-
-            </div>
-
-          </div>
-
-        </div>
-
-
       </div>
 
-    </section>
+      <div class="card-body">
+
+        <form id="websiteSettingsForm">
+
+          <div class="news-field">
+            <label>Website Name</label>
+            <input id="settingSiteName" type="text"
+              placeholder="मैथिली समाचार">
+          </div>
+
+          <div class="news-field">
+            <label>Tagline</label>
+            <input id="settingTagline" type="text"
+              placeholder="मैथिली भाषामे नवीनतम समाचार">
+          </div>
+
+          <div class="news-field">
+            <label>Website Description</label>
+            <textarea id="settingSiteDescription" rows="3"
+              placeholder="Website description..."></textarea>
+          </div>
+
+          <div class="news-grid">
+
+            <div class="news-field">
+              <label>Contact Email</label>
+              <input id="settingContactEmail" type="email"
+                placeholder="news@example.com">
+            </div>
+
+            <div class="news-field">
+              <label>Contact Mobile</label>
+              <input id="settingContactMobile" type="tel"
+                placeholder="+91...">
+            </div>
+
+          </div>
+
+          <div class="news-grid">
+
+            <div class="news-field">
+              <label>Facebook URL</label>
+              <input id="settingFacebook" type="url"
+                placeholder="https://facebook.com/...">
+            </div>
+
+            <div class="news-field">
+              <label>YouTube URL</label>
+              <input id="settingYoutube" type="url"
+                placeholder="https://youtube.com/...">
+            </div>
+
+          </div>
+
+          <div class="news-field">
+            <label>Default SEO Description</label>
+            <textarea id="settingSeoDescription" rows="3"
+              placeholder="Default search engine description..."></textarea>
+          </div>
+
+          <button type="submit" class="btn primary"
+            style="height:40px;padding:0 18px;">
+            Save Website Settings
+          </button>
+
+        </form>
+
+      </div>
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+        <div>
+          <div class="card-title">Security</div>
+          <div style="font-size:10px;color:#888;margin-top:3px;">
+            Admin password आ session security
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+
+        <div style="
+          padding:12px;
+          background:#f7f7f7;
+          border-radius:8px;
+          margin-bottom:15px;
+        ">
+          <div style="font-size:10px;color:#888;">
+            Logged in as
+          </div>
+
+          <strong id="securityUserName"
+            style="display:block;margin-top:4px;font-size:13px;">
+            Admin
+          </strong>
+
+          <div id="securityUserEmail"
+            style="margin-top:3px;font-size:10px;color:#777;">
+          </div>
+        </div>
+
+
+        <form id="changePasswordForm">
+
+          <div class="news-field">
+            <label>Current Password</label>
+            <input id="securityCurrentPassword"
+              type="password"
+              autocomplete="current-password"
+              required>
+          </div>
+
+          <div class="news-field">
+            <label>New Password</label>
+            <input id="securityNewPassword"
+              type="password"
+              minlength="8"
+              autocomplete="new-password"
+              required>
+          </div>
+
+          <div class="news-field">
+            <label>Confirm New Password</label>
+            <input id="securityConfirmPassword"
+              type="password"
+              minlength="8"
+              autocomplete="new-password"
+              required>
+          </div>
+
+          <button type="submit" class="btn primary"
+            style="height:40px;padding:0 18px;">
+            Change Password
+          </button>
+
+        </form>
+
+        <div style="
+          margin-top:18px;
+          padding:12px;
+          border:1px solid #eee;
+          border-radius:8px;
+          font-size:10px;
+          color:#777;
+          line-height:1.6;
+        ">
+          <strong style="color:#333;">Security</strong><br>
+          Admin API requests server-side session द्वारा verify होइत अछि।
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="card" style="margin-top:18px;">
+
+    <div class="card-header">
+      <div class="card-title">Local Admin Preferences</div>
+    </div>
+
+    <div class="card-body">
+
+      <label style="
+        display:flex;
+        align-items:center;
+        gap:8px;
+        font-size:12px;
+        cursor:pointer;
+      ">
+        <input id="settingRememberTab" type="checkbox">
+        पिछला खुलल tab याद राखू
+      </label>
+
+      <div style="
+        margin-top:7px;
+        color:#888;
+        font-size:10px;
+      ">
+        ई preference एहि browser में सुरक्षित रहत।
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
 
   </main>
 
@@ -9590,11 +9738,375 @@ function addUser(){
    SETTINGS
 ===================================================== */
 
+function getCurrentAdminUser(){
+
+  try{
+
+    return JSON.parse(
+      localStorage.getItem("admin") ||
+      "null"
+    );
+
+  }catch{
+
+    return null;
+
+  }
+
+}
+
+
 function loadSettings(){
 
-  console.log(
-    "Settings ready"
+  try{
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "websiteSettings"
+        ) || "{}"
+      ) || {};
+
+    setInputValue(
+      "settingSiteName",
+      saved.siteName ||
+      "मैथिली समाचार"
+    );
+
+    setInputValue(
+      "settingTagline",
+      saved.tagline ||
+      "मैथिली भाषामे नवीनतम समाचार"
+    );
+
+    setInputValue(
+      "settingSiteDescription",
+      saved.siteDescription ||
+      "मैथिली समाचार"
+    );
+
+    setInputValue(
+      "settingContactEmail",
+      saved.contactEmail ||
+      ""
+    );
+
+    setInputValue(
+      "settingContactMobile",
+      saved.contactMobile ||
+      ""
+    );
+
+    setInputValue(
+      "settingFacebook",
+      saved.facebook ||
+      ""
+    );
+
+    setInputValue(
+      "settingYoutube",
+      saved.youtube ||
+      ""
+    );
+
+    setInputValue(
+      "settingSeoDescription",
+      saved.seoDescription ||
+      "मैथिली समाचार"
+    );
+
+    const remember =
+      document.getElementById(
+        "settingRememberTab"
+      );
+
+    if(remember){
+
+      remember.checked =
+        saved.rememberTab === true;
+
+    }
+
+    const admin =
+      getCurrentAdminUser();
+
+    if(admin){
+
+      setText(
+        "securityUserName",
+        admin.name ||
+        "Admin"
+      );
+
+      setText(
+        "securityUserEmail",
+        admin.email ||
+        ""
+      );
+
+    }
+
+  }catch(error){
+
+    console.error(
+      "SETTINGS LOAD ERROR:",
+      error
+    );
+
+    showToast(
+      error.message ||
+      "Settings load नहि भ' सकल।",
+      "error"
+    );
+
+  }
+
+}
+
+
+async function saveWebsiteSettings(
+  event
+){
+
+  event.preventDefault();
+
+  const settings = {
+
+    siteName:
+      document
+        .getElementById(
+          "settingSiteName"
+        )
+        .value
+        .trim(),
+
+    tagline:
+      document
+        .getElementById(
+          "settingTagline"
+        )
+        .value
+        .trim(),
+
+    siteDescription:
+      document
+        .getElementById(
+          "settingSiteDescription"
+        )
+        .value
+        .trim(),
+
+    contactEmail:
+      document
+        .getElementById(
+          "settingContactEmail"
+        )
+        .value
+        .trim(),
+
+    contactMobile:
+      document
+        .getElementById(
+          "settingContactMobile"
+        )
+        .value
+        .trim(),
+
+    facebook:
+      document
+        .getElementById(
+          "settingFacebook"
+        )
+        .value
+        .trim(),
+
+    youtube:
+      document
+        .getElementById(
+          "settingYoutube"
+        )
+        .value
+        .trim(),
+
+    seoDescription:
+      document
+        .getElementById(
+          "settingSeoDescription"
+        )
+        .value
+        .trim(),
+
+    rememberTab:
+      document
+        .getElementById(
+          "settingRememberTab"
+        )
+        .checked
+
+  };
+
+  localStorage.setItem(
+    "websiteSettings",
+    JSON.stringify(
+      settings
+    )
   );
+
+  showToast(
+    "Website Settings save भ' गेल।"
+  );
+
+}
+
+
+async function changeAdminPassword(
+  event
+){
+
+  event.preventDefault();
+
+  const currentPassword =
+    document
+      .getElementById(
+        "securityCurrentPassword"
+      )
+      .value;
+
+  const newPassword =
+    document
+      .getElementById(
+        "securityNewPassword"
+      )
+      .value;
+
+  const confirmPassword =
+    document
+      .getElementById(
+        "securityConfirmPassword"
+      )
+      .value;
+
+  if(
+    newPassword.length < 8
+  ){
+
+    showToast(
+      "नव password कम सँ कम 8 अक्षरक हो।",
+      "error"
+    );
+
+    return;
+
+  }
+
+  if(
+    newPassword !==
+    confirmPassword
+  ){
+
+    showToast(
+      "नव password आ confirmation समान नहि अछि।",
+      "error"
+    );
+
+    return;
+
+  }
+
+  const admin =
+    getCurrentAdminUser();
+
+  if(
+    !admin ||
+    !admin.id
+  ){
+
+    showToast(
+      "Admin information नहि भेटल।",
+      "error"
+    );
+
+    return;
+
+  }
+
+  try{
+
+    const response =
+      await fetch(
+        API +
+        "/users?id=" +
+        encodeURIComponent(
+          admin.id
+        ),
+        {
+          method:"PUT",
+          credentials:"include",
+          headers:{
+            "Content-Type":
+              "application/json",
+            "Accept":
+              "application/json"
+          },
+          body:
+            JSON.stringify({
+              name:
+                admin.name,
+              email:
+                admin.email,
+              role:
+                admin.role ||
+                "admin",
+              status:
+                admin.status ||
+                "active",
+              password:
+                newPassword,
+              current_password:
+                currentPassword
+            })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
+      throw new Error(
+        data.error ||
+        "Password change नहि भेल।"
+      );
+
+    }
+
+    document
+      .getElementById(
+        "changePasswordForm"
+      )
+      .reset();
+
+    showToast(
+      "Password सफलतापूर्वक बदलि गेल।"
+    );
+
+  }catch(error){
+
+    console.error(
+      "PASSWORD CHANGE ERROR:",
+      error
+    );
+
+    showToast(
+      error.message ||
+      "Password change नहि भेल।",
+      "error"
+    );
+
+  }
 
 }
 
@@ -9790,10 +10302,7 @@ async function loadAdminComments(){
               color:#777;
             "
           >
-            ${escapeHtml(
-              error.message ||
-              "Unknown error"
-            )}
+            ${String(error.message || "").toLowerCase().includes("mobile") ? "Comments table में mobile column नहि अछि। D1 में: ALTER TABLE comments ADD COLUMN mobile TEXT;" : escapeHtml(error.message || "Unknown error")}
           </div>
         </div>
       `;
@@ -12586,6 +13095,31 @@ function showToast(
   );
 
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const websiteSettingsForm =
+    document.getElementById("websiteSettingsForm");
+
+  if(websiteSettingsForm){
+    websiteSettingsForm.addEventListener(
+      "submit",
+      saveWebsiteSettings
+    );
+  }
+
+  const changePasswordForm =
+    document.getElementById("changePasswordForm");
+
+  if(changePasswordForm){
+    changePasswordForm.addEventListener(
+      "submit",
+      changeAdminPassword
+    );
+  }
+
+});
+
 </script>
 
 
