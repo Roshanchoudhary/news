@@ -658,7 +658,7 @@ export async function onRequestPost(
   try {
 
     const user =
-      await requireNewsWriter(
+      await requireAdmin(
         request,
         env
       );
@@ -725,16 +725,11 @@ export async function onRequestPost(
         : null;
 
 
-    let status =
+    const status =
       body.status ===
       "published"
         ? "published"
         : "draft";
-
-    // Author can create news, but cannot publish directly.
-    if (user.role === "author") {
-      status = "draft";
-    }
 
 
     const featured =
@@ -1064,7 +1059,7 @@ export async function onRequestPut(
   try {
 
     const user =
-      await requireNewsWriter(
+      await requireAdmin(
         request,
         env
       );
@@ -1119,7 +1114,6 @@ export async function onRequestPut(
           SELECT
             id,
             slug,
-            author_id,
             published_at
 
           FROM news
@@ -1190,26 +1184,11 @@ export async function onRequestPut(
         : null;
 
 
-    let status =
+    const status =
       body.status ===
       "published"
         ? "published"
         : "draft";
-
-    // Author can edit only own news and cannot publish directly.
-    if (user.role === "author") {
-      status = "draft";
-
-      if (Number(oldNews.author_id) !== Number(user.id)) {
-        return json(
-          {
-            success: false,
-            error: "अहाँ केवल अपन समाचार edit क' सकैत छी"
-          },
-          403
-        );
-      }
-    }
 
 
     const featured =
@@ -2183,33 +2162,6 @@ function tagDisplayName(
 
 }
 
-
-
-// ============================================================
-// NEWS WRITER AUTH
-// ============================================================
-
-async function requireNewsWriter(
-  request,
-  env
-) {
-
-  const user =
-    await getAuthenticatedUser(
-      request,
-      env
-    );
-
-  if (
-    !user ||
-    user.status !== "active" ||
-    !["admin", "editor", "author"].includes(user.role)
-  ) {
-    return null;
-  }
-
-  return user;
-}
 
 
 // ============================================================

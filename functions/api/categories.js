@@ -185,6 +185,13 @@ async function getCategories(
   }
 
 
+  if (parentId !== null && parentId !== "") {
+
+    where.push("COALESCE(parent_id, 0) = ?");
+    bindings.push(Number(parentId));
+
+  }
+
   if (
     menu === "1" ||
     menu === "true"
@@ -307,9 +314,9 @@ async function createCategory(
     );
 
   const parentId =
-    normalizeParentId(
-      body.parent_id
-    );
+    body.parent_id
+      ? Number(body.parent_id)
+      : null;
 
 
   if (!name) {
@@ -411,48 +418,6 @@ async function createCategory(
 
 
   // --------------------------------------------------
-  // Parent category validation
-  // --------------------------------------------------
-
-  if (parentId !== null) {
-
-    const parent =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            status
-          FROM categories
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(parentId)
-        .first();
-
-    if (!parent) {
-
-      return json({
-        success: false,
-        error:
-          "मुख्य श्रेणी नहि भेटल"
-      }, 400);
-
-    }
-
-    if (String(parent.status) !== "active") {
-
-      return json({
-        success: false,
-        error:
-          "Inactive श्रेणी केँ मुख्य श्रेणी नहि बना सकैत छी"
-      }, 400);
-
-    }
-
-  }
-
-
-  // --------------------------------------------------
   // Insert
   // --------------------------------------------------
 
@@ -506,9 +471,6 @@ async function createCategory(
 
       menu_order:
         menuOrder,
-
-      parent_id:
-        parentId,
 
       url:
         `/category/${slug}`
@@ -652,14 +614,11 @@ async function updateCategory(
           0
         );
 
+
   const parentId =
     body.parent_id !== undefined
-      ? normalizeParentId(
-          body.parent_id
-        )
-      : normalizeParentId(
-          oldCategory.parent_id
-        );
+      ? (body.parent_id ? Number(body.parent_id) : null)
+      : (oldCategory.parent_id ? Number(oldCategory.parent_id) : null);
 
 
   if (!name) {
@@ -757,106 +716,6 @@ async function updateCategory(
 
 
   // --------------------------------------------------
-  // Parent category validation
-  // --------------------------------------------------
-
-  if (parentId !== null) {
-
-    if (
-      Number(parentId) ===
-      Number(categoryId)
-    ) {
-
-      return json({
-        success: false,
-        error:
-          "श्रेणी स्वयं केर मुख्य श्रेणी नहि भ' सकैत अछि"
-      }, 400);
-
-    }
-
-    const parent =
-      await env.DB
-        .prepare(`
-          SELECT
-            id,
-            status
-          FROM categories
-          WHERE id = ?
-          LIMIT 1
-        `)
-        .bind(parentId)
-        .first();
-
-    if (!parent) {
-
-      return json({
-        success: false,
-        error:
-          "मुख्य श्रेणी नहि भेटल"
-      }, 400);
-
-    }
-
-    if (String(parent.status) !== "active") {
-
-      return json({
-        success: false,
-        error:
-          "Inactive श्रेणी केँ मुख्य श्रेणी नहि बना सकैत छी"
-      }, 400);
-
-    }
-
-    // Prevent circular parent chains.
-    let checkId = Number(parentId);
-    const visited = new Set();
-
-    while (checkId) {
-
-      if (visited.has(checkId)) {
-        break;
-      }
-
-      visited.add(checkId);
-
-      if (
-        checkId ===
-        Number(categoryId)
-      ) {
-
-        return json({
-          success: false,
-          error:
-            "Circular sub-category relation मान्य नहि अछि"
-        }, 400);
-
-      }
-
-      const row =
-        await env.DB
-          .prepare(`
-            SELECT parent_id
-            FROM categories
-            WHERE id = ?
-            LIMIT 1
-          `)
-          .bind(checkId)
-          .first();
-
-      if (!row || row.parent_id === null) {
-        break;
-      }
-
-      checkId =
-        Number(row.parent_id) || 0;
-
-    }
-
-  }
-
-
-  // --------------------------------------------------
   // Update
   // --------------------------------------------------
 
@@ -913,9 +772,6 @@ async function updateCategory(
 
       menu_order:
         menuOrder,
-
-      parent_id:
-        parentId,
 
       url:
         `/category/${slug}`
@@ -993,38 +849,6 @@ async function deleteCategory(
       error:
         "श्रेणी नहि भेटल"
     }, 404);
-
-  }
-
-
-  // --------------------------------------------------
-  // Do not delete a parent category while it still has
-  // sub-categories.
-  // --------------------------------------------------
-
-  const children =
-    await env.DB
-      .prepare(`
-        SELECT
-          COUNT(*) AS total
-        FROM categories
-        WHERE parent_id = ?
-      `)
-      .bind(id)
-      .first();
-
-  const childCount =
-    Number(
-      children?.total || 0
-    );
-
-  if (childCount > 0) {
-
-    return json({
-      success: false,
-      error:
-        `एहि श्रेणीक ${childCount} उप-श्रेणी अछि। पहिले उप-श्रेणी केँ दोसर मुख्य श्रेणी में बदलू अथवा delete करू।`
-    }, 409);
 
   }
 
@@ -1111,11 +935,9 @@ function normalizeCategory(
       ),
 
     parent_id:
-      category.parent_id === null ||
-      category.parent_id === undefined ||
-      category.parent_id === ""
-        ? null
-        : Number(category.parent_id),
+      category.parent_id
+        ? Number(category.parent_id)
+        : null,
 
     status:
       category.status ||
@@ -1125,29 +947,6 @@ function normalizeCategory(
       `/category/${category.slug}`
   };
 
-}
-
-
-// ======================================================
-// PARENT ID
-// ======================================================
-
-function normalizeParentId(value) {
-
-  if (
-    value === undefined ||
-    value === null ||
-    value === "" ||
-    value === "0"
-  ) {
-    return null;
-  }
-
-  const id = Number(value);
-
-  return Number.isInteger(id) && id > 0
-    ? id
-    : null;
 }
 
 
