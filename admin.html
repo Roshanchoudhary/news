@@ -994,6 +994,94 @@ tr:hover td{
   resize:vertical;
 }
 
+/* =====================================================
+   RICH NEWS CONTENT EDITOR
+===================================================== */
+
+.news-content-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:8px;
+  border:1px solid #ddd;
+  border-bottom:0;
+  border-radius:8px 8px 0 0;
+  background:#fafafa;
+}
+
+.news-content-toolbar button{
+  height:32px;
+  min-width:34px;
+  padding:0 9px;
+  border:1px solid #ddd;
+  background:#fff;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+}
+
+.news-content-toolbar button:hover{
+  border-color:#8b0000;
+  color:#8b0000;
+}
+
+.news-rich-editor{
+  min-height:360px;
+  border:1px solid #ddd;
+  border-radius:0 0 8px 8px;
+  padding:14px;
+  background:#fff;
+  outline:none;
+  font-size:16px;
+  line-height:1.9;
+}
+
+.news-rich-editor:focus{
+  border-color:#8b0000;
+  box-shadow:0 0 0 3px rgba(139,0,0,.06);
+}
+
+.news-rich-editor:empty:before{
+  content:attr(data-placeholder);
+  color:#aaa;
+}
+
+.news-rich-editor img{
+  max-width:100%;
+  height:auto;
+  display:block;
+  margin:18px auto;
+  border-radius:8px;
+}
+
+.news-image-dialog{
+  position:fixed;
+  inset:0;
+  z-index:100001;
+  background:rgba(0,0,0,.55);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.news-image-dialog-box{
+  width:100%;
+  max-width:520px;
+  background:#fff;
+  border-radius:12px;
+  padding:20px;
+  box-shadow:0 25px 80px rgba(0,0,0,.3);
+}
+
+@media(max-width:600px){
+  .news-rich-editor{
+    min-height:300px;
+    font-size:15px;
+  }
+}
+
 .news-field input:focus,
 .news-field textarea:focus,
 .news-field select:focus{
@@ -3342,11 +3430,28 @@ tr:hover td{
           समाचार सामग्री <b>*</b>
         </label>
 
+        <div class="news-content-toolbar">
+          <button type="button" onclick="formatNewsText('bold')" title="Bold">B</button>
+          <button type="button" onclick="formatNewsText('italic')" title="Italic"><i>I</i></button>
+          <button type="button" onclick="formatNewsText('underline')" title="Underline"><u>U</u></button>
+          <button type="button" onclick="formatNewsText('insertUnorderedList')" title="List">☷</button>
+          <button type="button" onclick="formatNewsText('justifyLeft')" title="Left">←</button>
+          <button type="button" onclick="formatNewsText('justifyCenter')" title="Center">↔</button>
+          <button type="button" onclick="formatNewsText('justifyRight')" title="Right">→</button>
+          <button type="button" onclick="openNewsImageDialog()" title="बीच में Image लगाउ">🖼️ Image URL</button>
+        </div>
+
+        <div
+          id="newsContentEditor"
+          class="news-rich-editor"
+          contenteditable="true"
+          data-placeholder="समाचारक पूरा सामग्री लिखू..."
+        ></div>
+
         <textarea
           id="newsContent"
-          class="news-content"
+          style="display:none;"
           required
-          placeholder="समाचारक पूरा सामग्री लिखू..."
         ></textarea>
 
       </div>
@@ -4885,6 +4990,15 @@ async function addNews(){
 
   }
 
+  const newsEditor =
+    document.getElementById(
+      "newsContentEditor"
+    );
+
+  if(newsEditor){
+    newsEditor.innerHTML = "";
+  }
+
 
   const newsId =
     document.getElementById(
@@ -5049,28 +5163,76 @@ async function loadNewsEditorCategories(){
       `;
 
 
-    categories.forEach(
-      category => {
+    const byParent = {};
 
-        const option =
-          document.createElement(
-            "option"
+    categories.forEach(category => {
+
+      const key =
+        category.parent_id === null ||
+        category.parent_id === undefined ||
+        category.parent_id === "" ||
+        Number(category.parent_id) === 0
+          ? "root"
+          : String(category.parent_id);
+
+      if(!byParent[key]){
+        byParent[key] = [];
+      }
+
+      byParent[key].push(category);
+
+    });
+
+    Object.keys(byParent).forEach(key => {
+
+      byParent[key].sort(
+        (a,b) =>
+          Number(a.menu_order || 0) -
+          Number(b.menu_order || 0)
+      );
+
+    });
+
+    function appendCategoryOptions(
+      parentKey,
+      depth
+    ){
+
+      (byParent[parentKey] || [])
+        .forEach(category => {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+          option.value =
+            category.id;
+
+          option.textContent =
+            (
+              depth > 0
+                ? "— ".repeat(depth)
+                : ""
+            ) +
+            category.name;
+
+          select.appendChild(
+            option
           );
 
+          appendCategoryOptions(
+            String(category.id),
+            depth + 1
+          );
 
-        option.value =
-          category.id;
+        });
 
+    }
 
-        option.textContent =
-          category.name;
-
-
-        select.appendChild(
-          option
-        );
-
-      }
+    appendCategoryOptions(
+      "root",
+      0
     );
 
 
@@ -5253,6 +5415,307 @@ async function loadNewsEditorTags(){
    SAVE / UPDATE NEWS
 ===================================================== */
 
+function formatNewsText(command, value = null){
+
+  const editor =
+    document.getElementById(
+      "newsContentEditor"
+    );
+
+  if(!editor){
+    return;
+  }
+
+  editor.focus();
+
+  try{
+    document.execCommand(
+      command,
+      false,
+      value
+    );
+  }catch(error){
+    console.error(
+      "FORMAT ERROR:",
+      error
+    );
+  }
+
+}
+
+
+let savedNewsEditorRange = null;
+
+function openNewsImageDialog(){
+
+  const editor =
+    document.getElementById(
+      "newsContentEditor"
+    );
+
+  const selection =
+    window.getSelection();
+
+  if(
+    editor &&
+    selection &&
+    selection.rangeCount > 0 &&
+    editor.contains(selection.anchorNode)
+  ){
+    savedNewsEditorRange =
+      selection.getRangeAt(0).cloneRange();
+  }else{
+    savedNewsEditorRange = null;
+  }
+
+  const old =
+    document.getElementById(
+      "newsImageDialog"
+    );
+
+  if(old){
+    old.remove();
+  }
+
+  const dialog =
+    document.createElement("div");
+
+  dialog.id =
+    "newsImageDialog";
+
+  dialog.className =
+    "news-image-dialog";
+
+  dialog.innerHTML = `
+    <div class="news-image-dialog-box">
+
+      <h3 style="margin:0 0 6px;">
+        समाचारक बीच में Image जोड़ू
+      </h3>
+
+      <p style="margin:0 0 15px;color:#777;font-size:11px;">
+        Image URL paste करू। Image सामग्रीक वर्तमान cursor पर जुड़त।
+      </p>
+
+      <input
+        id="newsInlineImageUrl"
+        type="url"
+        placeholder="https://example.com/photo.jpg"
+        style="
+          width:100%;
+          height:42px;
+          border:1px solid #ddd;
+          border-radius:8px;
+          padding:0 12px;
+          outline:none;
+        "
+      >
+
+      <div
+        style="
+          display:flex;
+          justify-content:flex-end;
+          gap:8px;
+          margin-top:15px;
+        "
+      >
+        <button
+          type="button"
+          class="btn"
+          onclick="closeNewsImageDialog()"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          class="btn primary"
+          onclick="insertNewsImageFromUrl()"
+        >
+          Image जोड़ू
+        </button>
+      </div>
+
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  document
+    .getElementById(
+      "newsInlineImageUrl"
+    )
+    ?.focus();
+
+}
+
+
+function closeNewsImageDialog(){
+
+  document
+    .getElementById(
+      "newsImageDialog"
+    )
+    ?.remove();
+
+}
+
+
+function insertNewsImageFromUrl(){
+
+  const input =
+    document.getElementById(
+      "newsInlineImageUrl"
+    );
+
+  const url =
+    input?.value.trim();
+
+  if(!url){
+    showToast(
+      "Image URL जरूरी अछि।",
+      "error"
+    );
+    return;
+  }
+
+  try{
+    new URL(url);
+  }catch{
+    showToast(
+      "सही Image URL दिअ।",
+      "error"
+    );
+    return;
+  }
+
+  const editor =
+    document.getElementById(
+      "newsContentEditor"
+    );
+
+  if(!editor){
+    return;
+  }
+
+  editor.focus();
+
+  if(savedNewsEditorRange){
+    const selection =
+      window.getSelection();
+
+    selection.removeAllRanges();
+    selection.addRange(
+      savedNewsEditorRange
+    );
+  }
+
+  const image =
+    document.createElement("img");
+
+  image.src = url;
+  image.alt = "समाचार चित्र";
+  image.loading = "lazy";
+  image.style.maxWidth = "100%";
+  image.style.height = "auto";
+  image.style.display = "block";
+  image.style.margin = "18px auto";
+
+  const selection =
+    window.getSelection();
+
+  if(
+    selection &&
+    selection.rangeCount > 0 &&
+    editor.contains(
+      selection.anchorNode
+    )
+  ){
+
+    const range =
+      selection.getRangeAt(0);
+
+    range.deleteContents();
+    range.insertNode(image);
+
+    range.setStartAfter(image);
+    range.collapse(true);
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+  }else{
+
+    editor.appendChild(image);
+
+  }
+
+  savedNewsEditorRange = null;
+
+  closeNewsImageDialog();
+
+}
+
+
+function sanitizeNewsEditorHtml(html){
+
+  const wrapper =
+    document.createElement("div");
+
+  wrapper.innerHTML =
+    String(html || "");
+
+  wrapper
+    .querySelectorAll(
+      "script,iframe,object,embed,form,style"
+    )
+    .forEach(
+      node => node.remove()
+    );
+
+  wrapper
+    .querySelectorAll("*")
+    .forEach(node => {
+
+      [...node.attributes]
+        .forEach(attr => {
+
+          const name =
+            attr.name.toLowerCase();
+
+          const value =
+            attr.value || "";
+
+          if(
+            name.startsWith("on") ||
+            name === "srcdoc"
+          ){
+            node.removeAttribute(
+              attr.name
+            );
+          }
+
+          if(
+            (
+              name === "src" ||
+              name === "href"
+            ) &&
+            /^\s*javascript:/i.test(value)
+          ){
+            node.removeAttribute(
+              attr.name
+            );
+          }
+
+        });
+
+    });
+
+  return wrapper.innerHTML.trim();
+
+}
+
+
 async function saveNews(event){
 
   event.preventDefault();
@@ -5264,10 +5727,27 @@ async function saveNews(event){
     ).value.trim();
 
 
+  const editor =
+    document.getElementById(
+      "newsContentEditor"
+    );
+
   const content =
+    editor
+      ? sanitizeNewsEditorHtml(editor.innerHTML)
+      : document.getElementById(
+          "newsContent"
+        ).value.trim();
+
+  const hiddenContent =
     document.getElementById(
       "newsContent"
-    ).value.trim();
+    );
+
+  if(hiddenContent){
+    hiddenContent.value =
+      content;
+  }
 
 
   const slug =
@@ -5672,6 +6152,18 @@ async function editNews(id){
       "newsContent",
       news.content
     );
+
+    const newsEditor =
+      document.getElementById(
+        "newsContentEditor"
+      );
+
+    if(newsEditor){
+      newsEditor.innerHTML =
+        sanitizeNewsEditorHtml(
+          news.content || ""
+        );
+    }
 
 
     setInputValue(
@@ -6598,16 +7090,6 @@ function openCategoryModal(category = null){
         </div>
 
 
-        <!-- PARENT CATEGORY / SUB-CATEGORY -->
-
-        <div style="margin-bottom:16px;">
-          <label style="display:block;font-size:12px;font-weight:800;margin-bottom:7px;">Parent श्रेणी</label>
-          <select id="categoryFormParent" style="width:100%;height:42px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px;background:#fff;">
-            <option value="">मुख्य श्रेणी (कोनो parent नहि)</option>
-          </select>
-          <div style="color:#888;font-size:10px;margin-top:5px;">Parent चुनलापर ई श्रेणी Sub-category बनत।</div>
-        </div>
-
         <!-- DESCRIPTION -->
 
         <div style="margin-bottom:16px;">
@@ -6641,6 +7123,46 @@ function openCategoryModal(category = null){
               category?.description || ""
             )
           }</textarea>
+
+        </div>
+
+
+        <!-- PARENT CATEGORY -->
+
+        <div style="margin-bottom:16px;">
+
+          <label
+            style="
+              display:block;
+              font-size:12px;
+              font-weight:800;
+              margin-bottom:7px;
+            "
+          >
+            मुख्य श्रेणी
+          </label>
+
+          <select
+            id="categoryFormParent"
+            style="
+              width:100%;
+              height:42px;
+              border:1px solid #ddd;
+              border-radius:8px;
+              padding:0 12px;
+              font-size:13px;
+              background:#fff;
+              cursor:pointer;
+              outline:none;
+            "
+          >
+            <option value="">— कोनो मुख्य श्रेणी नहि —</option>
+          </select>
+
+          <div style="margin-top:6px;color:#888;font-size:10px;">
+            Main Category नहि चुनलासँ ई मुख्य श्रेणी रहत।
+            Main Category चुनलासँ ई Sub-category बनत।
+          </div>
 
         </div>
 
@@ -6773,9 +7295,9 @@ function openCategoryModal(category = null){
     modal
   );
 
-  loadCategoryParentOptions(
-    isEdit ? category?.parent_id : null,
-    isEdit ? category?.id : null
+  loadParentCategories(
+    category?.id || null,
+    category?.parent_id ?? null
   );
 
 
@@ -6869,23 +7391,6 @@ function closeCategoryModal(){
 /* =====================================================
    GENERATE SLUG
 ===================================================== */
-
-async function loadCategoryParentOptions(selectedId = null, excludeId = null){
-  const select=document.getElementById("categoryFormParent");
-  if(!select) return;
-  try{
-    const response=await fetch(API+"/categories?status=active",{credentials:"include",cache:"no-store"});
-    const data=await response.json();
-    if(!data.success) throw new Error(data.error||"Category load error");
-    select.innerHTML='<option value="">मुख्य श्रेणी (कोनो parent नहि)</option>';
-    (data.categories||[]).filter(c=>!c.parent_id).forEach(c=>{
-      if(excludeId && Number(c.id)===Number(excludeId)) return;
-      const o=document.createElement("option"); o.value=c.id; o.textContent=c.name;
-      if(selectedId && Number(selectedId)===Number(c.id)) o.selected=true;
-      select.appendChild(o);
-    });
-  }catch(e){console.error("PARENT CATEGORY LOAD",e);}
-}
 
 function generateCategorySlug(){
 
@@ -6999,6 +7504,109 @@ function updateCategorySlugPreview(){
    SAVE CATEGORY
 ===================================================== */
 
+async function loadParentCategories(
+  excludeId = null,
+  selectedParentId = null
+){
+
+  const select =
+    document.getElementById(
+      "categoryFormParent"
+    );
+
+  if(!select){
+    return;
+  }
+
+  select.innerHTML =
+    `<option value="">— कोनो मुख्य श्रेणी नहि —</option>`;
+
+  try{
+
+    const response =
+      await fetch(
+        API + "/categories?status=active",
+        {
+          method:"GET",
+          credentials:"include",
+          cache:"no-store",
+          headers:{
+            "Accept":"application/json"
+          }
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+      throw new Error(
+        data.error ||
+        "Category load नहि भ' सकल।"
+      );
+    }
+
+    const categories =
+      Array.isArray(data.categories)
+        ? data.categories
+        : [];
+
+    const roots =
+      categories
+        .filter(category =>
+          (
+            category.parent_id === null ||
+            category.parent_id === undefined ||
+            category.parent_id === "" ||
+            Number(category.parent_id) === 0
+          ) &&
+          Number(category.id) !== Number(excludeId)
+        )
+        .sort(
+          (a,b) =>
+            Number(a.menu_order || 0) -
+            Number(b.menu_order || 0)
+        );
+
+    roots.forEach(category => {
+
+      const option =
+        document.createElement("option");
+
+      option.value =
+        category.id;
+
+      option.textContent =
+        category.name;
+
+      select.appendChild(option);
+
+    });
+
+    if(
+      selectedParentId !== null &&
+      selectedParentId !== undefined &&
+      selectedParentId !== ""
+    ){
+      select.value =
+        String(selectedParentId);
+    }
+
+  }catch(error){
+
+    console.error(
+      "PARENT CATEGORY LOAD ERROR:",
+      error
+    );
+
+  }
+
+}
+
+
 async function saveCategory(){
 
   const id =
@@ -7088,16 +7696,24 @@ async function saveCategory(){
 
     description,
 
+    parent_id:
+      document.getElementById(
+        "categoryFormParent"
+      )?.value
+        ? Number(
+            document.getElementById(
+              "categoryFormParent"
+            ).value
+          )
+        : null,
+
     menu_visible:
       menuVisible,
 
     status:
       active
         ? "active"
-        : "inactive",
-
-    parent_id:
-      document.getElementById("categoryFormParent")?.value || null
+        : "inactive"
 
   };
 
@@ -8986,7 +9602,6 @@ function loadSettings(){
 /* =====================================================
    COMMENTS
 ===================================================== */
-
 let adminCommentsCache = [];
 
 async function loadAdminComments(){
