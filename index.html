@@ -118,37 +118,92 @@ input:focus-visible{
 
 .nav-inner{
   display:flex;
-  align-items:center;
-  gap:4px;
-  overflow-x:auto;
-  overflow-y:hidden;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
+  align-items:stretch;
+  gap:3px;
   min-height:46px;
+  position:relative;
 }
 
-.nav-inner::-webkit-scrollbar{
-  display:none;
+.nav-link,
+.nav-parent-btn{
+  color:white;
+  font-size:14px;
+  font-weight:600;
 }
 
 .nav-link{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-height:44px;
+  min-height:46px;
   padding:10px 15px;
   border-radius:5px;
   white-space:nowrap;
-  flex:0 0 auto;
-  color:white;
-  font-size:14px;
-  font-weight:600;
-  transition:.2s;
 }
 
 .nav-link:hover,
 .nav-link.active{
   background:rgba(255,255,255,.16);
+}
+
+.nav-parent{
+  position:relative;
+  display:flex;
+  align-items:stretch;
+}
+
+.nav-parent-btn{
+  border:0;
+  background:transparent;
+  min-height:46px;
+  padding:10px 15px;
+  cursor:pointer;
+  white-space:nowrap;
+  border-radius:5px;
+}
+
+.nav-parent-btn:hover,
+.nav-parent.open > .nav-parent-btn{
+  background:rgba(255,255,255,.16);
+}
+
+.nav-arrow{
+  margin-left:7px;
+  font-size:10px;
+}
+
+.nav-dropdown{
+  position:absolute;
+  left:0;
+  top:100%;
+  min-width:210px;
+  background:#fff;
+  color:#222;
+  border-radius:0 0 8px 8px;
+  box-shadow:0 8px 25px rgba(0,0,0,.22);
+  padding:6px;
+  display:none;
+  z-index:1000;
+}
+
+.nav-parent:hover > .nav-dropdown,
+.nav-parent.open > .nav-dropdown{
+  display:block;
+}
+
+.nav-dropdown a{
+  display:block;
+  color:#333;
+  padding:10px 12px;
+  border-radius:6px;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.nav-dropdown a:hover,
+.nav-dropdown a.active{
+  background:#f4e8e8;
+  color:#8b0000;
 }
 
 .nav-loading{
@@ -158,6 +213,68 @@ input:focus-visible{
   white-space:nowrap;
 }
 
+
+/* =====================================================
+   MOBILE NAV
+===================================================== */
+
+@media(max-width:600px){
+
+  .nav-inner{
+    display:block;
+    min-height:0;
+    padding:5px 0;
+  }
+
+  .nav-link{
+    width:100%;
+    min-height:44px;
+    justify-content:flex-start;
+    padding:11px 12px;
+  }
+
+  .nav-parent{
+    display:block;
+  }
+
+  .nav-parent-btn{
+    width:100%;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    text-align:left;
+    padding:11px 12px;
+  }
+
+  .nav-dropdown{
+    position:static;
+    min-width:0;
+    display:none;
+    box-shadow:none;
+    border-radius:0;
+    padding:0 0 5px 14px;
+    background:rgba(0,0,0,.12);
+  }
+
+  .nav-parent.open > .nav-dropdown{
+    display:block;
+  }
+
+  .nav-dropdown a{
+    color:#fff;
+    padding:10px 12px;
+    border-radius:5px;
+    font-size:13px;
+  }
+
+  .nav-dropdown a:hover,
+  .nav-dropdown a.active{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+  }
+
+}
 
 /* =====================================================
    SEARCH
@@ -939,57 +1056,206 @@ function renderCategoryMenu(){
       "categoryNav"
     );
 
-
   const loading =
     document.getElementById(
       "categoryNavLoading"
     );
 
-
   if(loading){
     loading.remove();
   }
 
+  const homeLink =
+    document.createElement("a");
+
+  homeLink.href = "/";
+  homeLink.className = "nav-link";
+  homeLink.textContent = "सभ समाचार";
+  homeLink.dataset.category = "";
+
+  nav.innerHTML = "";
+  nav.appendChild(homeLink);
+
+  const parents =
+    categories
+      .filter(
+        category =>
+          !category.parent_id
+      )
+      .sort(categoryOrder);
+
+  const childrenByParent = {};
 
   categories.forEach(
     category => {
 
-      if(!category.slug){
+      if(!category.parent_id){
         return;
       }
 
+      const key =
+        String(category.parent_id);
 
-      const link =
-        document.createElement(
-          "a"
-        );
+      if(!childrenByParent[key]){
+        childrenByParent[key] = [];
+      }
 
-
-      link.className =
-        "nav-link";
-
-
-      link.href =
-        "/category/" +
-        encodeURIComponent(
-          category.slug
-        );
-
-
-      link.textContent =
-        category.name;
-
-
-      link.dataset.category =
-        category.slug;
-
-
-      nav.appendChild(
-        link
+      childrenByParent[key].push(
+        category
       );
 
     }
   );
+
+  Object.keys(childrenByParent)
+    .forEach(
+      key =>
+        childrenByParent[key]
+          .sort(categoryOrder)
+    );
+
+  parents.forEach(
+    parent => {
+
+      if(!parent.slug){
+        return;
+      }
+
+      const children =
+        childrenByParent[
+          String(parent.id)
+        ] || [];
+
+      if(!children.length){
+
+        nav.appendChild(
+          createCategoryLink(parent)
+        );
+
+        return;
+      }
+
+      const wrapper =
+        document.createElement("div");
+
+      wrapper.className =
+        "nav-parent";
+
+      const button =
+        document.createElement("button");
+
+      button.type = "button";
+      button.className =
+        "nav-parent-btn";
+
+      button.innerHTML =
+        `<span>${escapeHtml(parent.name)}</span>
+         <span class="nav-arrow">▼</span>`;
+
+      button.addEventListener(
+        "click",
+        event => {
+
+          event.stopPropagation();
+
+          document
+            .querySelectorAll(
+              "#categoryNav .nav-parent.open"
+            )
+            .forEach(
+              item => {
+
+                if(item !== wrapper){
+                  item.classList.remove("open");
+                }
+
+              }
+            );
+
+          wrapper.classList.toggle("open");
+
+        }
+      );
+
+      const dropdown =
+        document.createElement("div");
+
+      dropdown.className =
+        "nav-dropdown";
+
+      children.forEach(
+        child => {
+
+          dropdown.appendChild(
+            createCategoryLink(child)
+          );
+
+        }
+      );
+
+      wrapper.appendChild(button);
+      wrapper.appendChild(dropdown);
+      nav.appendChild(wrapper);
+
+    }
+  );
+
+}
+
+
+function categoryOrder(a,b){
+
+  const order =
+    Number(a.menu_order || 0) -
+    Number(b.menu_order || 0);
+
+  if(order !== 0){
+    return order;
+  }
+
+  return String(
+    a.name || ""
+  ).localeCompare(
+    String(b.name || ""),
+    "hi"
+  );
+
+}
+
+
+function createCategoryLink(category){
+
+  const link =
+    document.createElement("a");
+
+  link.className =
+    "nav-link";
+
+  link.href =
+    "/category/" +
+    encodeURIComponent(
+      category.slug
+    );
+
+  link.textContent =
+    category.name;
+
+  link.dataset.category =
+    category.slug;
+
+  return link;
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 

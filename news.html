@@ -99,41 +99,165 @@ a{
    NAV
 ===================================================== */
 
+/* =====================================================
+   NAV
+===================================================== */
+
 .nav{
   background:#650000;
-  color:white;
+  color:#fff;
 }
 
 .nav-inner{
   display:flex;
-  gap:4px;
-  overflow-x:auto;
-  scrollbar-width:none;
+  align-items:stretch;
+  gap:3px;
+  min-height:46px;
+  position:relative;
 }
 
-.nav-inner::-webkit-scrollbar{
-  display:none;
+.nav-link,
+.nav-parent-btn{
+  color:#fff;
+  font-size:13px;
+  font-weight:600;
 }
 
 .nav-link{
   display:inline-flex;
   align-items:center;
-  min-height:44px;
+  justify-content:center;
+  min-height:46px;
   padding:10px 14px;
+  border-radius:5px;
   white-space:nowrap;
-  font-size:13px;
-  font-weight:600;
+}
+
+.nav-link:hover,
+.nav-link.active{
+  background:rgba(255,255,255,.16);
+}
+
+.nav-parent{
+  position:relative;
+  display:flex;
+  align-items:stretch;
+}
+
+.nav-parent-btn{
+  border:0;
+  background:transparent;
+  min-height:46px;
+  padding:10px 14px;
+  cursor:pointer;
+  white-space:nowrap;
   border-radius:5px;
 }
 
-.nav-link:hover{
-  background:rgba(255,255,255,.15);
+.nav-parent-btn:hover,
+.nav-parent.open > .nav-parent-btn{
+  background:rgba(255,255,255,.16);
+}
+
+.nav-arrow{
+  margin-left:7px;
+  font-size:10px;
+}
+
+.nav-dropdown{
+  position:absolute;
+  left:0;
+  top:100%;
+  min-width:210px;
+  background:#fff;
+  color:#222;
+  border-radius:0 0 8px 8px;
+  box-shadow:0 8px 25px rgba(0,0,0,.22);
+  padding:6px;
+  display:none;
+  z-index:1000;
+}
+
+.nav-parent:hover > .nav-dropdown,
+.nav-parent.open > .nav-dropdown{
+  display:block;
+}
+
+.nav-dropdown a{
+  display:block;
+  color:#333;
+  padding:10px 12px;
+  border-radius:6px;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.nav-dropdown a:hover,
+.nav-dropdown a.active{
+  background:#f4e8e8;
+  color:#8b0000;
 }
 
 
 /* =====================================================
-   MAIN
+   MOBILE NAV
 ===================================================== */
+
+@media(max-width:600px){
+
+  .nav-inner{
+    display:block;
+    min-height:0;
+    padding:5px 0;
+  }
+
+  .nav-link{
+    width:100%;
+    min-height:44px;
+    justify-content:flex-start;
+    padding:11px 12px;
+  }
+
+  .nav-parent{
+    display:block;
+  }
+
+  .nav-parent-btn{
+    width:100%;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    text-align:left;
+    padding:11px 12px;
+  }
+
+  .nav-dropdown{
+    position:static;
+    min-width:0;
+    display:none;
+    box-shadow:none;
+    border-radius:0;
+    padding:0 0 5px 14px;
+    background:rgba(0,0,0,.12);
+  }
+
+  .nav-parent.open > .nav-dropdown{
+    display:block;
+  }
+
+  .nav-dropdown a{
+    color:#fff;
+    padding:10px 12px;
+  }
+
+  .nav-dropdown a:hover,
+  .nav-dropdown a.active{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+  }
+
+}
 
 main{
   padding:30px 0 60px;
@@ -1450,103 +1574,208 @@ async function loadCategories(){
 
     const response =
       await fetch(
-        "/api/categories?status=active",
-        {
-          cache:"no-store"
-        }
+        "/api/categories?status=active&menu=1",
+        { cache:"no-store" }
       );
-
 
     const data =
       await response.json();
 
-
-    if(
-      !data.success
-    ){
+    if(!data.success){
       return;
     }
 
+    const categories =
+      (data.categories || [])
+        .filter(
+          item =>
+            String(item.status || "active").toLowerCase() === "active"
+        )
+        .filter(
+          item =>
+            Number(item.menu_visible ?? item.show_in_menu ?? 1) === 1
+        );
 
     const nav =
-      document.getElementById(
-        "categoryNav"
-      );
+      document.getElementById("categoryNav");
 
+    if(!nav){
+      return;
+    }
 
-    (data.categories || [])
-      .filter(
-        category =>
-          String(
-            category.status ||
-            "active"
-          ).toLowerCase()
-          ===
-          "active"
-      )
-      .filter(
-        category =>
-          Number(
-            category.menu_visible ??
-            category.show_in_menu ??
-            1
-          ) === 1
-      )
-      .sort(
-        (a,b) =>
-          Number(
-            a.menu_order || 0
-          ) -
-          Number(
-            b.menu_order || 0
-          )
-      )
-      .forEach(
-        category => {
+    nav.innerHTML = "";
 
-          if(
-            !category.slug
-          ){
-            return;
-          }
+    const home =
+      document.createElement("a");
 
+    home.href = "/";
+    home.className = "nav-link";
+    home.textContent = "सभ समाचार";
+    nav.appendChild(home);
 
-          const link =
-            document.createElement(
-              "a"
-            );
+    const parents =
+      categories
+        .filter(item => !item.parent_id)
+        .sort(categoryOrder);
 
+    const childrenByParent = {};
 
-          link.className =
-            "nav-link";
+    categories.forEach(
+      item => {
 
+        if(!item.parent_id){
+          return;
+        }
 
-          link.href =
-            "/category/" +
-            encodeURIComponent(
-              category.slug
-            );
+        const key = String(item.parent_id);
 
+        if(!childrenByParent[key]){
+          childrenByParent[key] = [];
+        }
 
-          link.textContent =
-            category.name;
+        childrenByParent[key].push(item);
 
+      }
+    );
+
+    Object.keys(childrenByParent).forEach(
+      key =>
+        childrenByParent[key].sort(categoryOrder)
+    );
+
+    parents.forEach(
+      parent => {
+
+        if(!parent.slug){
+          return;
+        }
+
+        const children =
+          childrenByParent[String(parent.id)] || [];
+
+        if(!children.length){
 
           nav.appendChild(
-            link
+            createCategoryLink(parent)
           );
 
+          return;
         }
-      );
+
+        const wrapper =
+          document.createElement("div");
+
+        wrapper.className = "nav-parent";
+
+        const button =
+          document.createElement("button");
+
+        button.type = "button";
+        button.className = "nav-parent-btn";
+
+        button.innerHTML =
+          `<span>${escapeHtml(parent.name)}</span>
+           <span class="nav-arrow">▼</span>`;
+
+        button.addEventListener(
+          "click",
+          event => {
+
+            event.stopPropagation();
+
+            document
+              .querySelectorAll("#categoryNav .nav-parent.open")
+              .forEach(
+                item => {
+                  if(item !== wrapper){
+                    item.classList.remove("open");
+                  }
+                }
+              );
+
+            wrapper.classList.toggle("open");
+
+          }
+        );
+
+        const dropdown =
+          document.createElement("div");
+
+        dropdown.className = "nav-dropdown";
+
+        children.forEach(
+          child =>
+            dropdown.appendChild(
+              createCategoryLink(child)
+            )
+        );
+
+        wrapper.appendChild(button);
+        wrapper.appendChild(dropdown);
+        nav.appendChild(wrapper);
+
+      }
+    );
 
   }catch(error){
 
     console.error(
-      "CATEGORY ERROR:",
+      "CATEGORY MENU ERROR:",
       error
     );
 
   }
+
+}
+
+
+function categoryOrder(a,b){
+
+  const order =
+    Number(a.menu_order || 0) -
+    Number(b.menu_order || 0);
+
+  if(order !== 0){
+    return order;
+  }
+
+  return String(a.name || "")
+    .localeCompare(
+      String(b.name || ""),
+      "hi"
+    );
+
+}
+
+
+function createCategoryLink(category){
+
+  const link =
+    document.createElement("a");
+
+  link.href =
+    "/category/" +
+    encodeURIComponent(category.slug);
+
+  link.className =
+    "nav-link";
+
+  link.textContent =
+    category.name;
+
+  return link;
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 

@@ -333,6 +333,34 @@
           <div class="category-field">
 
             <label class="category-label">
+              मुख्य श्रेणी
+            </label>
+
+            <select
+              class="category-select"
+              id="categoryParentId"
+            >
+              <option value="">
+                — मुख्य श्रेणी नहि (Main Category) —
+              </option>
+            </select>
+
+            <div
+              style="
+                margin-top:5px;
+                color:#888;
+                font-size:10px;
+              "
+            >
+              Main category चुनलासँ ई श्रेणी ओकर Sub-category बनत।
+            </div>
+
+          </div>
+
+
+          <div class="category-field">
+
+            <label class="category-label">
               विवरण
             </label>
 
@@ -498,6 +526,8 @@
         )
         .classList.add("show");
 
+      populateParentCategories();
+
       document
         .getElementById(
           "categoryName"
@@ -580,6 +610,10 @@
           category
         );
 
+        await populateParentCategories(
+          category.parent_id
+        );
+
 
       } catch (error) {
 
@@ -611,6 +645,11 @@
 
     setValue(
       "categoryDescription",
+      ""
+    );
+
+    setValue(
+      "categoryParentId",
       ""
     );
 
@@ -672,6 +711,11 @@
     );
 
     setValue(
+      "categoryParentId",
+      category.parent_id ?? ""
+    );
+
+    setValue(
       "categoryMenuOrder",
       category.menu_order ??
       category.order ??
@@ -711,6 +755,108 @@
 
 
     updateSlugPreview();
+
+  }
+
+
+  /* =======================================================
+     PARENT CATEGORIES
+  ======================================================= */
+
+  async function populateParentCategories(
+    selectedId = ""
+  ) {
+
+    const select =
+      document.getElementById(
+        "categoryParentId"
+      );
+
+    if (!select) {
+      return;
+    }
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/categories?status=active",
+          {
+            credentials:"same-origin",
+            cache:"no-store"
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.error ||
+          "मुख्य श्रेणी load नहि भ' सकल"
+        );
+      }
+
+      const currentEditingId =
+        Number(editingId || 0);
+
+      select.innerHTML = `
+        <option value="">
+          — मुख्य श्रेणी नहि (Main Category) —
+        </option>
+      `;
+
+      (data.categories || [])
+        .filter(
+          category =>
+            Number(category.id) !==
+            currentEditingId
+        )
+        .filter(
+          category =>
+            category.parent_id === null ||
+            category.parent_id === undefined
+        )
+        .forEach(
+          category => {
+
+            const option =
+              document.createElement(
+                "option"
+              );
+
+            option.value =
+              category.id;
+
+            option.textContent =
+              category.name;
+
+            option.selected =
+              String(
+                selectedId ?? ""
+              ) ===
+              String(
+                category.id
+              );
+
+            select.appendChild(
+              option
+            );
+
+          }
+        );
+
+    } catch (error) {
+
+      console.error(
+        "PARENT CATEGORY LOAD:",
+        error
+      );
+
+    }
 
   }
 
@@ -897,6 +1043,13 @@
             )
             .value
             .trim(),
+
+        parent_id:
+          document
+            .getElementById(
+              "categoryParentId"
+            )
+            .value || null,
 
         menu_visible:
           document
