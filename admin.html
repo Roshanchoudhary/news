@@ -3504,7 +3504,6 @@ tr:hover td{
         <input
           type="text"
           id="newsSlug"
-          required
           placeholder="news-title"
         >
 
@@ -3599,7 +3598,6 @@ tr:hover td{
         <textarea
           id="newsContent"
           style="display:none;"
-          required
         ></textarea>
 
       </div>
@@ -5898,10 +5896,26 @@ async function saveNews(event){
   }
 
 
-  const slug =
+  let slug =
     document.getElementById(
       "newsSlug"
     ).value.trim();
+
+  /* Generate English slug automatically for new news */
+  if(!slug){
+    slug = title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/^-+|-+$/g,"");
+
+    const slugInput =
+      document.getElementById("newsSlug");
+
+    if(slugInput){
+      slugInput.value = slug;
+    }
+  }
 
 
   if(!title){
