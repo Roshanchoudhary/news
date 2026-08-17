@@ -1580,10 +1580,9 @@ export async function onRequestDelete(
         .run();
 
 
-    if (
-      !result.meta ||
-      !result.meta.changes
-    ) {
+    const changed = Number(result?.meta?.changes || result?.meta?.rows_written || 0);
+
+    if (!changed) {
 
       return json(
         {
@@ -2182,10 +2181,8 @@ async function requireAdmin(
 
   if (
     !user ||
-    user.status !==
-      "active" ||
-    user.role !==
-      "admin"
+    String(user.status || "").toLowerCase() !== "active" ||
+    String(user.role || "").toLowerCase() !== "admin"
   ) {
 
     return null;
