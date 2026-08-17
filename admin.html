@@ -5257,140 +5257,275 @@ async function saveNews(event){
 
   event.preventDefault();
 
-  const form = document.getElementById("newsEditorForm");
-  const button = form ? form.querySelector('button[type="submit"]') : null;
 
-  if (button) {
-    button.disabled = true;
-    button.dataset.originalText = button.dataset.originalText || button.textContent;
-    button.textContent = "Saving...";
-  }
+  const title =
+    document.getElementById(
+      "newsTitle"
+    ).value.trim();
 
-  try {
 
-    const title = document.getElementById("newsTitle")?.value.trim() || "";
-    const content = document.getElementById("newsContent")?.value.trim() || "";
-    const slug = document.getElementById("newsSlug")?.value.trim() || "";
-    const newsId = document.getElementById("newsId")?.value.trim() || "";
+  const content =
+    document.getElementById(
+      "newsContent"
+    ).value.trim();
 
-    if (!title) {
-      throw new Error("समाचार शीर्षक जरूरी अछि।");
-    }
 
-    if (!content) {
-      throw new Error("समाचार सामग्री जरूरी अछि।");
-    }
+  const slug =
+    document.getElementById(
+      "newsSlug"
+    ).value.trim();
 
-    if (!slug) {
-      throw new Error("News URL जरूरी अछि।");
-    }
 
-    const categoryValue =
-      document.getElementById("newsCategory")?.value || "";
-
-    const selectedTags = Array.from(
-      document.querySelectorAll('input[name="newsTag"]:checked')
-    ).map(input => Number(input.value)).filter(Number.isFinite);
-
-    const rawStatus =
-      document.getElementById("newsEditorStatus")?.value || "draft";
-
-    // API currently accepts only published/draft.
-    const status = rawStatus === "published" ? "published" : "draft";
-
-    const payload = {
-      title,
-      slug,
-      summary: document.getElementById("newsSummary")?.value.trim() || "",
-      content,
-      image_url: document.getElementById("newsImage")?.value.trim() || null,
-      category_id: categoryValue ? Number(categoryValue) : null,
-      status,
-      featured: !!document.getElementById("newsFeatured")?.checked,
-      seo_title: document.getElementById("newsSeoTitle")?.value.trim() || "",
-      seo_description: document.getElementById("newsSeoDescription")?.value.trim() || "",
-      tags: selectedTags
-    };
-
-    const requestUrl = newsId
-      ? API + "/news?id=" + encodeURIComponent(newsId)
-      : API + "/news";
-
-    const requestMethod = newsId ? "PUT" : "POST";
+  if(!title){
 
     showToast(
-      newsId
-        ? "समाचार update भ' रहल अछि..."
-        : "समाचार save भ' रहल अछि..."
+      "समाचार शीर्षक जरूरी अछि।"
     );
 
-    const response = await fetch(requestUrl, {
-      method: requestMethod,
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    return;
 
-    const text = await response.text();
-    let data;
+  }
 
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch (e) {
-      throw new Error(
-        "Server response JSON नहि अछि (HTTP " + response.status + ")"
+
+  if(!content){
+
+    showToast(
+      "समाचार सामग्री जरूरी अछि।"
+    );
+
+    return;
+
+  }
+
+
+  if(!slug){
+
+    showToast(
+      "News URL जरूरी अछि।"
+    );
+
+    return;
+
+  }
+
+
+  const newsId =
+    document.getElementById(
+      "newsId"
+    ).value.trim();
+
+
+  const selectedTags =
+    Array.from(
+      document.querySelectorAll(
+        'input[name="newsTag"]:checked'
+      )
+    )
+    .map(
+      input =>
+        Number(
+          input.value
+        )
+    );
+
+
+  const payload = {
+
+    title:
+
+      title,
+
+
+    slug:
+
+      slug,
+
+
+    summary:
+
+      document.getElementById(
+        "newsSummary"
+      ).value.trim(),
+
+
+    content:
+
+      content,
+
+
+    image_url:
+
+      document.getElementById(
+        "newsImage"
+      ).value.trim() ||
+      null,
+
+
+    category_id:
+
+      document.getElementById(
+        "newsCategory"
+      ).value
+        ? Number(
+            document.getElementById(
+              "newsCategory"
+            ).value
+          )
+        : null,
+
+
+    status:
+
+      document.getElementById(
+        "newsEditorStatus"
+      ).value ||
+      "draft",
+
+
+    featured:
+
+      document.getElementById(
+        "newsFeatured"
+      ).checked,
+
+
+    seo_title:
+
+      document.getElementById(
+        "newsSeoTitle"
+      ).value.trim(),
+
+
+    seo_description:
+
+      document.getElementById(
+        "newsSeoDescription"
+      ).value.trim(),
+
+
+    tags:
+
+      selectedTags
+
+  };
+
+
+  const requestUrl =
+
+    newsId
+
+      ? API +
+        "/news?id=" +
+        encodeURIComponent(
+          newsId
+        )
+
+      : API +
+        "/news";
+
+
+  const requestMethod =
+
+    newsId
+
+      ? "PUT"
+
+      : "POST";
+
+
+  try{
+
+    showToast(
+
+      newsId
+
+        ? "समाचार update भ' रहल अछि..."
+
+        : "समाचार save भ' रहल अछि..."
+
+    );
+
+
+    const response =
+      await fetch(
+        requestUrl,
+        {
+          method:
+            requestMethod,
+
+          credentials:
+            "include",
+
+          headers:{
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+
+        }
       );
-    }
 
-    if (!response.ok || data.success !== true) {
+
+    const data =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      data.success !== true
+    ){
+
       throw new Error(
         data.error ||
-        (newsId
-          ? "समाचार update नहि भ' सकल।"
-          : "समाचार save नहि भ' सकल।")
+        (
+          newsId
+            ? "समाचार update नहि भ' सकल।"
+            : "समाचार save नहि भ' सकल।"
+        )
       );
+
     }
+
 
     closeNewsEditor();
 
+
     showToast(
+
       newsId
+
         ? "समाचार सफलतापूर्वक update भ' गेल।"
+
         : "समाचार सफलतापूर्वक save भ' गेल।"
+
     );
 
-    // Refresh independently; a list-loading error must not make a
-    // successful save look like a failed save.
-    try {
-      await loadNews();
-    } catch (e) {
-      console.error("NEWS LIST REFRESH ERROR:", e);
-    }
 
-    try {
-      await loadOverview();
-    } catch (e) {
-      console.error("OVERVIEW REFRESH ERROR:", e);
-    }
+    await loadNews();
 
-  } catch (error) {
 
-    console.error("SAVE/UPDATE NEWS ERROR:", error);
+    await loadOverview();
+
+
+  }catch(error){
+
+    console.error(
+      "SAVE/UPDATE NEWS ERROR:",
+      error
+    );
+
 
     showToast(
-      error?.message || "समाचार save नहि भ' सकल।",
-      "error"
+      error.message ||
+      "समाचार save नहि भ' सकल।"
     );
-
-  } finally {
-
-    if (button) {
-      button.disabled = false;
-      button.textContent = button.dataset.originalText || "Save News";
-    }
 
   }
 
@@ -6081,37 +6216,18 @@ function renderCategories(
             category.status ||
             "active";
 
-          const parent =
-            categoriesCache.find(
-              item =>
-                Number(item.id) ===
-                Number(category.parent_id)
-            );
-
-          const displayName =
-            parent
-              ? `
-                <div>
-                  <span style="color:#999;">↳</span>
-                  ${escapeHtml(category.name || "")}
-                </div>
-                <div style="font-size:9px;color:#999;margin-top:2px;">
-                  Main: ${escapeHtml(parent.name || "")}
-                </div>
-              `
-              : `
-                <strong>
-                  ${escapeHtml(category.name || "")}
-                </strong>
-              `;
-
 
           return `
             <tr>
 
               <td>
 
-                ${displayName}
+                <strong>
+                  ${escapeHtml(
+                    category.name ||
+                    ""
+                  )}
+                </strong>
 
               </td>
 
@@ -6165,7 +6281,6 @@ function renderCategories(
               <td>
 
                 ${
-                  category.menu_order ??
                   category.sort_order ??
                   0
                 }
@@ -6219,122 +6334,6 @@ function renderCategories(
         }
       )
       .join("");
-
-}
-
-
-/* =====================================================
-   PARENT CATEGORY SELECT
-===================================================== */
-
-async function populateCategoryParentSelect(
-  selectedId = ""
-){
-
-  const select =
-    document.getElementById(
-      "categoryFormParent"
-    );
-
-  if(!select){
-    return;
-  }
-
-  select.innerHTML = `
-    <option value="">
-      — मुख्य श्रेणी नहि (Main Category) —
-    </option>
-  `;
-
-  const editingId =
-    Number(
-      document.getElementById(
-        "categoryFormId"
-      )?.value || 0
-    );
-
-  try{
-
-    const response =
-      await fetch(
-        API +
-        "/categories?status=active",
-        {
-          method:"GET",
-          credentials:"include",
-          cache:"no-store",
-          headers:{
-            "Accept":
-              "application/json"
-          }
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if(
-      !response.ok ||
-      data.success !== true
-    ){
-      throw new Error(
-        data.error ||
-        "मुख्य श्रेणी load नहि भ' सकल।"
-      );
-    }
-
-    (data.categories || [])
-      .filter(
-        item =>
-          Number(item.id) !==
-          editingId
-      )
-      .filter(
-        item =>
-          item.parent_id === null ||
-          item.parent_id === undefined ||
-          item.parent_id === ""
-      )
-      .sort(
-        (a,b) =>
-          Number(a.menu_order || 0) -
-          Number(b.menu_order || 0)
-      )
-      .forEach(
-        item => {
-
-          const option =
-            document.createElement(
-              "option"
-            );
-
-          option.value =
-            item.id;
-
-          option.textContent =
-            item.name;
-
-          option.selected =
-            String(
-              selectedId ?? ""
-            ) ===
-            String(item.id);
-
-          select.appendChild(
-            option
-          );
-
-        }
-      );
-
-  }catch(error){
-
-    console.error(
-      "PARENT CATEGORY ERROR:",
-      error
-    );
-
-  }
 
 }
 
@@ -6599,52 +6598,6 @@ function openCategoryModal(category = null){
         </div>
 
 
-        <!-- PARENT CATEGORY -->
-
-        <div style="margin-bottom:16px;">
-
-          <label
-            style="
-              display:block;
-              font-size:12px;
-              font-weight:800;
-              margin-bottom:7px;
-            "
-          >
-            मुख्य श्रेणी
-          </label>
-
-          <select
-            id="categoryFormParent"
-            style="
-              width:100%;
-              height:42px;
-              border:1px solid #ddd;
-              border-radius:8px;
-              padding:0 12px;
-              font-size:13px;
-              outline:none;
-              background:#fff;
-            "
-          >
-            <option value="">
-              — मुख्य श्रेणी नहि (Main Category) —
-            </option>
-          </select>
-
-          <div
-            style="
-              margin-top:6px;
-              color:#888;
-              font-size:10px;
-            "
-          >
-            Main category चुनलासँ ई Sub-category बनत।
-          </div>
-
-        </div>
-
-
         <!-- DESCRIPTION -->
 
         <div style="margin-bottom:16px;">
@@ -6808,11 +6761,6 @@ function openCategoryModal(category = null){
 
   document.body.appendChild(
     modal
-  );
-
-
-  populateCategoryParentSelect(
-    category?.parent_id ?? ""
   );
 
 
@@ -7107,11 +7055,6 @@ async function saveCategory(){
     slug,
 
     description,
-
-    parent_id:
-      document.getElementById(
-        "categoryFormParent"
-      )?.value || null,
 
     menu_visible:
       menuVisible,
@@ -10311,6 +10254,82 @@ document.addEventListener(
 /* =====================================================
    PART 9 END
 ===================================================== */
+     /* =====================================================
+    FINAL INITIALIZATION
+ ===================================================== */
+
+ document.addEventListener(
+   "DOMContentLoaded",
+   function(){
+
+     /*
+      * News editor form के accidental
+      * double submit रोकू।
+      */
+
+     const form =
+       document.getElementById(
+         "newsEditorForm"
+       );
+
+
+     if(form){
+
+       form.addEventListener(
+         "submit",
+         function(){
+
+           const button =
+             form.querySelector(
+               'button[type="submit"]'
+             );
+
+
+           if(button){
+
+             button.disabled =
+               true;
+
+
+             button.dataset.originalText =
+               button.textContent;
+
+
+             button.textContent =
+               "Saving...";
+
+
+             /*
+              * Request पूरा भेलाक बाद
+              * button फेर enable होयत।
+              */
+
+             setTimeout(
+               function(){
+
+                 button.disabled =
+                   false;
+
+
+                 button.textContent =
+                   button.dataset.originalText ||
+                   "Save News";
+
+               },
+               5000
+             );
+
+           }
+
+         }
+       );
+
+     }
+
+   }
+ );
+
+
  /* =====================================================
     NEWS EDITOR IMAGE PREVIEW
  ===================================================== */
@@ -11861,62 +11880,6 @@ function escapeUserHtml(
    TOAST FALLBACK
 ========================================================= */
 
-function showToast(
-  message
-) {
-
-  if (
-    typeof window.showToast ===
-    "function"
-  ) {
-
-    window.showToast(
-      message
-    );
-
-    return;
-
-  }
-
-
-  const toast =
-    document.getElementById(
-      "toast"
-    );
-
-
-  if (!toast) {
-
-    alert(
-      message
-    );
-
-    return;
-
-  }
-
-
-  toast.textContent =
-    message;
-
-
-  toast.classList.add(
-    "show"
-  );
-
-
-  setTimeout(
-    () => {
-
-      toast.classList.remove(
-        "show"
-      );
-
-    },
-    2500
-  );
-
-}
 </script>
 
 
