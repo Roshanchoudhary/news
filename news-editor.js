@@ -1507,7 +1507,9 @@
 
     setValue(
       "newsContentEditor",
-      news.content
+      contentForEditor(
+        news.content
+      )
     );
 
 
@@ -1827,6 +1829,109 @@
 
 
   /* =======================================================
+     NORMALIZE EDITOR CONTENT
+     Converts pasted HTML (<div>, <br>, <p>, etc.) into
+     clean text while preserving inline images as markers.
+  ======================================================= */
+
+  function normalizeEditorContent(value) {
+
+    const raw = String(value || "").trim();
+
+    if (!raw) {
+      return "";
+    }
+
+    // Plain text: keep it as-is.
+    if (!/[<][a-z!/][^>]*>/i.test(raw)) {
+      return raw
+        .replace(/\r\n/g, "\n")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(
+      "<div id=\"__news_root__\">" + raw + "</div>",
+      "text/html"
+    );
+
+    const root = doc.getElementById("__news_root__");
+
+    if (!root) {
+      return raw;
+    }
+
+    function walk(node) {
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.nodeValue || "";
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) {
+        return "";
+      }
+
+      const tag = node.tagName.toLowerCase();
+
+      if (tag === "script" || tag === "style" || tag === "iframe") {
+        return "";
+      }
+
+      if (tag === "img") {
+        const url =
+          node.getAttribute("src") || "";
+
+        if (!/^https?:\/\//i.test(url)) {
+          return "";
+        }
+
+        const alt =
+          (node.getAttribute("alt") || "चित्र")
+            .replace(/[{}|]/g, " ")
+            .trim();
+
+        return "\n\n{{image:" + url + "|" + alt + "}}\n\n";
+      }
+
+      if (tag === "br") {
+        return "\n";
+      }
+
+      let result = "";
+
+      node.childNodes.forEach(function (child) {
+        result += walk(child);
+      });
+
+      if (
+        ["div", "p", "section", "article", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "li"].includes(tag)
+      ) {
+        result += "\n\n";
+      }
+
+      return result;
+    }
+
+    return walk(root)
+      .replace(/\u00a0/g, " ")
+      .replace(/[ \t]+\n/g, "\n")
+      .replace(/\n[ \t]+/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+
+  /* =======================================================
+     EDITOR DISPLAY CLEANUP
+  ======================================================= */
+
+  function contentForEditor(value) {
+    return normalizeEditorContent(value);
+  }
+
+  /* =======================================================
      SAVE
   ======================================================= */
 
@@ -1842,9 +1947,17 @@
 
 
       const content =
-        document.getElementById(
-          "newsContentEditor"
-        ).value.trim();
+        normalizeEditorContent(
+          document.getElementById(
+            "newsContentEditor"
+          ).value
+        );
+
+
+      // Keep the editor clean after saving pasted HTML.
+      document.getElementById(
+        "newsContentEditor"
+      ).value = content;
 
 
       let slug =
