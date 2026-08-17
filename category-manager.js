@@ -1,15 +1,24 @@
 /* =========================================================
    category-manager.js
-   Professional Category Management
+   Category + Sub-category Management
 ========================================================= */
 
 (function () {
 
   let editingId = null;
 
-  document.addEventListener("DOMContentLoaded", () => {
-    createCategoryModal();
-  });
+  /* =======================================================
+     INIT
+  ======================================================= */
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+      createCategoryModal();
+
+    }
+  );
 
 
   /* =======================================================
@@ -18,9 +27,20 @@
 
   function createCategoryModal() {
 
-    if (document.getElementById("categoryModal")) return;
+    if (
+      document.getElementById(
+        "categoryModal"
+      )
+    ) {
+      return;
+    }
 
-    const style = document.createElement("style");
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
 
     style.textContent = `
 
@@ -144,6 +164,13 @@
         color:#8b0000;
       }
 
+      .category-parent-help {
+        margin-top:6px;
+        color:#777;
+        font-size:10px;
+        line-height:1.5;
+      }
+
       .category-options {
         display:grid;
         grid-template-columns:1fr 1fr;
@@ -208,8 +235,9 @@
         border-color:#8b0000;
       }
 
-      .category-btn.danger {
-        color:#c62828;
+      .category-btn:disabled {
+        opacity:.6;
+        cursor:not-allowed;
       }
 
       @media(max-width:600px) {
@@ -229,16 +257,29 @@
           grid-template-columns:1fr;
         }
 
+        .category-slug-row {
+          flex-direction:column;
+        }
+
       }
 
     `;
 
-    document.head.appendChild(style);
+
+    document.head.appendChild(
+      style
+    );
 
 
-    const modal = document.createElement("div");
+    const modal =
+      document.createElement(
+        "div"
+      );
 
-    modal.id = "categoryModal";
+
+    modal.id =
+      "categoryModal";
+
 
     modal.innerHTML = `
 
@@ -263,6 +304,7 @@
 
           <button
             class="category-close"
+            type="button"
             onclick="window.closeCategoryEditor()"
           >
             ×
@@ -279,6 +321,8 @@
           ></div>
 
 
+          <!-- NAME -->
+
           <div class="category-field">
 
             <label class="category-label">
@@ -289,10 +333,13 @@
               class="category-input"
               id="categoryName"
               placeholder="जैसे — मिथिला"
+              autocomplete="off"
             >
 
           </div>
 
+
+          <!-- SLUG -->
 
           <div class="category-field">
 
@@ -306,6 +353,7 @@
                 class="category-input"
                 id="categorySlug"
                 placeholder="mithila"
+                autocomplete="off"
               >
 
               <button
@@ -318,9 +366,7 @@
 
             </div>
 
-            <div
-              class="category-preview"
-            >
+            <div class="category-preview">
               URL:
               <strong id="categoryUrlPreview">
                 /category/...
@@ -329,6 +375,8 @@
 
           </div>
 
+
+          <!-- DESCRIPTION -->
 
           <div class="category-field">
 
@@ -344,6 +392,35 @@
 
           </div>
 
+
+          <!-- PARENT CATEGORY -->
+
+          <div class="category-field">
+
+            <label class="category-label">
+              मुख्य श्रेणी
+            </label>
+
+            <select
+              class="category-select"
+              id="categoryParent"
+            >
+
+              <option value="">
+                — कोनो मुख्य श्रेणी नहि —
+              </option>
+
+            </select>
+
+            <div class="category-parent-help">
+              कोनो मुख्य श्रेणी नहि चुनलासँ ई Main Category रहत।
+              मुख्य श्रेणी चुनलासँ ई ओकर Sub-category बनत।
+            </div>
+
+          </div>
+
+
+          <!-- OPTIONS -->
 
           <div class="category-options">
 
@@ -379,6 +456,8 @@
           </div>
 
 
+          <!-- MENU ORDER -->
+
           <div
             class="category-field"
             style="margin-top:15px"
@@ -398,6 +477,7 @@
 
           </div>
 
+
         </div>
 
 
@@ -405,6 +485,7 @@
 
           <button
             class="category-btn"
+            type="button"
             onclick="window.closeCategoryEditor()"
           >
             Cancel
@@ -413,6 +494,7 @@
           <button
             class="category-btn primary"
             id="categorySaveBtn"
+            type="button"
             onclick="window.saveCategory()"
           >
             Save Category
@@ -424,12 +506,25 @@
 
     `;
 
-    document.body.appendChild(modal);
+
+    document.body.appendChild(
+      modal
+    );
 
 
-    document
-      .getElementById("categoryName")
-      .addEventListener(
+    /* ===================================================
+       NAME → AUTO SLUG
+    =================================================== */
+
+    const nameInput =
+      document.getElementById(
+        "categoryName"
+      );
+
+
+    if (nameInput) {
+
+      nameInput.addEventListener(
         "input",
         function () {
 
@@ -438,7 +533,11 @@
               "categorySlug"
             );
 
-          if (!slug.dataset.manual) {
+
+          if (
+            slug &&
+            !slug.dataset.manual
+          ) {
 
             slug.value =
               makeSlug(
@@ -452,14 +551,27 @@
         }
       );
 
+    }
 
-    document
-      .getElementById("categorySlug")
-      .addEventListener(
+
+    /* ===================================================
+       SLUG
+    =================================================== */
+
+    const slugInput =
+      document.getElementById(
+        "categorySlug"
+      );
+
+
+    if (slugInput) {
+
+      slugInput.addEventListener(
         "input",
         function () {
 
-          this.dataset.manual = "1";
+          this.dataset.manual =
+            "1";
 
           this.value =
             normalizeSlug(
@@ -471,6 +583,8 @@
         }
       );
 
+    }
+
   }
 
 
@@ -479,7 +593,7 @@
   ======================================================= */
 
   window.openCategoryEditor =
-    function () {
+    async function () {
 
       editingId = null;
 
@@ -492,11 +606,20 @@
         .textContent =
         "नई श्रेणी";
 
+
       document
         .getElementById(
           "categoryModal"
         )
-        .classList.add("show");
+        .classList.add(
+          "show"
+        );
+
+
+      await loadParentCategories(
+        null
+      );
+
 
       document
         .getElementById(
@@ -518,6 +641,7 @@
 
       resetForm();
 
+
       document
         .getElementById(
           "categoryModalTitle"
@@ -525,19 +649,43 @@
         .textContent =
         "श्रेणी Edit करू";
 
+
       document
         .getElementById(
           "categoryModal"
         )
-        .classList.add("show");
+        .classList.add(
+          "show"
+        );
 
 
       try {
 
+        /*
+         * First load main categories.
+         * Current category itself is excluded.
+         */
+
+        await loadParentCategories(
+          id
+        );
+
+
         const response =
           await fetch(
             "/api/categories?id=" +
-            encodeURIComponent(id)
+            encodeURIComponent(
+              id
+            ),
+            {
+              method:"GET",
+
+              credentials:
+                "same-origin",
+
+              cache:
+                "no-store"
+            }
           );
 
 
@@ -560,7 +708,10 @@
 
         const category =
           data.category ||
-          data.categories?.find(
+          (
+            data.categories ||
+            []
+          ).find(
             item =>
               Number(item.id) ===
               Number(id)
@@ -583,14 +734,215 @@
 
       } catch (error) {
 
+        console.error(
+          "CATEGORY EDIT:",
+          error
+        );
+
+
         showMessage(
-          error.message,
+          error.message ||
+          "श्रेणी load नहि भेल",
           "error"
         );
 
       }
 
     };
+
+
+  /* =======================================================
+     LOAD MAIN CATEGORIES
+  ======================================================= */
+
+  async function loadParentCategories(
+    excludeId
+  ) {
+
+    const select =
+      document.getElementById(
+        "categoryParent"
+      );
+
+
+    if (!select) {
+      return;
+    }
+
+
+    select.innerHTML = `
+      <option value="">
+        — कोनो मुख्य श्रेणी नहि —
+      </option>
+    `;
+
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/categories?status=active",
+          {
+            method:"GET",
+
+            credentials:
+              "same-origin",
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+
+        throw new Error(
+          data.error ||
+          "मुख्य श्रेणी load नहि भेल"
+        );
+
+      }
+
+
+      const categories =
+        Array.isArray(
+          data.categories
+        )
+          ? data.categories
+          : [];
+
+
+      /*
+       * IMPORTANT:
+       *
+       * Only parent/root categories
+       *
+       * parent_id = NULL
+       *
+       * Existing sub-categories
+       * will NOT appear here.
+       */
+
+      const parents =
+        categories
+          .filter(
+            category => {
+
+              const parentId =
+                category.parent_id;
+
+
+              return (
+                parentId === null ||
+                parentId === undefined ||
+                parentId === "" ||
+                Number(parentId) === 0
+              );
+
+            }
+          )
+          .filter(
+            category =>
+              Number(
+                category.id
+              ) !==
+              Number(
+                excludeId
+              )
+          )
+          .sort(
+            function (a, b) {
+
+              const orderA =
+                Number(
+                  a.menu_order ??
+                  a.menuOrder ??
+                  0
+                );
+
+
+              const orderB =
+                Number(
+                  b.menu_order ??
+                  b.menuOrder ??
+                  0
+                );
+
+
+              if (
+                orderA !== orderB
+              ) {
+
+                return (
+                  orderA -
+                  orderB
+                );
+
+              }
+
+
+              return String(
+                a.name || ""
+              ).localeCompare(
+                String(
+                  b.name || ""
+                )
+              );
+
+            }
+          );
+
+
+      parents.forEach(
+        function (category) {
+
+          const option =
+            document.createElement(
+              "option"
+            );
+
+
+          option.value =
+            String(
+              category.id
+            );
+
+
+          option.textContent =
+            category.name;
+
+
+          select.appendChild(
+            option
+          );
+
+        }
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "LOAD PARENT CATEGORIES:",
+        error
+      );
+
+
+      /*
+       * Don't block editor.
+       * Keep Main Category option.
+       */
+
+    }
+
+  }
 
 
   /* =======================================================
@@ -604,15 +956,18 @@
       ""
     );
 
+
     setValue(
       "categorySlug",
       ""
     );
 
+
     setValue(
       "categoryDescription",
       ""
     );
+
 
     setValue(
       "categoryMenuOrder",
@@ -620,25 +975,52 @@
     );
 
 
-    document
-      .getElementById(
+    setValue(
+      "categoryParent",
+      ""
+    );
+
+
+    const menuVisible =
+      document.getElementById(
         "categoryMenuVisible"
-      )
-      .checked = true;
+      );
 
 
-    document
-      .getElementById(
+    if (menuVisible) {
+
+      menuVisible.checked =
+        true;
+
+    }
+
+
+    const active =
+      document.getElementById(
         "categoryActive"
-      )
-      .checked = true;
+      );
 
 
-    document
-      .getElementById(
+    if (active) {
+
+      active.checked =
+        true;
+
+    }
+
+
+    const slug =
+      document.getElementById(
         "categorySlug"
-      )
-      .dataset.manual = "";
+      );
+
+
+    if (slug) {
+
+      slug.dataset.manual =
+        "";
+
+    }
 
 
     updateSlugPreview();
@@ -649,7 +1031,7 @@
 
 
   /* =======================================================
-     FILL
+     FILL EDIT FORM
   ======================================================= */
 
   function fillForm(
@@ -661,53 +1043,107 @@
       category.name
     );
 
+
     setValue(
       "categorySlug",
       category.slug
     );
+
 
     setValue(
       "categoryDescription",
       category.description
     );
 
+
     setValue(
       "categoryMenuOrder",
       category.menu_order ??
+      category.menuOrder ??
       category.order ??
       0
     );
 
 
-    document
-      .getElementById(
+    /*
+     * Parent Category
+     */
+
+    const parentSelect =
+      document.getElementById(
+        "categoryParent"
+      );
+
+
+    if (parentSelect) {
+
+      const parentId =
+        category.parent_id ??
+        category.parentId ??
+        "";
+
+
+      parentSelect.value =
+        parentId === null ||
+        parentId === undefined ||
+        parentId === ""
+          ? ""
+          : String(
+              parentId
+            );
+
+    }
+
+
+    const slug =
+      document.getElementById(
         "categorySlug"
-      )
-      .dataset.manual = "1";
+      );
 
 
-    document
-      .getElementById(
+    if (slug) {
+
+      slug.dataset.manual =
+        "1";
+
+    }
+
+
+    const menuVisible =
+      document.getElementById(
         "categoryMenuVisible"
-      )
-      .checked =
-      Number(
-        category.menu_visible ??
-        category.show_in_menu ??
-        1
-      ) === 1;
+      );
 
 
-    document
-      .getElementById(
+    if (menuVisible) {
+
+      menuVisible.checked =
+        Number(
+          category.menu_visible ??
+          category.show_in_menu ??
+          category.menuVisible ??
+          1
+        ) === 1;
+
+    }
+
+
+    const active =
+      document.getElementById(
         "categoryActive"
-      )
-      .checked =
-      String(
-        category.status ??
-        "active"
-      ).toLowerCase() ===
-      "active";
+      );
+
+
+    if (active) {
+
+      active.checked =
+        String(
+          category.status ??
+          "active"
+        ).toLowerCase() ===
+        "active";
+
+    }
 
 
     updateSlugPreview();
@@ -716,7 +1152,7 @@
 
 
   /* =======================================================
-     SLUG
+     GENERATE SLUG
   ======================================================= */
 
   window.generateCategorySlug =
@@ -737,16 +1173,29 @@
           );
 
 
+      if (!slug) {
+        return;
+      }
+
+
       slug.value =
-        makeSlug(name);
+        makeSlug(
+          name
+        );
 
 
-      slug.dataset.manual = "";
+      slug.dataset.manual =
+        "";
+
 
       updateSlugPreview();
 
     };
 
+
+  /* =======================================================
+     MAKE SLUG
+  ======================================================= */
 
   function makeSlug(
     text
@@ -755,18 +1204,26 @@
     return String(
       text || ""
     )
+
       .toLowerCase()
+
       .trim()
+
       .replace(
         /[^a-z0-9]+/g,
         "-"
       )
+
       .replace(
         /^-+|-+$/g,
         "");
 
   }
 
+
+  /* =======================================================
+     NORMALIZE SLUG
+  ======================================================= */
 
   function normalizeSlug(
     slug
@@ -775,21 +1232,29 @@
     return String(
       slug || ""
     )
+
       .toLowerCase()
+
       .replace(
         /[^a-z0-9-]/g,
         "-"
       )
+
       .replace(
         /-+/g,
         "-"
       )
+
       .replace(
         /^-+|-+$/g,
         "");
 
   }
 
+
+  /* =======================================================
+     SLUG PREVIEW
+  ======================================================= */
 
   function updateSlugPreview() {
 
@@ -801,13 +1266,21 @@
         .value;
 
 
-    document
-      .getElementById(
+    const preview =
+      document.getElementById(
         "categoryUrlPreview"
-      )
-      .textContent =
+      );
+
+
+    if (!preview) {
+      return;
+    }
+
+
+    preview.textContent =
       slug
-        ? "/category/" + slug
+        ? "/category/" +
+          slug
         : "/category/...";
 
   }
@@ -853,7 +1326,10 @@
       if (!slug) {
 
         slug =
-          makeSlug(name);
+          makeSlug(
+            name
+          );
+
 
         document
           .getElementById(
@@ -866,12 +1342,16 @@
 
 
       slug =
-        normalizeSlug(slug);
+        normalizeSlug(
+          slug
+        );
 
 
       if (
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/
-          .test(slug)
+          .test(
+            slug
+          )
       ) {
 
         showMessage(
@@ -883,6 +1363,52 @@
 
       }
 
+
+      /*
+       * Parent Category
+       */
+
+      const parentValue =
+        document
+          .getElementById(
+            "categoryParent"
+          )
+          .value;
+
+
+      const parentId =
+        parentValue === ""
+          ? null
+          : Number(
+              parentValue
+            );
+
+
+      if (
+        parentId !== null &&
+        (
+          !Number.isInteger(
+            parentId
+          ) ||
+          parentId <= 0
+        )
+      ) {
+
+        showMessage(
+          "मुख्य श्रेणी सही नहि अछि।",
+          "error"
+        );
+
+        return;
+
+      }
+
+
+      /*
+       * IMPORTANT:
+       *
+       * parent_id is sent to D1 API.
+       */
 
       const payload = {
 
@@ -897,6 +1423,9 @@
             )
             .value
             .trim(),
+
+        parent_id:
+          parentId,
 
         menu_visible:
           document
@@ -913,7 +1442,8 @@
               .getElementById(
                 "categoryMenuOrder"
               )
-              .value || 0
+              .value ||
+            0
           ),
 
         status:
@@ -934,10 +1464,15 @@
         );
 
 
-      button.disabled = true;
+      if (button) {
 
-      button.textContent =
-        "Saving...";
+        button.disabled =
+          true;
+
+        button.textContent =
+          "Saving...";
+
+      }
 
 
       try {
@@ -945,14 +1480,18 @@
         let url =
           "/api/categories";
 
+
         let method =
           "POST";
 
 
-        if (editingId !== null) {
+        if (
+          editingId !== null
+        ) {
 
           method =
             "PUT";
+
 
           url +=
             "?id=" +
@@ -971,12 +1510,17 @@
               method,
 
               headers: {
+
                 "Content-Type":
                   "application/json"
+
               },
 
               credentials:
                 "same-origin",
+
+              cache:
+                "no-store",
 
               body:
                 JSON.stringify(
@@ -987,8 +1531,28 @@
           );
 
 
-        const data =
-          await response.json();
+        const text =
+          await response.text();
+
+
+        let data;
+
+
+        try {
+
+          data =
+            JSON.parse(
+              text
+            );
+
+        } catch {
+
+          throw new Error(
+            "Server सँ valid JSON response नहि भेटल। HTTP " +
+            response.status
+          );
+
+        }
 
 
         if (
@@ -998,6 +1562,7 @@
 
           throw new Error(
             data.error ||
+            data.message ||
             "श्रेणी save नहि भेल"
           );
 
@@ -1011,22 +1576,72 @@
         );
 
 
+        /*
+         * Refresh category list
+         */
+
+        if (
+          typeof window.loadCategories ===
+          "function"
+        ) {
+
+          try {
+
+            await window.loadCategories();
+
+          } catch (
+            refreshError
+          ) {
+
+            console.error(
+              "CATEGORY LIST REFRESH:",
+              refreshError
+            );
+
+          }
+
+        }
+
+
+        /*
+         * Also refresh other known
+         * category loaders if present.
+         */
+
+        if (
+          typeof window.loadCategoryList ===
+          "function"
+        ) {
+
+          try {
+
+            await window.loadCategoryList();
+
+          } catch (
+            refreshError
+          ) {
+
+            console.error(
+              "CATEGORY LIST REFRESH 2:",
+              refreshError
+            );
+
+          }
+
+        }
+
+
+        /*
+         * Close after successful save
+         */
+
         setTimeout(
-          () => {
+          function () {
 
             closeCategoryEditor();
 
-            if (
-              typeof window.loadCategories ===
-              "function"
-            ) {
-
-              window.loadCategories();
-
-            }
-
           },
-          700
+          500
         );
 
 
@@ -1037,18 +1652,25 @@
           error
         );
 
+
         showMessage(
-          error.message,
+          error.message ||
+          "श्रेणी save नहि भेल",
           "error"
         );
 
+
       } finally {
 
-        button.disabled =
-          false;
+        if (button) {
 
-        button.textContent =
-          "Save Category";
+          button.disabled =
+            false;
+
+          button.textContent =
+            "Save Category";
+
+        }
 
       }
 
@@ -1062,13 +1684,23 @@
   window.closeCategoryEditor =
     function () {
 
-      document
-        .getElementById(
+      const modal =
+        document.getElementById(
           "categoryModal"
-        )
-        .classList.remove(
-          "show"
         );
+
+
+      if (!modal) {
+        return;
+      }
+
+
+      modal.classList.remove(
+        "show"
+      );
+
+
+      editingId = null;
 
     };
 
@@ -1087,12 +1719,23 @@
         "categoryMessage"
       );
 
+
+    if (!box) {
+      return;
+    }
+
+
     box.textContent =
       message;
 
+
     box.className =
       "category-message " +
-      type +
+      (
+        type === "success"
+          ? "success"
+          : "error"
+      ) +
       " show";
 
   }
@@ -1105,7 +1748,15 @@
         "categoryMessage"
       );
 
-    box.textContent = "";
+
+    if (!box) {
+      return;
+    }
+
+
+    box.textContent =
+      "";
+
 
     box.className =
       "category-message";
@@ -1114,7 +1765,7 @@
 
 
   /* =======================================================
-     HELPERS
+     SET VALUE
   ======================================================= */
 
   function setValue(
@@ -1123,7 +1774,10 @@
   ) {
 
     const element =
-      document.getElementById(id);
+      document.getElementById(
+        id
+      );
+
 
     if (element) {
 
@@ -1136,6 +1790,10 @@
   }
 
 
+  /* =======================================================
+     ESCAPE HTML
+  ======================================================= */
+
   function escapeHtml(
     value
   ) {
@@ -1143,22 +1801,27 @@
     return String(
       value ?? ""
     )
+
       .replace(
         /&/g,
         "&amp;"
       )
+
       .replace(
         /</g,
         "&lt;"
       )
+
       .replace(
         />/g,
         "&gt;"
       )
+
       .replace(
         /"/g,
         "&quot;"
       )
+
       .replace(
         /'/g,
         "&#039;"
