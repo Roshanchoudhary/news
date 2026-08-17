@@ -658,7 +658,7 @@ export async function onRequestPost(
   try {
 
     const user =
-      await requireAdmin(
+      await requireNewsWriter(
         request,
         env
       );
@@ -725,11 +725,16 @@ export async function onRequestPost(
         : null;
 
 
-    const status =
+    let status =
       body.status ===
       "published"
         ? "published"
         : "draft";
+
+    // Author can create news, but cannot publish directly.
+    if (user.role === "author") {
+      status = "draft";
+    }
 
 
     const featured =
@@ -1059,7 +1064,7 @@ export async function onRequestPut(
   try {
 
     const user =
-      await requireAdmin(
+      await requireNewsWriter(
         request,
         env
       );
@@ -1114,6 +1119,7 @@ export async function onRequestPut(
           SELECT
             id,
             slug,
+            author_id,
             published_at
 
           FROM news
@@ -1184,11 +1190,26 @@ export async function onRequestPut(
         : null;
 
 
-    const status =
+    let status =
       body.status ===
       "published"
         ? "published"
         : "draft";
+
+    // Author can edit only own news and cannot publish directly.
+    if (user.role === "author") {
+      status = "draft";
+
+      if (Number(oldNews.author_id) !== Number(user.id)) {
+        return json(
+          {
+            success: false,
+            error: "अहाँ केवल अपन समाचार edit क' सकैत छी"
+          },
+          403
+        );
+      }
+    }
 
 
     const featured =
@@ -1580,9 +1601,10 @@ export async function onRequestDelete(
         .run();
 
 
-    const changed = Number(result?.meta?.changes || result?.meta?.rows_written || 0);
-
-    if (!changed) {
+    if (
+      !result.meta ||
+      !result.meta.changes
+    ) {
 
       return json(
         {
@@ -2164,6 +2186,33 @@ function tagDisplayName(
 
 
 // ============================================================
+// NEWS WRITER AUTH
+// ============================================================
+
+async function requireNewsWriter(
+  request,
+  env
+) {
+
+  const user =
+    await getAuthenticatedUser(
+      request,
+      env
+    );
+
+  if (
+    !user ||
+    user.status !== "active" ||
+    !["admin", "editor", "author"].includes(user.role)
+  ) {
+    return null;
+  }
+
+  return user;
+}
+
+
+// ============================================================
 // ADMIN AUTH
 // ============================================================
 
@@ -2181,8 +2230,10 @@ async function requireAdmin(
 
   if (
     !user ||
-    String(user.status || "").toLowerCase() !== "active" ||
-    String(user.role || "").toLowerCase() !== "admin"
+    user.status !==
+      "active" ||
+    user.role !==
+      "admin"
   ) {
 
     return null;
