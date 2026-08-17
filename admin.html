@@ -5257,6 +5257,35 @@ async function saveNews(event){
 
   event.preventDefault();
 
+  /*
+   * Save button पर form submit के समय स्पष्ट loading state।
+   * API success के बाद refresh अलग-अलग try/catch में हो,
+   * ताकि news save होने के बाद list/overview refresh error
+   * के कारण user को गलत "save failed" message न मिले।
+   */
+
+  const form =
+    document.getElementById(
+      "newsEditorForm"
+    );
+
+  const submitButton =
+    form?.querySelector(
+      'button[type="submit"]'
+    );
+
+  if(submitButton){
+
+    submitButton.disabled = true;
+
+    submitButton.dataset.originalText =
+      submitButton.textContent;
+
+    submitButton.textContent =
+      "Saving...";
+
+  }
+
 
   const title =
     document.getElementById(
@@ -5454,7 +5483,10 @@ async function saveNews(event){
             requestMethod,
 
           credentials:
-            "include",
+            "same-origin",
+
+          cache:
+            "no-store",
 
           headers:{
             "Content-Type":
@@ -5473,17 +5505,35 @@ async function saveNews(event){
       );
 
 
-    const data =
-      await response.json();
+    /*
+     * JSON response नहि भेटलाक स्थिति में सेहो
+     * वास्तविक HTTP error user केँ देखाउ।
+     */
+
+    let data = null;
+
+    try{
+
+      data =
+        await response.json();
+
+    }catch(parseError){
+
+      throw new Error(
+        "Server सँ valid response नहि भेटल। HTTP " +
+        response.status
+      );
+
+    }
 
 
     if(
       !response.ok ||
-      data.success !== true
+      data?.success !== true
     ){
 
       throw new Error(
-        data.error ||
+        data?.error ||
         (
           newsId
             ? "समाचार update नहि भ' सकल।"
@@ -5494,8 +5544,12 @@ async function saveNews(event){
     }
 
 
-    closeNewsEditor();
+    /*
+     * API ने save सफल क' देलक।
+     * आब editor बन्द करू आ success message देखाउ।
+     */
 
+    closeNewsEditor();
 
     showToast(
 
@@ -5508,10 +5562,54 @@ async function saveNews(event){
     );
 
 
-    await loadNews();
+    /*
+     * News list refresh अलग try/catch में।
+     * Refresh fail भेलाक कारण save केँ failed नहि मानू।
+     */
+
+    try{
+
+      await loadNews();
+
+    }catch(refreshError){
+
+      console.error(
+        "NEWS LIST REFRESH ERROR:",
+        refreshError
+      );
+
+    }
 
 
-    await loadOverview();
+    try{
+
+      await loadOverview();
+
+    }catch(refreshError){
+
+      console.error(
+        "NEWS OVERVIEW REFRESH ERROR:",
+        refreshError
+      );
+
+    }
+
+
+    /*
+     * New news के लेल form ID reset करू,
+     * जाहि सँ अगिला Add News साफ form सँ शुरू हो।
+     */
+
+    const savedNewsId =
+      document.getElementById(
+        "newsId"
+      );
+
+    if(savedNewsId){
+
+      savedNewsId.value = "";
+
+    }
 
 
   }catch(error){
@@ -5523,9 +5621,21 @@ async function saveNews(event){
 
 
     showToast(
-      error.message ||
+      error?.message ||
       "समाचार save नहि भ' सकल।"
     );
+
+  }finally{
+
+    if(submitButton){
+
+      submitButton.disabled = false;
+
+      submitButton.textContent =
+        submitButton.dataset.originalText ||
+        "Save News";
+
+    }
 
   }
 
