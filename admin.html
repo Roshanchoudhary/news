@@ -10757,13 +10757,7 @@ async function deleteAdminComment(
    USERS LOADER
 ===================================================== */
 
-async function loadUsers(){
 
-  console.log(
-    "Users management ready"
-  );
-
-}
 
 
 /* =====================================================
@@ -13039,62 +13033,7 @@ function escapeUserHtml(
    TOAST FALLBACK
 ========================================================= */
 
-function showToast(
-  message
-) {
 
-  if (
-    typeof window.showToast ===
-    "function"
-  ) {
-
-    window.showToast(
-      message
-    );
-
-    return;
-
-  }
-
-
-  const toast =
-    document.getElementById(
-      "toast"
-    );
-
-
-  if (!toast) {
-
-    alert(
-      message
-    );
-
-    return;
-
-  }
-
-
-  toast.textContent =
-    message;
-
-
-  toast.classList.add(
-    "show"
-  );
-
-
-  setTimeout(
-    () => {
-
-      toast.classList.remove(
-        "show"
-      );
-
-    },
-    2500
-  );
-
-}
 
 document.addEventListener("DOMContentLoaded", () => {
 
