@@ -1,4 +1,7 @@
+// ======================================================
 // functions/api/categories.js
+// Category + Sub-category API
+// ======================================================
 
 export async function onRequest(context) {
 
@@ -10,45 +13,72 @@ export async function onRequest(context) {
       request.method.toUpperCase();
 
 
+    // ==================================================
+    // GET
+    // ==================================================
+
     if (method === "GET") {
+
       return await getCategories(
         request,
         env
       );
+
     }
 
 
+    // ==================================================
+    // POST
+    // ==================================================
+
     if (method === "POST") {
+
       return await createCategory(
         request,
         env
       );
+
     }
 
+
+    // ==================================================
+    // PUT / PATCH
+    // ==================================================
 
     if (
       method === "PUT" ||
       method === "PATCH"
     ) {
+
       return await updateCategory(
         request,
         env
       );
+
     }
 
 
+    // ==================================================
+    // DELETE
+    // ==================================================
+
     if (method === "DELETE") {
+
       return await deleteCategory(
         request,
         env
       );
+
     }
 
 
-    return json({
-      success: false,
-      error: "Method not allowed"
-    }, 405);
+    return json(
+      {
+        success: false,
+        error: "Method not allowed"
+      },
+      405
+    );
 
 
   } catch (error) {
@@ -59,12 +89,15 @@ export async function onRequest(context) {
     );
 
 
-    return json({
-      success: false,
-      error:
-        error.message ||
-        "श्रेणी API में त्रुटि भेल"
-    }, 500);
+    return json(
+      {
+        success: false,
+        error:
+          error?.message ||
+          "श्रेणी API में त्रुटि भेल"
+      },
+      500
+    );
 
   }
 
@@ -100,13 +133,19 @@ async function getCategories(
     url.searchParams.get("status");
 
 
-  // --------------------------------------------------
-  // Single category
-  // --------------------------------------------------
+  const parentIdParam =
+    url.searchParams.get(
+      "parent_id"
+    );
+
+
+  // ==================================================
+  // SINGLE CATEGORY
+  // ==================================================
 
   if (id || slug) {
 
-    let category;
+    let category = null;
 
 
     if (slug) {
@@ -114,8 +153,7 @@ async function getCategories(
       category =
         await env.DB
           .prepare(`
-            SELECT
-              *
+            SELECT *
             FROM categories
             WHERE slug = ?
             LIMIT 1
@@ -128,8 +166,7 @@ async function getCategories(
       category =
         await env.DB
           .prepare(`
-            SELECT
-              *
+            SELECT *
             FROM categories
             WHERE id = ?
             LIMIT 1
@@ -142,32 +179,70 @@ async function getCategories(
 
     if (!category) {
 
-      return json({
-        success: false,
-        error:
-          "श्रेणी नहि भेटल"
-      }, 404);
+      return json(
+        {
+          success: false,
+          error:
+            "श्रेणी नहि भेटल"
+        },
+        404
+      );
 
     }
 
 
+    // ------------------------------------------------
+    // Get children
+    // ------------------------------------------------
+
+    const children =
+      await env.DB
+        .prepare(`
+          SELECT *
+          FROM categories
+          WHERE parent_id = ?
+          ORDER BY
+            COALESCE(menu_order, 0) ASC,
+            name COLLATE NOCASE ASC,
+            id ASC
+        `)
+        .bind(category.id)
+        .all();
+
+
     return json({
       success: true,
-      category: normalizeCategory(
-        category
-      )
+
+      category:
+        normalizeCategory(
+          category
+        ),
+
+      children:
+        (
+          children.results ||
+          []
+        ).map(
+          normalizeCategory
+        )
+
     });
 
   }
 
 
-  // --------------------------------------------------
-  // Category list
-  // --------------------------------------------------
+  // ==================================================
+  // CATEGORY LIST
+  // ==================================================
 
-  let where = [];
-  let bindings = [];
+  const where = [];
 
+  const bindings = [];
+
+
+  // ==================================================
+  // STATUS
+  // ==================================================
 
   if (
     status &&
@@ -185,27 +260,92 @@ async function getCategories(
   }
 
 
-  if (parentId !== null && parentId !== "") {
-
-    where.push("COALESCE(parent_id, 0) = ?");
-    bindings.push(Number(parentId));
-
-  }
+  // ==================================================
+  // MENU
+  // ==================================================
 
   if (
     menu === "1" ||
     menu === "true"
   ) {
 
-    where.push(`
-      COALESCE(menu_visible, 1) = 1
-    `);
+    where.push(
+      "COALESCE(menu_visible, 1) = 1"
+    );
+
+  }
+
+
+  // ==================================================
+  // PARENT FILTER
+  //
+  // parent_id=root
+  //     => केवल Main Categories
+  //
+  // parent_id=5
+  //     => ID 5 की Sub Categories
+  //
+  // कोई parent_id नहीं
+  //     => सभी categories
+  // ==================================================
+
+  if (
+    parentIdParam !== null &&
+    parentIdParam !== ""
+  ) {
+
+    if (
+      parentIdParam === "root" ||
+      parentIdParam === "null" ||
+      parentIdParam === "none"
+    ) {
+
+      where.push(
+        "parent_id IS NULL"
+      );
+
+    } else {
+
+      const parentId =
+        Number(
+          parentIdParam
+        );
+
+
+      if (
+        !Number.isInteger(
+          parentId
+        ) ||
+        parentId <= 0
+      ) {
+
+        return json(
+          {
+            success: false,
+            error:
+              "Invalid parent_id"
+          },
+          400
+        );
+
+      }
+
+
+      where.push(
+        "parent_id = ?"
+      );
+
+      bindings.push(
+        parentId
+      );
+
+    }
 
   }
 
 
   const whereSQL =
-    where.length
+    where.length > 0
       ? "WHERE " +
         where.join(" AND ")
       : "";
@@ -214,8 +354,7 @@ async function getCategories(
   const result =
     await env.DB
       .prepare(`
-        SELECT
-          *
+        SELECT *
         FROM categories
 
         ${whereSQL}
@@ -231,15 +370,19 @@ async function getCategories(
 
   const categories =
     (
-      result.results || []
+      result.results ||
+      []
     ).map(
       normalizeCategory
     );
 
 
   return json({
+
     success: true,
+
     categories
+
   });
 
 }
@@ -263,16 +406,36 @@ async function createCategory(
 
   if (!user) {
 
-    return json({
-      success: false,
-      error: "Unauthorized"
-    }, 401);
+    return json(
+      {
+        success: false,
+        error: "Unauthorized"
+      },
+      401
+    );
 
   }
 
 
-  const body =
-    await request.json();
+  let body;
+
+  try {
+
+    body =
+      await request.json();
+
+  } catch {
+
+    return json(
+      {
+        success: false,
+        error:
+          "Invalid JSON"
+      },
+      400
+    );
+
+  }
 
 
   const name =
@@ -285,7 +448,7 @@ async function createCategory(
     cleanString(
       body.slug
     )
-    .toLowerCase();
+      .toLowerCase();
 
 
   const description =
@@ -313,65 +476,163 @@ async function createCategory(
       body.menu_order
     );
 
-  const parentId =
-    body.parent_id
-      ? Number(body.parent_id)
-      : null;
 
+  // ==================================================
+  // PARENT ID
+  // ==================================================
+
+  const parentId =
+    parseParentId(
+      body.parent_id ??
+      body.parentId
+    );
+
+
+  if (
+    parentId === "invalid"
+  ) {
+
+    return json(
+      {
+        success: false,
+        error:
+          "Invalid parent category"
+      },
+      400
+    );
+
+  }
+
+
+  // ==================================================
+  // NAME
+  // ==================================================
 
   if (!name) {
 
-    return json({
-      success: false,
-      error:
-        "श्रेणी नाम जरूरी अछि"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "श्रेणी नाम जरूरी अछि"
+      },
+      400
+    );
 
   }
 
 
-  // Automatically create English slug
+  // ==================================================
+  // SLUG
+  // ==================================================
+
   if (!slug) {
 
     slug =
-      makeSlug(name);
+      makeSlug(
+        name
+      );
 
   }
 
 
   if (!slug) {
 
-    return json({
-      success: false,
-      error:
-        "English URL slug जरूरी अछि"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "English URL slug जरूरी अछि"
+      },
+      400
+    );
 
   }
 
 
-  if (!validSlug(slug)) {
+  if (
+    !validSlug(slug)
+  ) {
 
-    return json({
-      success: false,
-      error:
-        "URL slug केवल English अक्षर, number आ hyphen में होयबाक चाही"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "URL slug केवल English अक्षर, number आ hyphen में होयबाक चाही"
+      },
+      400
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Duplicate name
-  // --------------------------------------------------
+  // ==================================================
+  // PARENT VALIDATION
+  // ==================================================
+
+  if (
+    parentId !== null
+  ) {
+
+    const parent =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            name,
+            status
+          FROM categories
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(parentId)
+        .first();
+
+
+    if (!parent) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "मुख्य श्रेणी नहि भेटल"
+        },
+        400
+      );
+
+    }
+
+
+    if (
+      parent.status ===
+      "inactive"
+    ) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "Inactive श्रेणी केँ parent नहि बना सकैत छी"
+        },
+        400
+      );
+
+    }
+
+  }
+
+
+  // ==================================================
+  // DUPLICATE NAME
+  // ==================================================
 
   const existingName =
     await env.DB
       .prepare(`
-        SELECT
-          id
+        SELECT id
         FROM categories
-        WHERE LOWER(name) = LOWER(?)
+        WHERE LOWER(name) =
+              LOWER(?)
         LIMIT 1
       `)
       .bind(name)
@@ -380,24 +641,26 @@ async function createCategory(
 
   if (existingName) {
 
-    return json({
-      success: false,
-      error:
-        "ई श्रेणी पहिले सँ मौजूद अछि"
-    }, 409);
+    return json(
+      {
+        success: false,
+        error:
+          "ई श्रेणी पहिले सँ मौजूद अछि"
+      },
+      409
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Duplicate slug
-  // --------------------------------------------------
+  // ==================================================
+  // DUPLICATE SLUG
+  // ==================================================
 
   const existingSlug =
     await env.DB
       .prepare(`
-        SELECT
-          id
+        SELECT id
         FROM categories
         WHERE slug = ?
         LIMIT 1
@@ -408,18 +671,21 @@ async function createCategory(
 
   if (existingSlug) {
 
-    return json({
-      success: false,
-      error:
-        "ई English URL slug पहिले सँ मौजूद अछि"
-    }, 409);
+    return json(
+      {
+        success: false,
+        error:
+          "ई English URL slug पहिले सँ मौजूद अछि"
+      },
+      409
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Insert
-  // --------------------------------------------------
+  // ==================================================
+  // INSERT
+  // ==================================================
 
   const result =
     await env.DB
@@ -431,10 +697,19 @@ async function createCategory(
           status,
           menu_visible,
           menu_order,
-          parent_id
+          parent_id,
+          updated_at
         )
+
         VALUES (
-          ?, ?, ?, ?, ?, ?, ?
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          ?,
+          CURRENT_TIMESTAMP
         )
       `)
       .bind(
@@ -449,18 +724,27 @@ async function createCategory(
       .run();
 
 
+  const newId =
+    Number(
+      result.meta.last_row_id
+    );
+
+
   return json({
+
     success: true,
 
     message:
       "श्रेणी सफलतापूर्वक जोड़ल गेल",
 
     category: {
-      id:
-        result.meta.last_row_id,
+
+      id: newId,
 
       name,
+
       slug,
+
       description:
         description || null,
 
@@ -472,8 +756,12 @@ async function createCategory(
       menu_order:
         menuOrder,
 
+      parent_id:
+        parentId,
+
       url:
         `/category/${slug}`
+
     }
 
   });
@@ -499,38 +787,65 @@ async function updateCategory(
 
   if (!user) {
 
-    return json({
-      success: false,
-      error: "Unauthorized"
-    }, 401);
+    return json(
+      {
+        success: false,
+        error: "Unauthorized"
+      },
+      401
+    );
 
   }
 
 
   const url =
-    new URL(request.url);
+    new URL(
+      request.url
+    );
 
 
-  const id =
-    url.searchParams.get("id");
+  const queryId =
+    url.searchParams.get(
+      "id"
+    );
 
 
-  const body =
-    await request.json();
+  let body;
+
+  try {
+
+    body =
+      await request.json();
+
+  } catch {
+
+    return json(
+      {
+        success: false,
+        error:
+          "Invalid JSON"
+      },
+      400
+    );
+
+  }
 
 
   const categoryId =
-    id ||
+    queryId ||
     body.id;
 
 
   if (!categoryId) {
 
-    return json({
-      success: false,
-      error:
-        "Category ID जरूरी अछि"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "Category ID जरूरी अछि"
+      },
+      400
+    );
 
   }
 
@@ -549,25 +864,35 @@ async function updateCategory(
 
   if (!oldCategory) {
 
-    return json({
-      success: false,
-      error:
-        "श्रेणी नहि भेटल"
-    }, 404);
+    return json(
+      {
+        success: false,
+        error:
+          "श्रेणी नहि भेटल"
+      },
+      404
+    );
 
   }
 
 
+  // ==================================================
+  // BASIC VALUES
+  // ==================================================
+
   const name =
     body.name !== undefined
-      ? cleanString(body.name)
+      ? cleanString(
+          body.name
+        )
       : oldCategory.name;
 
 
   let slug =
     body.slug !== undefined
-      ? cleanString(body.slug)
-          .toLowerCase()
+      ? cleanString(
+          body.slug
+        ).toLowerCase()
       : oldCategory.slug;
 
 
@@ -576,7 +901,10 @@ async function updateCategory(
       ? cleanString(
           body.description
         )
-      : oldCategory.description;
+      : (
+          oldCategory.description ||
+          ""
+        );
 
 
   const status =
@@ -615,51 +943,218 @@ async function updateCategory(
         );
 
 
-  const parentId =
+  // ==================================================
+  // PARENT
+  // ==================================================
+
+  let parentId;
+
+  if (
     body.parent_id !== undefined
-      ? (body.parent_id ? Number(body.parent_id) : null)
-      : (oldCategory.parent_id ? Number(oldCategory.parent_id) : null);
+  ) {
 
+    parentId =
+      parseParentId(
+        body.parent_id
+      );
 
-  if (!name) {
+  } else if (
+    body.parentId !== undefined
+  ) {
 
-    return json({
-      success: false,
-      error:
-        "श्रेणी नाम जरूरी अछि"
-    }, 400);
+    parentId =
+      parseParentId(
+        body.parentId
+      );
+
+  } else {
+
+    parentId =
+      oldCategory.parent_id === null ||
+      oldCategory.parent_id === undefined
+        ? null
+        : Number(
+            oldCategory.parent_id
+          );
 
   }
 
+
+  if (
+    parentId === "invalid"
+  ) {
+
+    return json(
+      {
+        success: false,
+        error:
+          "Invalid parent category"
+      },
+      400
+    );
+
+  }
+
+
+  // ==================================================
+  // NAME
+  // ==================================================
+
+  if (!name) {
+
+    return json(
+      {
+        success: false,
+        error:
+          "श्रेणी नाम जरूरी अछि"
+      },
+      400
+    );
+
+  }
+
+
+  // ==================================================
+  // SLUG
+  // ==================================================
 
   if (!slug) {
 
     slug =
-      makeSlug(name);
+      makeSlug(
+        name
+      );
 
   }
 
 
-  if (!validSlug(slug)) {
+  if (
+    !validSlug(slug)
+  ) {
 
-    return json({
-      success: false,
-      error:
-        "English URL slug सही नहि अछि"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "English URL slug सही नहि अछि"
+      },
+      400
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Duplicate slug
-  // --------------------------------------------------
+  // ==================================================
+  // SELF PARENT
+  // ==================================================
+
+  if (
+    parentId !== null &&
+    Number(parentId) ===
+      Number(categoryId)
+  ) {
+
+    return json(
+      {
+        success: false,
+        error:
+          "श्रेणी अपने आपक parent नहि भ' सकैत अछि"
+      },
+      400
+    );
+
+  }
+
+
+  // ==================================================
+  // PARENT VALIDATION
+  // ==================================================
+
+  if (
+    parentId !== null
+  ) {
+
+    const parent =
+      await env.DB
+        .prepare(`
+          SELECT
+            id,
+            status
+          FROM categories
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(parentId)
+        .first();
+
+
+    if (!parent) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "मुख्य श्रेणी नहि भेटल"
+        },
+        400
+      );
+
+    }
+
+
+    if (
+      parent.status ===
+      "inactive"
+    ) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "Inactive श्रेणी केँ parent नहि बना सकैत छी"
+        },
+        400
+      );
+
+    }
+
+
+    // ----------------------------------------------
+    // Circular hierarchy check
+    // ----------------------------------------------
+
+    const isCircular =
+      await hasDescendant(
+        env.DB,
+        Number(categoryId),
+        Number(parentId)
+      );
+
+
+    if (isCircular) {
+
+      return json(
+        {
+          success: false,
+          error:
+            "Circular category hierarchy अनुमत नहि अछि"
+        },
+        400
+      );
+
+    }
+
+  }
+
+
+  // ==================================================
+  // DUPLICATE SLUG
+  // ==================================================
 
   const duplicateSlug =
     await env.DB
       .prepare(`
-        SELECT
-          id
+        SELECT id
         FROM categories
         WHERE slug = ?
           AND id != ?
@@ -674,26 +1169,29 @@ async function updateCategory(
 
   if (duplicateSlug) {
 
-    return json({
-      success: false,
-      error:
-        "ई English URL slug दोसर श्रेणी में उपयोग भ' रहल अछि"
-    }, 409);
+    return json(
+      {
+        success: false,
+        error:
+          "ई English URL slug दोसर श्रेणी में उपयोग भ' रहल अछि"
+      },
+      409
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Duplicate name
-  // --------------------------------------------------
+  // ==================================================
+  // DUPLICATE NAME
+  // ==================================================
 
   const duplicateName =
     await env.DB
       .prepare(`
-        SELECT
-          id
+        SELECT id
         FROM categories
-        WHERE LOWER(name) = LOWER(?)
+        WHERE LOWER(name) =
+              LOWER(?)
           AND id != ?
         LIMIT 1
       `)
@@ -706,18 +1204,21 @@ async function updateCategory(
 
   if (duplicateName) {
 
-    return json({
-      success: false,
-      error:
-        "ई श्रेणी नाम दोसर श्रेणी में मौजूद अछि"
-    }, 409);
+    return json(
+      {
+        success: false,
+        error:
+          "ई श्रेणी नाम दोसर श्रेणी में मौजूद अछि"
+      },
+      409
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Update
-  // --------------------------------------------------
+  // ==================================================
+  // UPDATE
+  // ==================================================
 
   await env.DB
     .prepare(`
@@ -750,16 +1251,19 @@ async function updateCategory(
 
 
   return json({
+
     success: true,
 
     message:
       "श्रेणी सफलतापूर्वक update भ' गेल",
 
     category: {
+
       id:
         Number(categoryId),
 
       name,
+
       slug,
 
       description:
@@ -773,8 +1277,12 @@ async function updateCategory(
       menu_order:
         menuOrder,
 
+      parent_id:
+        parentId,
+
       url:
         `/category/${slug}`
+
     }
 
   });
@@ -800,29 +1308,39 @@ async function deleteCategory(
 
   if (!user) {
 
-    return json({
-      success: false,
-      error: "Unauthorized"
-    }, 401);
+    return json(
+      {
+        success: false,
+        error: "Unauthorized"
+      },
+      401
+    );
 
   }
 
 
   const url =
-    new URL(request.url);
+    new URL(
+      request.url
+    );
 
 
   const id =
-    url.searchParams.get("id");
+    url.searchParams.get(
+      "id"
+    );
 
 
   if (!id) {
 
-    return json({
-      success: false,
-      error:
-        "Category ID जरूरी अछि"
-    }, 400);
+    return json(
+      {
+        success: false,
+        error:
+          "Category ID जरूरी अछि"
+      },
+      400
+    );
 
   }
 
@@ -844,19 +1362,60 @@ async function deleteCategory(
 
   if (!category) {
 
-    return json({
-      success: false,
-      error:
-        "श्रेणी नहि भेटल"
-    }, 404);
+    return json(
+      {
+        success: false,
+        error:
+          "श्रेणी नहि भेटल"
+      },
+      404
+    );
 
   }
 
 
-  // --------------------------------------------------
-  // Do not delete category if news exists.
-  // Instead return a clear error.
-  // --------------------------------------------------
+  // ==================================================
+  // CHECK SUB-CATEGORIES
+  // ==================================================
+
+  const children =
+    await env.DB
+      .prepare(`
+        SELECT
+          COUNT(*) AS total
+        FROM categories
+        WHERE parent_id = ?
+      `)
+      .bind(id)
+      .first();
+
+
+  const childCount =
+    Number(
+      children?.total || 0
+    );
+
+
+  if (
+    childCount > 0
+  ) {
+
+    return json(
+      {
+        success: false,
+
+        error:
+          `एहि श्रेणी केर ${childCount} उप-श्रेणी अछि। पहिले उप-श्रेणी हटाउ अथवा दोसर मुख्य श्रेणी में राखू।`
+      },
+      409
+    );
+
+  }
+
+
+  // ==================================================
+  // CHECK NEWS
+  // ==================================================
 
   const news =
     await env.DB
@@ -876,17 +1435,26 @@ async function deleteCategory(
     );
 
 
-  if (newsCount > 0) {
+  if (
+    newsCount > 0
+  ) {
 
-    return json({
-      success: false,
+    return json(
+      {
+        success: false,
 
-      error:
-        `एहि श्रेणी में ${newsCount} समाचार अछि। पहिले समाचारक श्रेणी बदलू, तकर बाद श्रेणी delete करू।`
-    }, 409);
+        error:
+          `एहि श्रेणी में ${newsCount} समाचार अछि। पहिले समाचारक श्रेणी बदलू, तकर बाद श्रेणी delete करू।`
+      },
+      409
+    );
 
   }
 
+
+  // ==================================================
+  // DELETE
+  // ==================================================
 
   await env.DB
     .prepare(`
@@ -898,11 +1466,101 @@ async function deleteCategory(
 
 
   return json({
+
     success: true,
 
     message:
       "श्रेणी delete भ' गेल"
+
   });
+
+}
+
+
+// ======================================================
+// CHECK DESCENDANT
+// ======================================================
+
+async function hasDescendant(
+  db,
+  categoryId,
+  possibleParentId
+) {
+
+  let currentId =
+    possibleParentId;
+
+
+  const visited =
+    new Set();
+
+
+  while (
+    currentId !== null &&
+    currentId !== undefined
+  ) {
+
+    if (
+      visited.has(
+        currentId
+      )
+    ) {
+
+      return true;
+
+    }
+
+
+    visited.add(
+      currentId
+    );
+
+
+    if (
+      currentId ===
+      categoryId
+    ) {
+
+      return true;
+
+    }
+
+
+    const row =
+      await db
+        .prepare(`
+          SELECT
+            parent_id
+          FROM categories
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .bind(
+          currentId
+        )
+        .first();
+
+
+    if (
+      !row ||
+      row.parent_id === null ||
+      row.parent_id === undefined
+    ) {
+
+      return false;
+
+    }
+
+
+    currentId =
+      Number(
+        row.parent_id
+      );
+
+  }
+
+
+  return false;
 
 }
 
@@ -915,11 +1573,40 @@ function normalizeCategory(
   category
 ) {
 
+  const parentId =
+    category.parent_id === null ||
+    category.parent_id === undefined ||
+    category.parent_id === ""
+      ? null
+      : Number(
+          category.parent_id
+        );
+
+
   return {
+
     ...category,
 
     id:
-      Number(category.id),
+      Number(
+        category.id
+      ),
+
+    name:
+      category.name ||
+      "",
+
+    slug:
+      category.slug ||
+      "",
+
+    description:
+      category.description ||
+      null,
+
+    status:
+      category.status ||
+      "active",
 
     menu_visible:
       Number(
@@ -935,17 +1622,63 @@ function normalizeCategory(
       ),
 
     parent_id:
-      category.parent_id
-        ? Number(category.parent_id)
-        : null,
+      parentId,
 
-    status:
-      category.status ||
-      "active",
+    parentId:
+      parentId,
+
+    is_subcategory:
+      parentId !== null,
 
     url:
       `/category/${category.slug}`
+
   };
+
+}
+
+
+// ======================================================
+// PARSE PARENT ID
+// ======================================================
+
+function parseParentId(
+  value
+) {
+
+  // Main category
+
+  if (
+    value === undefined ||
+    value === null ||
+    value === "" ||
+    value === "null" ||
+    value === "none" ||
+    value === "root" ||
+    value === 0 ||
+    value === "0"
+  ) {
+
+    return null;
+
+  }
+
+
+  const id =
+    Number(value);
+
+
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
+
+    return "invalid";
+
+  }
+
+
+  return id;
 
 }
 
@@ -1085,6 +1818,7 @@ async function verifySession(
     const payload =
       parts[0];
 
+
     const signature =
       parts[1];
 
@@ -1154,9 +1888,10 @@ async function hmacSign(
     await crypto.subtle.importKey(
       "raw",
 
-      new TextEncoder().encode(
-        secret
-      ),
+      new TextEncoder()
+        .encode(
+          secret
+        ),
 
       {
         name: "HMAC",
@@ -1175,9 +1910,10 @@ async function hmacSign(
 
       key,
 
-      new TextEncoder().encode(
-        value
-      )
+      new TextEncoder()
+        .encode(
+          value
+        )
     );
 
 
@@ -1249,7 +1985,7 @@ function parseCookies(
 
 
 // ======================================================
-// SLUG
+// MAKE ENGLISH SLUG
 // ======================================================
 
 function makeSlug(
@@ -1261,10 +1997,12 @@ function makeSlug(
   )
     .toLowerCase()
     .trim()
+
     .replace(
       /[^a-z0-9]+/g,
       "-"
     )
+
     .replace(
       /^-+|-+$/g,
       "");
@@ -1280,9 +2018,10 @@ function validSlug(
   slug
 ) {
 
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(
-    slug
-  );
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    .test(
+      slug
+    );
 
 }
 
@@ -1297,19 +2036,22 @@ function normalizeStatus(
 
   const status =
     String(
-      value || "active"
+      value ||
+      "active"
     )
       .toLowerCase();
 
 
-  return [
-    "active",
-    "inactive"
-  ].includes(status)
+  if (
+    status === "inactive"
+  ) {
 
-    ? status
+    return "inactive";
 
-    : "active";
+  }
+
+
+  return "active";
 
 }
 
@@ -1365,7 +2107,9 @@ function normalizeNumber(
 
 
   if (
-    !Number.isFinite(number) ||
+    !Number.isFinite(
+      number
+    ) ||
     number < 0
   ) {
 
@@ -1382,7 +2126,7 @@ function normalizeNumber(
 
 
 // ======================================================
-// STRING
+// CLEAN STRING
 // ======================================================
 
 function cleanString(
@@ -1407,7 +2151,7 @@ function cleanString(
 
 
 // ======================================================
-// JSON
+// JSON RESPONSE
 // ======================================================
 
 function json(
@@ -1416,21 +2160,27 @@ function json(
 ) {
 
   return new Response(
+
     JSON.stringify(
       data
     ),
 
     {
+
       status,
 
       headers: {
+
         "Content-Type":
           "application/json; charset=UTF-8",
 
         "Cache-Control":
           "no-store"
+
       }
+
     }
+
   );
 
 }
@@ -1462,14 +2212,17 @@ function base64Url(
   return btoa(
     binary
   )
+
     .replace(
       /\+/g,
       "-"
     )
+
     .replace(
       /\//g,
       "_"
     )
+
     .replace(
       /=/g,
       "");
@@ -1507,7 +2260,9 @@ function decodeBase64Url(
 
 
   const binary =
-    atob(base64);
+    atob(
+      base64
+    );
 
 
   const bytes =
@@ -1548,7 +2303,8 @@ function safeEqual(
   if (
     !a ||
     !b ||
-    a.length !== b.length
+    a.length !==
+      b.length
   ) {
 
     return false;
