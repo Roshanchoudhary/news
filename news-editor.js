@@ -496,6 +496,10 @@
                     समाचार <span>*</span>
                   </label>
 
+                  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:7px;">
+                    <button type="button" class="editor-btn" onclick="window.insertNewsImageUrl()">🖼️ URL सँ चित्र जोड़ू</button>
+                  </div>
+
                   <textarea
                     class="editor-textarea"
                     id="newsContentEditor"
@@ -631,6 +635,14 @@
                       श्रेणी चुनू
                     </option>
 
+                  </select>
+
+                </div>
+
+                <div class="editor-field">
+                  <label class="editor-label">Sub-category</label>
+                  <select class="editor-select" id="editorSubcategory">
+                    <option value="">पहिने श्रेणी चुनू</option>
                   </select>
 
                 </div>
@@ -866,6 +878,13 @@
       );
 
 
+    /* Category -> Sub-category */
+
+    document.getElementById("editorCategory").addEventListener("change", function(){
+      fillSubcategories(this.value, null);
+    });
+
+
     /* Image preview */
 
     document
@@ -948,6 +967,7 @@
 
 
       fillCategories();
+      fillSubcategories();
 
       renderEditorTags();
 
@@ -1013,6 +1033,18 @@
 
   }
 
+
+  function fillSubcategories(parentId = null, selectedId = null) {
+    const select = document.getElementById("editorSubcategory");
+    if(!select) return;
+    select.innerHTML = '<option value="">Sub-category चुनू</option>';
+    if(!parentId) return;
+    categories.filter(c => Number(c.parent_id || 0) === Number(parentId)).forEach(c => {
+      const o=document.createElement("option"); o.value=c.id; o.textContent=c.name;
+      if(selectedId && Number(selectedId)===Number(c.id)) o.selected=true;
+      select.appendChild(o);
+    });
+  }
 
   /* =======================================================
      TAGS
@@ -1393,6 +1425,9 @@
       .value =
       "";
 
+    const subcategory = document.getElementById("editorSubcategory");
+    if(subcategory){ subcategory.innerHTML = '<option value="">पहिने श्रेणी चुनू</option>'; subcategory.value = ""; }
+
 
     document
       .getElementById(
@@ -1511,13 +1546,13 @@
     );
 
 
-    document
-      .getElementById(
-        "editorCategory"
-      )
-      .value =
-      news.category_id ||
-      "";
+    const selectedCategoryId = Number(news.category_id || 0);
+    const selectedCategory = categories.find(c => Number(c.id) === selectedCategoryId);
+    const parentId = selectedCategory?.parent_id ? Number(selectedCategory.parent_id) : selectedCategoryId;
+    const parentCategory = categories.find(c => Number(c.id) === parentId);
+    const categorySelect = document.getElementById("editorCategory");
+    if(categorySelect){ categorySelect.value = parentCategory?.id || selectedCategoryId || ""; }
+    fillSubcategories(parentCategory?.id || null, selectedCategory?.parent_id ? selectedCategoryId : null);
 
 
     document
@@ -1912,10 +1947,7 @@
           ).value.trim(),
 
         category_id:
-          document.getElementById(
-            "editorCategory"
-          ).value ||
-          null,
+          (document.getElementById("editorSubcategory")?.value || document.getElementById("editorCategory")?.value) || null,
 
         status,
 
@@ -2101,6 +2133,22 @@
       }
 
     };
+
+
+  window.insertNewsImageUrl = function(){
+    const url = prompt("चित्रक direct URL लिखू:");
+    if(!url) return;
+    try{ new URL(url); }catch(e){ showEditorMessage("सही image URL लिखू।", "error"); return; }
+    const alt = prompt("चित्रक नाम/Alt text (optional):") || "चित्र";
+    const textarea = document.getElementById("newsContentEditor");
+    if(!textarea) return;
+    const marker = `\n\n{{image:${url}|${alt.replace(/[{}|]/g, " ")}}}\n\n`;
+    const start=textarea.selectionStart ?? textarea.value.length;
+    const end=textarea.selectionEnd ?? start;
+    textarea.value = textarea.value.slice(0,start)+marker+textarea.value.slice(end);
+    textarea.focus();
+    textarea.selectionStart=textarea.selectionEnd=start+marker.length;
+  };
 
 
   /* =======================================================
