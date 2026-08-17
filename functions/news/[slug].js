@@ -558,6 +558,11 @@ h1 {
 
 }
 
+
+.article-inline-image{margin:20px 0;text-align:center;}
+.article-inline-image img{max-width:100%;height:auto;border-radius:10px;display:block;margin:0 auto;}
+.article-inline-image figcaption{font-size:12px;color:#777;margin-top:6px;}
+
 </style>
 
 </head>
@@ -1360,16 +1365,22 @@ function formatContent(
   }
 
 
+  const imagePattern = /\{\{image:(https?:\/\/[^|}]+)(?:\|([^}]*))?\}\}/g;
+
   return value
-    .split(
-      /\n\s*\n/
-    )
-    .map(
-      paragraph =>
-        `<p>${escapeHtml(
-          paragraph.trim()
-        )}</p>`
-    )
+    .split(/\n\s*\n/)
+    .map(paragraph => {
+      const raw = paragraph.trim();
+      if(imagePattern.test(raw) && raw.replace(imagePattern, "").trim() === "") {
+        imagePattern.lastIndex = 0;
+        return raw.replace(imagePattern, (_, url, alt) =>
+          `<figure class="article-inline-image"><img src="${escapeHtml(url)}" alt="${escapeHtml(alt || "चित्र")}" loading="lazy"><figcaption>${escapeHtml(alt || "")}</figcaption></figure>`
+        );
+      }
+      imagePattern.lastIndex = 0;
+      const safe = escapeHtml(raw).replace(/\{\{image:(https?:\/\/[^|}]+)(?:\|([^}]*))?\}\}/g, "");
+      return `<p>${safe}</p>`;
+    })
     .join("");
 
 }
