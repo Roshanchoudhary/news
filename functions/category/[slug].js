@@ -24,8 +24,7 @@ export async function onRequest(context) {
           name,
           slug,
           description,
-          status,
-          parent_id
+          status
         FROM categories
         WHERE slug = ?
           AND status = 'active'
@@ -72,18 +71,7 @@ export async function onRequest(context) {
         FROM news n
         INNER JOIN categories c
           ON c.id = n.category_id
-        WHERE n.category_id IN (
-          WITH RECURSIVE category_tree(id) AS (
-            SELECT ?
-            UNION ALL
-            SELECT c.id
-            FROM categories c
-            INNER JOIN category_tree t
-              ON c.parent_id = t.id
-          )
-          SELECT id
-          FROM category_tree
-        )
+        WHERE n.category_id = ?
           AND n.status = 'published'
         ORDER BY
           COALESCE(
