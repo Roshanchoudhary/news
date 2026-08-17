@@ -5250,41 +5250,47 @@ async function loadNewsEditorTags(){
 
 
 /* =====================================================
+   NEWS API HELPER — CREATE / UPDATE / DELETE
+===================================================== */
+async function newsApiRequest(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "include",
+    cache: "no-store",
+    ...options,
+    headers: {
+      "Accept": "application/json",
+      ...(options.body ? {"Content-Type": "application/json"} : {}),
+      ...(options.headers || {})
+    }
+  });
+
+  const text = await response.text();
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (e) {
+    throw new Error(`Server response invalid अछि (HTTP ${response.status})`);
+  }
+
+  if (response.status === 401) {
+    throw new Error("Login session समाप्त भ' गेल अछि। कृपया फेर login करू।");
+  }
+
+  if (!response.ok || !data?.success) {
+    throw new Error(data?.error || `Request failed (HTTP ${response.status})`);
+  }
+
+  return data;
+}
+
+/* =====================================================
    SAVE / UPDATE NEWS
 ===================================================== */
 
 async function saveNews(event){
 
   event.preventDefault();
-
-  /*
-   * Save button पर form submit के समय स्पष्ट loading state।
-   * API success के बाद refresh अलग-अलग try/catch में हो,
-   * ताकि news save होने के बाद list/overview refresh error
-   * के कारण user को गलत "save failed" message न मिले।
-   */
-
-  const form =
-    document.getElementById(
-      "newsEditorForm"
-    );
-
-  const submitButton =
-    form?.querySelector(
-      'button[type="submit"]'
-    );
-
-  if(submitButton){
-
-    submitButton.disabled = true;
-
-    submitButton.dataset.originalText =
-      submitButton.textContent;
-
-    submitButton.textContent =
-      "Saving...";
-
-  }
 
 
   const title =
@@ -5475,81 +5481,17 @@ async function saveNews(event){
     );
 
 
-    const response =
-      await fetch(
-        requestUrl,
-        {
-          method:
-            requestMethod,
+    const data = await newsApiRequest(
+      requestUrl,
+      {
+        method: requestMethod,
+        body: JSON.stringify(payload)
+      }
+    );
 
-          credentials:
-            "same-origin",
-
-          cache:
-            "no-store",
-
-          headers:{
-            "Content-Type":
-              "application/json",
-
-            "Accept":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify(
-              payload
-            )
-
-        }
-      );
-
-
-    /*
-     * JSON response नहि भेटलाक स्थिति में सेहो
-     * वास्तविक HTTP error user केँ देखाउ।
-     */
-
-    let data = null;
-
-    try{
-
-      data =
-        await response.json();
-
-    }catch(parseError){
-
-      throw new Error(
-        "Server सँ valid response नहि भेटल। HTTP " +
-        response.status
-      );
-
-    }
-
-
-    if(
-      !response.ok ||
-      data?.success !== true
-    ){
-
-      throw new Error(
-        data?.error ||
-        (
-          newsId
-            ? "समाचार update नहि भ' सकल।"
-            : "समाचार save नहि भ' सकल।"
-        )
-      );
-
-    }
-
-
-    /*
-     * API ने save सफल क' देलक।
-     * आब editor बन्द करू आ success message देखाउ।
-     */
 
     closeNewsEditor();
+
 
     showToast(
 
@@ -5562,54 +5504,10 @@ async function saveNews(event){
     );
 
 
-    /*
-     * News list refresh अलग try/catch में।
-     * Refresh fail भेलाक कारण save केँ failed नहि मानू।
-     */
-
-    try{
-
-      await loadNews();
-
-    }catch(refreshError){
-
-      console.error(
-        "NEWS LIST REFRESH ERROR:",
-        refreshError
-      );
-
-    }
+    await loadNews();
 
 
-    try{
-
-      await loadOverview();
-
-    }catch(refreshError){
-
-      console.error(
-        "NEWS OVERVIEW REFRESH ERROR:",
-        refreshError
-      );
-
-    }
-
-
-    /*
-     * New news के लेल form ID reset करू,
-     * जाहि सँ अगिला Add News साफ form सँ शुरू हो।
-     */
-
-    const savedNewsId =
-      document.getElementById(
-        "newsId"
-      );
-
-    if(savedNewsId){
-
-      savedNewsId.value = "";
-
-    }
+    await loadOverview();
 
 
   }catch(error){
@@ -5621,21 +5519,9 @@ async function saveNews(event){
 
 
     showToast(
-      error?.message ||
+      error.message ||
       "समाचार save नहि भ' सकल।"
     );
-
-  }finally{
-
-    if(submitButton){
-
-      submitButton.disabled = false;
-
-      submitButton.textContent =
-        submitButton.dataset.originalText ||
-        "Save News";
-
-    }
 
   }
 
@@ -5669,42 +5555,10 @@ async function editNews(id){
     );
 
 
-    const response =
-      await fetch(
-        API +
-        "/news?id=" +
-        encodeURIComponent(id),
-        {
-          method:"GET",
-
-          credentials:"include",
-
-          cache:"no-store",
-
-          headers:{
-            "Accept":
-              "application/json"
-          }
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if(
-      !response.ok ||
-      data.success !== true
-    ){
-
-      throw new Error(
-        data.error ||
-        "समाचार load नहि भ' सकल।"
-      );
-
-    }
+    const data = await newsApiRequest(
+      API + "/news?id=" + encodeURIComponent(id),
+      { method: "GET" }
+    );
 
 
     const news =
@@ -6100,42 +5954,10 @@ async function deleteNews(id){
     );
 
 
-    const response =
-      await fetch(
-        API +
-        "/news?id=" +
-        encodeURIComponent(id),
-        {
-          method:"DELETE",
-
-          credentials:"include",
-
-          cache:"no-store",
-
-          headers:{
-            "Accept":
-              "application/json"
-          }
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if(
-      !response.ok ||
-      data.success !== true
-    ){
-
-      throw new Error(
-        data.error ||
-        "समाचार delete नहि भ' सकल।"
-      );
-
-    }
+    await newsApiRequest(
+      API + "/news?id=" + encodeURIComponent(id),
+      { method: "DELETE" }
+    );
 
 
     showToast(
@@ -6143,9 +5965,11 @@ async function deleteNews(id){
     );
 
 
-    await loadNews();
+    try { await loadNews(); } catch (e) { console.warn("News list refresh:", e); }
+    try { await loadOverview(); } catch (e) { console.warn("Overview refresh:", e); }
 
-    await loadOverview();
+    const idField = document.getElementById("newsId");
+    if (idField) idField.value = "";
 
 
   }catch(error){
