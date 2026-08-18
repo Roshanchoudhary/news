@@ -623,27 +623,21 @@
                 <div class="editor-field">
 
                   <label class="editor-label">
-                    श्रेणी
+                    श्रेणी / Sub-category <span>*</span>
                   </label>
 
-                  <select
-                    class="editor-select"
-                    id="editorCategory"
+                  <div
+                    id="editorCategoryTree"
+                    class="category-tree-picker"
                   >
+                    लोड भ' रहल अछि...
+                  </div>
 
-                    <option value="">
-                      श्रेणी चुनू
-                    </option>
-
-                  </select>
-
-                </div>
-
-                <div class="editor-field">
-                  <label class="editor-label">Sub-category</label>
-                  <select class="editor-select" id="editorSubcategory">
-                    <option value="">पहिने श्रेणी चुनू</option>
-                  </select>
+                  <div
+                    style="margin-top:6px;font-size:10px;color:#777;line-height:1.5;"
+                  >
+                    एक समाचार में एक सँ बेसी Main Category आ Sub-category चुनि सकैत छी।
+                  </div>
 
                 </div>
 
@@ -878,13 +872,6 @@
       );
 
 
-    /* Category -> Sub-category */
-
-    document.getElementById("editorCategory").addEventListener("change", function(){
-      fillSubcategories(this.value, null);
-    });
-
-
     /* Image preview */
 
     document
@@ -967,7 +954,6 @@
 
 
       fillCategories();
-      fillSubcategories();
 
       renderEditorTags();
 
@@ -988,62 +974,51 @@
      CATEGORIES
   ======================================================= */
 
-  function fillCategories() {
+  function fillCategories(selectedIds = []) {
 
-    const select =
-      document.getElementById(
-        "editorCategory"
-      );
+    const container =
+      document.getElementById("editorCategoryTree");
 
+    if (!container) return;
 
-    if (!select) {
-      return;
-    }
-
-
-    select.innerHTML =
-      `<option value="">
-        श्रेणी चुनू
-      </option>`;
-
-
-    categories.forEach(
-      category => {
-
-        const option =
-          document.createElement(
-            "option"
-          );
-
-
-        option.value =
-          category.id;
-
-
-        option.textContent =
-          category.name;
-
-
-        select.appendChild(
-          option
-        );
-
-      }
+    const selected = new Set(
+      (selectedIds || []).map(Number).filter(Number.isFinite)
     );
 
+    const parents = categories
+      .filter(c => !c.parent_id)
+      .sort((a,b) => Number(a.menu_order || 0) - Number(b.menu_order || 0) || String(a.name||"").localeCompare(String(b.name||"")));
+
+    container.innerHTML = parents.length ? parents.map(parent => {
+      const children = categories
+        .filter(c => Number(c.parent_id || 0) === Number(parent.id))
+        .sort((a,b) => Number(a.menu_order || 0) - Number(b.menu_order || 0) || String(a.name||"").localeCompare(String(b.name||"")));
+
+      return `
+        <div class="category-tree-main">
+          <label class="category-tree-label">
+            <input type="checkbox" class="news-category-check" value="${Number(parent.id)}" ${selected.has(Number(parent.id)) ? "checked" : ""}>
+            <span>${escapeHtml(parent.name || "")}</span>
+          </label>
+          ${children.length ? `
+            <div class="category-tree-children">
+              ${children.map(child => `
+                <label class="category-tree-child">
+                  <input type="checkbox" class="news-category-check" value="${Number(child.id)}" ${selected.has(Number(child.id)) ? "checked" : ""}>
+                  <span>${escapeHtml(child.name || "")}</span>
+                </label>
+              `).join("")}
+            </div>
+          ` : ""}
+        </div>
+      `;
+    }).join("") : `<div style="font-size:11px;color:#999;padding:8px;">कोनो active category नहि अछि।</div>`;
   }
 
-
-  function fillSubcategories(parentId = null, selectedId = null) {
-    const select = document.getElementById("editorSubcategory");
-    if(!select) return;
-    select.innerHTML = '<option value="">Sub-category चुनू</option>';
-    if(!parentId) return;
-    categories.filter(c => Number(c.parent_id || 0) === Number(parentId)).forEach(c => {
-      const o=document.createElement("option"); o.value=c.id; o.textContent=c.name;
-      if(selectedId && Number(selectedId)===Number(c.id)) o.selected=true;
-      select.appendChild(o);
-    });
+  function getSelectedCategoryIds(){
+    return Array.from(document.querySelectorAll(".news-category-check:checked"))
+      .map(input => Number(input.value))
+      .filter(Number.isFinite);
   }
 
   /* =======================================================
@@ -1418,15 +1393,9 @@
     );
 
 
-    document
-      .getElementById(
-        "editorCategory"
-      )
-      .value =
-      "";
-
-    const subcategory = document.getElementById("editorSubcategory");
-    if(subcategory){ subcategory.innerHTML = '<option value="">पहिने श्रेणी चुनू</option>'; subcategory.value = ""; }
+    document.querySelectorAll(".news-category-check").forEach(input => {
+      input.checked = false;
+    });
 
 
     document
@@ -1548,13 +1517,10 @@
     );
 
 
-    const selectedCategoryId = Number(news.category_id || 0);
-    const selectedCategory = categories.find(c => Number(c.id) === selectedCategoryId);
-    const parentId = selectedCategory?.parent_id ? Number(selectedCategory.parent_id) : selectedCategoryId;
-    const parentCategory = categories.find(c => Number(c.id) === parentId);
-    const categorySelect = document.getElementById("editorCategory");
-    if(categorySelect){ categorySelect.value = parentCategory?.id || selectedCategoryId || ""; }
-    fillSubcategories(parentCategory?.id || null, selectedCategory?.parent_id ? selectedCategoryId : null);
+    const selectedCategoryIds = Array.isArray(news.category_ids)
+      ? news.category_ids.map(Number)
+      : (news.category_id ? [Number(news.category_id)] : []);
+    fillCategories(selectedCategoryIds);
 
 
     document
@@ -2060,7 +2026,10 @@
           ).value.trim(),
 
         category_id:
-          (document.getElementById("editorSubcategory")?.value || document.getElementById("editorCategory")?.value) || null,
+          (getSelectedCategoryIds()[0] || null),
+
+        category_ids:
+          getSelectedCategoryIds(),
 
         status,
 
