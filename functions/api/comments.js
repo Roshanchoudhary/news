@@ -1,25 +1,18 @@
-// ============================================================
-// COMMENTS API
-//
-// GET    /api/comments
-// GET    /api/comments?news_id=123
-// GET    /api/comments?status=pending
-// POST   /api/comments
-// PUT    /api/comments?id=123
-// DELETE /api/comments?id=123
-//
-// PUBLIC:
-//   GET  ?news_id=123 -> approved comments only
-//   POST -> new comment pending
-//
-// ADMIN:
-//   GET  /api/comments -> all comments
-//   GET  /api/comments?status=pending
-//   PUT  /api/comments?id=123
-//   DELETE /api/comments?id=123
-//
-// Email + Mobile public response में कभी नहीं भेजे जाएंगे.
-// ============================================================
+// functions/api/comments.js
+
+/*
+ * ============================================================
+ * COMMENTS API
+ *
+ * GET  /api/comments?admin=1
+ * GET  /api/comments?news_id=123
+ * GET  /api/comments?slug=news-slug
+ *
+ * POST   /api/comments
+ * PUT    /api/comments?id=123
+ * DELETE /api/comments?id=123
+ * ============================================================
+ */
 
 
 // ============================================================
@@ -28,77 +21,82 @@
 
 export async function onRequestGet(context) {
 
-  const {
-    request,
-    env
-  } = context;
-
+  const { request, env } = context;
 
   try {
 
-    const url =
-      new URL(request.url);
+    const url = new URL(request.url);
 
-
-    const newsId =
-      url.searchParams.get(
-        "news_id"
-      );
-
-    const newsSlug =
-      url.searchParams.get(
-        "slug"
-      ) ||
-      url.searchParams.get(
-        "news_slug"
-      );
-
+    const adminMode =
+      url.searchParams.get("admin") === "1";
 
     const status =
-      url.searchParams.get(
-        "status"
-      );
+      String(
+        url.searchParams.get("status") || ""
+      ).trim().toLowerCase();
 
+    const newsIdParam =
+      String(
+        url.searchParams.get("news_id") || ""
+      ).trim();
 
-    const adminParam =
-      url.searchParams.get(
-        "admin"
-      );
+    const slugParam =
+      String(
+        url.searchParams.get("slug") ||
+        url.searchParams.get("news_slug") ||
+        ""
+      ).trim();
 
 
     // ========================================================
-    // ADMIN CHECK
-    //
-    // अब /api/comments बिना news_id के आने पर
-    // पहले Admin session check होयत।
+    // ADMIN GET
     // ========================================================
 
-    let adminUser = null;
+    if (adminMode || (!newsIdParam && !slugParam)) {
 
-
-    if (
-      (!newsId && !newsSlug) ||
-      status ||
-      adminParam === "1"
-    ) {
-
-      adminUser =
+      const admin =
         await requireModerator(
           request,
           env
         );
 
-    }
+      if (!admin) {
+
+        return json(
+          {
+            success:false,
+            error:"Unauthorized"
+          },
+          401
+        );
+
+      }
 
 
-    // ========================================================
-    // ADMIN GET
-    //
-    // /api/comments
-    // /api/comments?status=pending
-    // ========================================================
+      const allowedStatuses = [
+        "",
+        "pending",
+        "approved",
+        "rejected"
+      ];
 
-    if (adminUser) {
+
+      if (
+        !allowedStatuses.includes(
+          status
+        )
+      ) {
+
+        return json(
+          {
+            success:false,
+            error:"Invalid comment status"
+          },
+          400
+        );
+
+      }
+
 
       let query = `
         SELECT
@@ -110,77 +108,61 @@ export async function onRequestGet(context) {
           c.comment,
           c.status,
           c.created_at,
+
+          n.id AS actual_news_id,
           n.title AS news_title,
-          n.slug AS news_slug
+          n.slug AS news_slug,
+          n.status AS news_status
+
         FROM comments c
+
         LEFT JOIN news n
-          ON CAST(n.id AS TEXT) = CAST(c.news_id AS TEXT)
-          OR n.slug = CAST(c.news_id AS TEXT)
+          ON n.id = c.news_id
       `;
 
 
       const params = [];
-
       const conditions = [];
 
 
-      if (newsId || newsSlug) {
+      /*
+       * Optional admin filter by status.
+       */
 
-        if (newsId) {
+      if (status) {
 
-          const numericNewsId =
-            Number(newsId);
+        conditions.push(
+          "c.status = ?"
+        );
 
-          if (
-            !Number.isInteger(numericNewsId) ||
-            numericNewsId <= 0
-          ) {
-            return json(
-              {
-                success: false,
-                error: "News ID सही नहि अछि"
-              },
-              400
-            );
-          }
-
-          conditions.push(
-            "CAST(c.news_id AS TEXT) = ?"
-          );
-          params.push(String(numericNewsId));
-
-        } else {
-
-          conditions.push(
-            "(n.slug = ? OR CAST(c.news_id AS TEXT) = ?)"
-          );
-          params.push(String(newsSlug), String(newsSlug));
-
-        }
+        params.push(
+          status
+        );
 
       }
 
 
-      if (status) {
+      /*
+       * Optional admin filter by news ID.
+       */
 
-        const allowedStatuses = [
-          "pending",
-          "approved",
-          "rejected"
-        ];
+      if (newsIdParam) {
+
+        const id =
+          Number(
+            newsIdParam
+          );
 
 
         if (
-          !allowedStatuses.includes(
-            status
-          )
+          !Number.isInteger(id) ||
+          id <= 0
         ) {
 
           return json(
             {
-              success: false,
-              error:
-                "Invalid comment status"
+              success:false,
+              error:"News ID सही नहि अछि"
             },
             400
           );
@@ -189,12 +171,26 @@ export async function onRequestGet(context) {
 
 
         conditions.push(
-          "c.status = ?"
+          "c.news_id = ?"
         );
 
+        params.push(id);
+
+      }
+
+
+      /*
+       * Optional admin filter by slug.
+       */
+
+      if (slugParam) {
+
+        conditions.push(
+          "n.slug = ?"
+        );
 
         params.push(
-          status
+          slugParam
         );
 
       }
@@ -227,14 +223,18 @@ export async function onRequestGet(context) {
           .all();
 
 
-      return json({
+      return json(
+        {
+          success:true,
 
-        success: true,
+          comments:
+            result.results || [],
 
-        comments:
-          result.results || []
+          total:
+            (result.results || []).length
 
-      });
+        }
+      );
 
     }
 
@@ -243,56 +243,82 @@ export async function onRequestGet(context) {
     // PUBLIC GET
     // ========================================================
 
-    /*
-     * Public website पर news_id जरूरी अछि।
-     *
-     * Example:
-     *
-     * /api/comments?news_id=12
-     *
-     * केवल approved comments वापस होयत।
-     *
-     * Email और mobile SELECT में नहीं अछि।
-     */
-
-
-    if (!newsId && !newsSlug) {
-
-      return json(
-        {
-          success: false,
-          error: "News ID अथवा News URL जरूरी अछि"
-        },
-        400
-      );
-
-    }
-
-
     let numericNewsId = null;
 
-    if (newsId) {
-      numericNewsId = Number(newsId);
-      if (!Number.isInteger(numericNewsId) || numericNewsId <= 0) {
+
+    if (newsIdParam) {
+
+      numericNewsId =
+        Number(
+          newsIdParam
+        );
+
+
+      if (
+        !Number.isInteger(
+          numericNewsId
+        ) ||
+        numericNewsId <= 0
+      ) {
+
         return json(
-          { success: false, error: "News ID सही नहि अछि" },
+          {
+            success:false,
+            error:"News ID सही नहि अछि"
+          },
           400
         );
+
       }
+
     } else {
-      const article = await env.DB
-        .prepare(`SELECT id FROM news WHERE slug = ? LIMIT 1`)
-        .bind(String(newsSlug))
-        .first();
+
+      if (!slugParam) {
+
+        return json(
+          {
+            success:false,
+            error:"News URL जरूरी अछि"
+          },
+          400
+        );
+
+      }
+
+
+      const article =
+        await env.DB
+          .prepare(`
+            SELECT
+              id
+            FROM news
+            WHERE slug = ?
+            LIMIT 1
+          `)
+          .bind(
+            slugParam
+          )
+          .first();
+
 
       if (!article) {
+
         return json(
-          { success: false, error: "समाचार नहि भेटल" },
+          {
+            success:false,
+            error:"समाचार नहि भेटल"
+          },
           404
         );
+
       }
 
-      numericNewsId = Number(article.id);
+
+      numericNewsId =
+        Number(
+          article.id
+        );
+
     }
 
 
@@ -305,27 +331,35 @@ export async function onRequestGet(context) {
             c.name,
             c.comment,
             c.created_at
+
           FROM comments c
+
           WHERE
-            CAST(c.news_id AS TEXT) = ?
+            c.news_id = ?
             AND c.status = 'approved'
+
           ORDER BY
             c.created_at ASC,
             c.id ASC
         `)
-        .bind(String(numericNewsId))
+        .bind(
+          numericNewsId
+        )
         .all();
 
 
-    return json({
+    return json(
+      {
+        success:true,
 
-      success: true,
+        news_id:
+          numericNewsId,
 
-      news_id: numericNewsId,
+        comments:
+          result.results || []
+      }
+    );
 
-      comments: result.results || []
-
-    });
 
   } catch (error) {
 
@@ -337,10 +371,10 @@ export async function onRequestGet(context) {
 
     return json(
       {
-        success: false,
+        success:false,
         error:
           error.message ||
-          "Comments लोड नहि भ' सकल"
+          "Comments load नहि भ' सकल"
       },
       500
     );
@@ -352,12 +386,9 @@ export async function onRequestGet(context) {
 
 // ============================================================
 // CREATE COMMENT
-// POST /api/comments
 // ============================================================
 
-export async function onRequestPost(
-  context
-) {
+export async function onRequestPost(context) {
 
   const {
     request,
@@ -376,6 +407,7 @@ export async function onRequestPost(
         body.news_id
       );
 
+
     const newsSlug =
       String(
         body.news_slug ||
@@ -386,43 +418,96 @@ export async function onRequestPost(
 
     const name =
       String(
-        body.name || ""
+        body.name ||
+        ""
       ).trim();
 
 
     const email =
       String(
-        body.email || ""
+        body.email ||
+        ""
       )
-        .trim()
-        .toLowerCase();
+      .trim()
+      .toLowerCase();
 
 
     const mobile =
       String(
-        body.mobile || ""
+        body.mobile ||
+        ""
       ).trim();
 
 
     const comment =
       String(
-        body.comment || ""
+        body.comment ||
+        ""
       ).trim();
 
 
-    // ========================================================
-    // VALIDATION
-    // ========================================================
+    // --------------------------------------------------------
+    // Resolve slug -> ID
+    // --------------------------------------------------------
 
     if (
-      (!Number.isInteger(newsId) || newsId <= 0) &&
-      !newsSlug
+      (
+        !Number.isInteger(
+          newsId
+        ) ||
+        newsId <= 0
+      ) &&
+      newsSlug
+    ) {
+
+      const article =
+        await env.DB
+          .prepare(`
+            SELECT
+              id,
+              status
+            FROM news
+            WHERE slug = ?
+            LIMIT 1
+          `)
+          .bind(
+            newsSlug
+          )
+          .first();
+
+
+      if (!article) {
+
+        return json(
+          {
+            success:false,
+            error:"समाचार नहि भेटल"
+          },
+          404
+        );
+
+      }
+
+
+      newsId =
+        Number(
+          article.id
+        );
+
+    }
+
+
+    if (
+      !Number.isInteger(
+        newsId
+      ) ||
+      newsId <= 0
     ) {
 
       return json(
         {
-          success: false,
-          error: "News ID अथवा News URL जरूरी अछि"
+          success:false,
+          error:"News ID अथवा News URL जरूरी अछि"
         },
         400
       );
@@ -430,32 +515,16 @@ export async function onRequestPost(
     }
 
 
-    if ((!Number.isInteger(newsId) || newsId <= 0) && newsSlug) {
-
-      const article = await env.DB
-        .prepare(`SELECT id FROM news WHERE slug = ? LIMIT 1`)
-        .bind(newsSlug)
-        .first();
-
-      if (!article) {
-        return json(
-          { success: false, error: "समाचार नहि भेटल" },
-          404
-        );
-      }
-
-      newsId = Number(article.id);
-
-    }
-
+    // --------------------------------------------------------
+    // Validation
+    // --------------------------------------------------------
 
     if (!name) {
 
       return json(
         {
-          success: false,
-          error:
-            "नाम जरूरी अछि"
+          success:false,
+          error:"नाम जरूरी अछि"
         },
         400
       );
@@ -467,9 +536,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "ईमेल जरूरी अछि"
+          success:false,
+          error:"ईमेल जरूरी अछि"
         },
         400
       );
@@ -484,9 +552,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "ईमेल सही format में लिखू"
+          success:false,
+          error:"ईमेल सही format में लिखू"
         },
         400
       );
@@ -498,9 +565,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "मोबाइल नंबर जरूरी अछि"
+          success:false,
+          error:"मोबाइल नंबर जरूरी अछि"
         },
         400
       );
@@ -517,14 +583,15 @@ export async function onRequestPost(
 
     if (
       !/^(\+91)?[6-9]\d{9}$/
-        .test(cleanMobile)
+        .test(
+          cleanMobile
+        )
     ) {
 
       return json(
         {
-          success: false,
-          error:
-            "मोबाइल नंबर सही format में लिखू"
+          success:false,
+          error:"मोबाइल नंबर सही format में लिखू"
         },
         400
       );
@@ -536,9 +603,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "Comment लिखब जरूरी अछि"
+          success:false,
+          error:"Comment लिखब जरूरी अछि"
         },
         400
       );
@@ -547,62 +613,16 @@ export async function onRequestPost(
 
 
     if (
-      name.length > 100
-    ) {
-
-      return json(
-        {
-          success: false,
-          error:
-            "नाम बहुत पैघ अछि"
-        },
-        400
-      );
-
-    }
-
-
-    if (
-      email.length > 150
-    ) {
-
-      return json(
-        {
-          success: false,
-          error:
-            "ईमेल बहुत पैघ अछि"
-        },
-        400
-      );
-
-    }
-
-
-    if (
-      cleanMobile.length > 15
-    ) {
-
-      return json(
-        {
-          success: false,
-          error:
-            "मोबाइल नंबर गलत अछि"
-        },
-        400
-      );
-
-    }
-
-
-    if (
+      name.length > 100 ||
+      email.length > 150 ||
+      cleanMobile.length > 15 ||
       comment.length > 5000
     ) {
 
       return json(
         {
-          success: false,
-          error:
-            "Comment 5000 अक्षर सँ कम होबाक चाही"
+          success:false,
+          error:"Comment अथवा विवरणक लंबाई बहुत पैघ अछि"
         },
         400
       );
@@ -610,9 +630,9 @@ export async function onRequestPost(
     }
 
 
-    // ========================================================
-    // NEWS CHECK
-    // ========================================================
+    // --------------------------------------------------------
+    // News check
+    // --------------------------------------------------------
 
     const news =
       await env.DB
@@ -634,9 +654,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "समाचार नहि भेटल"
+          success:false,
+          error:"समाचार नहि भेटल"
         },
         404
       );
@@ -651,9 +670,8 @@ export async function onRequestPost(
 
       return json(
         {
-          success: false,
-          error:
-            "एहि समाचार पर comment नहि कएल जा सकैत अछि"
+          success:false,
+          error:"एहि समाचार पर comment नहि कएल जा सकैत अछि"
         },
         400
       );
@@ -661,9 +679,9 @@ export async function onRequestPost(
     }
 
 
-    // ========================================================
-    // INSERT
-    // ========================================================
+    // --------------------------------------------------------
+    // Insert pending comment
+    // --------------------------------------------------------
 
     const result =
       await env.DB
@@ -695,17 +713,17 @@ export async function onRequestPost(
         .run();
 
 
-    return json({
+    return json(
+      {
+        success:true,
 
-      success: true,
+        message:
+          "अहाँक comment प्राप्त भ' गेल। Admin approval के बाद ई प्रकाशित होयत।",
 
-      message:
-        "अहाँक comment प्राप्त भ' गेल। Admin approval के बाद ई प्रकाशित होयत।",
-
-      id:
-        result.meta.last_row_id
-
-    });
+        id:
+          result.meta.last_row_id
+      }
+    );
 
 
   } catch (error) {
@@ -718,7 +736,7 @@ export async function onRequestPost(
 
     return json(
       {
-        success: false,
+        success:false,
         error:
           error.message ||
           "Comment save नहि भ' सकल"
@@ -733,12 +751,9 @@ export async function onRequestPost(
 
 // ============================================================
 // UPDATE COMMENT
-// PUT /api/comments?id=123
 // ============================================================
 
-export async function onRequestPut(
-  context
-) {
+export async function onRequestPut(context) {
 
   const {
     request,
@@ -748,24 +763,19 @@ export async function onRequestPut(
 
   try {
 
-    // ========================================================
-    // ADMIN AUTH
-    // ========================================================
-
-    const user =
+    const moderator =
       await requireModerator(
         request,
         env
       );
 
 
-    if (!user) {
+    if (!moderator) {
 
       return json(
         {
-          success: false,
-          error:
-            "Unauthorized"
+          success:false,
+          error:"Unauthorized"
         },
         401
       );
@@ -780,18 +790,22 @@ export async function onRequestPut(
 
 
     const id =
-      url.searchParams.get(
-        "id"
+      Number(
+        url.searchParams.get(
+          "id"
+        )
       );
 
 
-    if (!id) {
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
 
       return json(
         {
-          success: false,
-          error:
-            "Comment ID जरूरी अछि"
+          success:false,
+          error:"Comment ID जरूरी अछि"
         },
         400
       );
@@ -805,30 +819,27 @@ export async function onRequestPut(
 
     const status =
       String(
-        body.status || ""
+        body.status ||
+        ""
       )
-        .trim()
-        .toLowerCase();
-
-
-    const allowedStatuses = [
-      "pending",
-      "approved",
-      "rejected"
-    ];
+      .trim()
+      .toLowerCase();
 
 
     if (
-      !allowedStatuses.includes(
+      ![
+        "pending",
+        "approved",
+        "rejected"
+      ].includes(
         status
       )
     ) {
 
       return json(
         {
-          success: false,
-          error:
-            "Status केवल pending, approved या rejected होयत"
+          success:false,
+          error:"Invalid comment status"
         },
         400
       );
@@ -855,9 +866,8 @@ export async function onRequestPut(
 
       return json(
         {
-          success: false,
-          error:
-            "Comment नहि भेटल"
+          success:false,
+          error:"Comment नहि भेटल"
         },
         404
       );
@@ -865,20 +875,10 @@ export async function onRequestPut(
     }
 
 
-    /*
-     * ध्यान:
-     *
-     * updated_at नहि लिखैत छी।
-     *
-     * अहाँक current comments table में
-     * updated_at column नहि अछि।
-     */
-
     await env.DB
       .prepare(`
         UPDATE comments
-        SET
-          status = ?
+        SET status = ?
         WHERE id = ?
       `)
       .bind(
@@ -888,14 +888,13 @@ export async function onRequestPut(
       .run();
 
 
-    return json({
-
-      success: true,
-
-      message:
-        "Comment status update भ' गेल"
-
-    });
+    return json(
+      {
+        success:true,
+        message:
+          "Comment status update भ' गेल"
+      }
+    );
 
 
   } catch (error) {
@@ -908,7 +907,7 @@ export async function onRequestPut(
 
     return json(
       {
-        success: false,
+        success:false,
         error:
           error.message ||
           "Comment update नहि भ' सकल"
@@ -923,12 +922,9 @@ export async function onRequestPut(
 
 // ============================================================
 // DELETE COMMENT
-// DELETE /api/comments?id=123
 // ============================================================
 
-export async function onRequestDelete(
-  context
-) {
+export async function onRequestDelete(context) {
 
   const {
     request,
@@ -938,20 +934,19 @@ export async function onRequestDelete(
 
   try {
 
-    const user =
+    const moderator =
       await requireModerator(
         request,
         env
       );
 
 
-    if (!user) {
+    if (!moderator) {
 
       return json(
         {
-          success: false,
-          error:
-            "Unauthorized"
+          success:false,
+          error:"Unauthorized"
         },
         401
       );
@@ -966,18 +961,22 @@ export async function onRequestDelete(
 
 
     const id =
-      url.searchParams.get(
-        "id"
+      Number(
+        url.searchParams.get(
+          "id"
+        )
       );
 
 
-    if (!id) {
+    if (
+      !Number.isInteger(id) ||
+      id <= 0
+    ) {
 
       return json(
         {
-          success: false,
-          error:
-            "Comment ID जरूरी अछि"
+          success:false,
+          error:"Comment ID जरूरी अछि"
         },
         400
       );
@@ -1004,9 +1003,8 @@ export async function onRequestDelete(
 
       return json(
         {
-          success: false,
-          error:
-            "Comment नहि भेटल"
+          success:false,
+          error:"Comment नहि भेटल"
         },
         404
       );
@@ -1025,14 +1023,13 @@ export async function onRequestDelete(
       .run();
 
 
-    return json({
-
-      success: true,
-
-      message:
-        "Comment delete भ' गेल"
-
-    });
+    return json(
+      {
+        success:true,
+        message:
+          "Comment delete भ' गेल"
+      }
+    );
 
 
   } catch (error) {
@@ -1045,7 +1042,7 @@ export async function onRequestDelete(
 
     return json(
       {
-        success: false,
+        success:false,
         error:
           error.message ||
           "Comment delete नहि भ' सकल"
@@ -1059,7 +1056,7 @@ export async function onRequestDelete(
 
 
 // ============================================================
-// ADMIN AUTH
+// ADMIN / MODERATOR AUTH
 // ============================================================
 
 async function requireModerator(
@@ -1069,16 +1066,8 @@ async function requireModerator(
 
   try {
 
-    if (
-      !env.AUTH_SECRET
-    ) {
-
-      console.error(
-        "AUTH_SECRET missing"
-      );
-
+    if (!env.AUTH_SECRET) {
       return null;
-
     }
 
 
@@ -1095,9 +1084,7 @@ async function requireModerator(
 
 
     if (!token) {
-
       return null;
-
     }
 
 
@@ -1112,9 +1099,7 @@ async function requireModerator(
       !session ||
       !session.id
     ) {
-
       return null;
-
     }
 
 
@@ -1139,14 +1124,32 @@ async function requireModerator(
 
     if (
       !user ||
-      user.status !==
-        "active" ||
-      user.role !==
-        "admin"
+      user.status !== "active"
     ) {
-
       return null;
+    }
 
+
+    /*
+     * Admin + Editor can manage comments.
+     * Author cannot approve/reject/delete.
+     */
+
+    const role =
+      String(
+        user.role || ""
+      ).toLowerCase();
+
+
+    if (
+      ![
+        "admin",
+        "editor"
+      ].includes(
+        role
+      )
+    ) {
+      return null;
     }
 
 
@@ -1156,7 +1159,7 @@ async function requireModerator(
   } catch (error) {
 
     console.error(
-      "COMMENT ADMIN AUTH ERROR:",
+      "COMMENT AUTH ERROR:",
       error
     );
 
@@ -1168,28 +1171,121 @@ async function requireModerator(
 
 
 // ============================================================
-// JSON RESPONSE
+// SESSION VERIFY
 // ============================================================
 
-function json(
-  data,
-  status = 200
+async function verifySessionToken(
+  token,
+  secret
 ) {
 
-  return Response.json(
-    data,
-    {
-      status,
+  try {
 
-      headers: {
-        "Content-Type":
-          "application/json; charset=UTF-8",
+    const parts =
+      String(
+        token || ""
+      ).split(".");
 
-        "Cache-Control":
-          "no-store"
-      }
 
+    if (
+      parts.length !== 2
+    ) {
+      return null;
     }
+
+
+    const payload =
+      parts[0];
+
+    const signature =
+      parts[1];
+
+
+    const expected =
+      await sign(
+        payload,
+        secret
+      );
+
+
+    if (
+      !timingSafeEqual(
+        signature,
+        expected
+      )
+    ) {
+      return null;
+    }
+
+
+    const data =
+      JSON.parse(
+        fromBase64url(
+          payload
+        )
+      );
+
+
+    if (
+      data.exp &&
+      Math.floor(
+        Date.now() / 1000
+      ) >= Number(
+        data.exp
+      )
+    ) {
+      return null;
+    }
+
+
+    return data;
+
+
+  } catch {
+    return null;
+  }
+
+}
+
+
+// ============================================================
+// HMAC SIGN
+// ============================================================
+
+async function sign(
+  payload,
+  secret
+) {
+
+  const key =
+    await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(
+        secret
+      ),
+      {
+        name:"HMAC",
+        hash:"SHA-256"
+      },
+      false,
+      ["sign"]
+    );
+
+
+  const signature =
+    await crypto.subtle.sign(
+      "HMAC",
+      key,
+      new TextEncoder().encode(
+        payload
+      )
+    );
+
+
+  return base64url(
+    new Uint8Array(
+      signature
+    )
   );
 
 }
@@ -1209,193 +1305,46 @@ function parseCookies(
   String(
     cookieString || ""
   )
-    .split(";")
-    .forEach(
-      part => {
+  .split(";")
+  .forEach(
+    part => {
 
-        const index =
-          part.indexOf("=");
-
-
-        if (
-          index === -1
-        ) {
-
-          return;
-
-        }
+      const index =
+        part.indexOf("=");
 
 
-        const key =
-          part
-            .slice(
-              0,
-              index
-            )
-            .trim();
-
-
-        const value =
-          part
-            .slice(
-              index + 1
-            )
-            .trim();
-
-
-        cookies[key] =
-          value;
-
+      if (
+        index === -1
+      ) {
+        return;
       }
-    );
+
+
+      const key =
+        part
+          .slice(
+            0,
+            index
+          )
+          .trim();
+
+
+      const value =
+        part
+          .slice(
+            index + 1
+          )
+          .trim();
+
+
+      cookies[key] =
+        value;
+
+    }
+  );
 
 
   return cookies;
-
-}
-
-
-// ============================================================
-// VERIFY SESSION TOKEN
-// ============================================================
-
-async function verifySessionToken(
-  token,
-  secret
-) {
-
-  try {
-
-    const parts =
-      String(
-        token || ""
-      ).split(".");
-
-
-    if (
-      parts.length !== 2
-    ) {
-
-      return null;
-
-    }
-
-
-    const payload =
-      parts[0];
-
-
-    const signature =
-      parts[1];
-
-
-    const expected =
-      await sign(
-        payload,
-        secret
-      );
-
-
-    if (
-      !timingSafeEqual(
-        signature,
-        expected
-      )
-    ) {
-
-      return null;
-
-    }
-
-
-    const data =
-      JSON.parse(
-        fromBase64url(
-          payload
-        )
-      );
-
-
-    if (
-      data.exp &&
-      Date.now() >
-        Number(
-          data.exp
-        )
-    ) {
-
-      return null;
-
-    }
-
-
-    return data;
-
-
-  } catch (error) {
-
-    console.error(
-      "VERIFY SESSION ERROR:",
-      error
-    );
-
-    return null;
-
-  }
-
-}
-
-
-// ============================================================
-// HMAC SIGN
-// ============================================================
-
-async function sign(
-  payload,
-  secret
-) {
-
-  const key =
-    await crypto.subtle.importKey(
-      "raw",
-
-      new TextEncoder().encode(
-        secret
-      ),
-
-      {
-        name:
-          "HMAC",
-
-        hash:
-          "SHA-256"
-      },
-
-      false,
-
-      [
-        "sign"
-      ]
-    );
-
-
-  const signature =
-    await crypto.subtle.sign(
-      "HMAC",
-
-      key,
-
-      new TextEncoder().encode(
-        payload
-      )
-    );
-
-
-  return base64url(
-    new Uint8Array(
-      signature
-    )
-  );
 
 }
 
@@ -1410,16 +1359,13 @@ function base64url(
 
   let binary = "";
 
-
   for (
     const byte of bytes
   ) {
-
     binary +=
       String.fromCharCode(
         byte
       );
-
   }
 
 
@@ -1442,41 +1388,34 @@ function base64url(
 }
 
 
-// ============================================================
-// FROM BASE64URL
-// ============================================================
-
 function fromBase64url(
   value
 ) {
 
-  const base64 =
+  let base64 =
     String(
       value || ""
     )
-      .replace(
-        /-/g,
-        "+"
-      )
-      .replace(
-        /_/g,
-        "/"
-      );
-
-
-  const padded =
-    base64 +
-    "=".repeat(
-      (
-        4 -
-        base64.length % 4
-      ) % 4
+    .replace(
+      /-/g,
+      "+"
+    )
+    .replace(
+      /_/g,
+      "/"
     );
+
+
+  while (
+    base64.length % 4
+  ) {
+    base64 += "=";
+  }
 
 
   const binary =
     atob(
-      padded
+      base64
     );
 
 
@@ -1491,17 +1430,13 @@ function fromBase64url(
     i < binary.length;
     i++
   ) {
-
     bytes[i] =
       binary.charCodeAt(i);
-
   }
 
 
   return new TextDecoder()
-    .decode(
-      bytes
-    );
+    .decode(bytes);
 
 }
 
@@ -1515,25 +1450,12 @@ function timingSafeEqual(
   b
 ) {
 
-  const first =
-    String(
-      a || ""
-    );
-
-
-  const second =
-    String(
-      b || ""
-    );
-
-
   if (
-    first.length !==
-    second.length
+    typeof a !== "string" ||
+    typeof b !== "string" ||
+    a.length !== b.length
   ) {
-
     return false;
-
   }
 
 
@@ -1542,17 +1464,40 @@ function timingSafeEqual(
 
   for (
     let i = 0;
-    i < first.length;
+    i < a.length;
     i++
   ) {
 
     result |=
-      first.charCodeAt(i) ^
-      second.charCodeAt(i);
+      a.charCodeAt(i) ^
+      b.charCodeAt(i);
 
   }
 
 
   return result === 0;
+
+}
+
+
+// ============================================================
+// JSON
+// ============================================================
+
+function json(
+  data,
+  status = 200
+) {
+
+  return Response.json(
+    data,
+    {
+      status,
+      headers:{
+        "Cache-Control":
+          "no-store"
+      }
+    }
+  );
 
 }
