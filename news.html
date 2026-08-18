@@ -348,6 +348,14 @@ footer p{
    MOBILE
 ===================================================== */
 
+.share-box{margin-top:28px;padding-top:20px;border-top:1px solid #eee;}
+.share-title{font-size:16px;font-weight:800;margin-bottom:12px;}
+.share-buttons{display:flex;flex-wrap:wrap;gap:8px;}
+.share-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 13px;border:0;border-radius:7px;color:#fff;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer;}
+.share-btn.whatsapp{background:#25D366;} .share-btn.facebook{background:#1877F2;} .share-btn.x{background:#111;} .share-btn.telegram{background:#229ED9;} .share-btn.linkedin{background:#0A66C2;} .share-btn.copy{background:#555;}
+.article-ad{margin:24px 0;padding:8px 0;text-align:center;overflow:hidden;}
+.article-inline-content-image{display:block;width:auto;max-width:100%;height:auto;margin:24px auto;border-radius:10px;}
+
 @media(max-width:600px){
 
   .container{
@@ -1615,13 +1623,15 @@ async function loadArticle(){
     const news =
       data.news;
 
+    const adSettings = await loadPublicAdSettings(news.id);
 
-    renderArticle(
-      news
-    );
+    renderArticle(news, adSettings);
 
     window.currentNewsId =
       Number(news.id);
+
+    trackAnalytics(news.id);
+    setTimeout(()=>{document.querySelectorAll('.adsbygoogle').forEach(()=>{window.adsbygoogle=window.adsbygoogle||[];try{window.adsbygoogle.push({});}catch(e){}});},100);
 
     await loadPublicComments(
       news.id
@@ -1654,8 +1664,29 @@ async function loadArticle(){
    RENDER ARTICLE
 ===================================================== */
 
+async function loadPublicAdSettings(newsId){
+  try{
+    const response=await fetch('/api/settings?news_id='+encodeURIComponent(newsId),{cache:'no-store'});
+    const data=await response.json();
+    return response.ok && data.success ? data : {settings:{},news_ads_enabled:false};
+  }catch(e){return {settings:{},news_ads_enabled:false};}
+}
+function ensureAdSenseScript(publisherId){
+  if(!publisherId || document.querySelector('script[data-adsense-client]'))return;
+  const script=document.createElement('script');script.async=true;script.crossOrigin='anonymous';script.dataset.adsenseClient=publisherId;script.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+encodeURIComponent(publisherId);document.head.appendChild(script);
+}
+function buildShareHtml(news){
+  const url=location.href, summary=String(news.summary||news.seo_description||'मैथिली समाचार').trim(), title=String(news.title||'मैथिली समाचार').trim();
+  const text=encodeURIComponent(title+'\n\n'+summary+'\n\n'+url), encodedUrl=encodeURIComponent(url);
+  return `<section class="share-box"><div class="share-title">🔗 शेयर करू</div><div class="share-buttons"><a class="share-btn whatsapp" href="https://api.whatsapp.com/send?text=${text}" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="share-btn facebook" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener noreferrer">Facebook</a><a class="share-btn x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(title+'\n\n'+summary)}&url=${encodedUrl}" target="_blank" rel="noopener noreferrer">X</a><a class="share-btn telegram" href="https://t.me/share/url?url=${encodedUrl}&text=${text}" target="_blank" rel="noopener noreferrer">Telegram</a><a class="share-btn linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener noreferrer">LinkedIn</a><button class="share-btn copy" type="button" onclick="copyNewsLink()">🔗 Copy Link</button></div></section>`;
+}
+function copyNewsLink(){const url=location.href;const done=()=>showCommentMessage("News link copy भ' गेल।",false);if(navigator.clipboard)navigator.clipboard.writeText(url).then(done).catch(()=>fallbackCopyLink(url));else fallbackCopyLink(url);}
+function fallbackCopyLink(url){const input=document.createElement('input');input.value=url;document.body.appendChild(input);input.select();try{document.execCommand('copy');showCommentMessage("News link copy भ' गेल।",false);}finally{input.remove();}}
+function trackAnalytics(newsId){try{let visitorId=localStorage.getItem('mn_visitor_id');if(!visitorId){visitorId=crypto.randomUUID?crypto.randomUUID():'v-'+Date.now()+'-'+Math.random().toString(36).slice(2);localStorage.setItem('mn_visitor_id',visitorId);}const body=JSON.stringify({visitor_id:visitorId,news_id:Number(newsId),path:location.pathname,referrer:document.referrer||'',language:navigator.language||'',screen:(screen.width||0)+'x'+(screen.height||0)});if(navigator.sendBeacon)navigator.sendBeacon('/api/analytics',new Blob([body],{type:'application/json'}));else fetch('/api/analytics',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true});}catch(e){}}
+
 function renderArticle(
-  news
+  news,
+  adData = null
 ){
 
   const container =
@@ -1689,6 +1720,12 @@ function renderArticle(
   const summary =
     news.summary ||
     "";
+
+  const adSettings=adData?.settings||{};
+  const showAd=!!(adData?.news_ads_enabled && adSettings.ads_enabled && adSettings.adsense_publisher_id && adSettings.adsense_display_slot);
+  if(showAd)ensureAdSenseScript(adSettings.adsense_publisher_id);
+  const adHtml=showAd?`<div class="article-ad" aria-label="Advertisement"><ins class="adsbygoogle" style="display:block" data-ad-client="${escapeAttribute(adSettings.adsense_publisher_id)}" data-ad-slot="${escapeAttribute(adSettings.adsense_display_slot)}" data-ad-format="auto" data-full-width-responsive="true"></ins></div>`:"";
+  const shareHtml=buildShareHtml(news);
 
 
   const tags =
@@ -1865,6 +1902,8 @@ function renderArticle(
         }
 
 
+        ${adHtml}
+
         <div
           class="article-content"
         >
@@ -1873,6 +1912,7 @@ function renderArticle(
           )}
         </div>
 
+        ${shareHtml}
 
         ${tagsHtml}
 
@@ -1913,6 +1953,13 @@ function updateSEO(
   document.title =
     title +
     " | मैथिली समाचार";
+
+  const shareDescription=String(news.summary || news.seo_description || makeExcerpt(news.content,155));
+  setMetaProperty('og:title',title);
+  setMetaProperty('og:description',shareDescription);
+  setMetaProperty('og:type','article');
+  setMetaProperty('og:url',location.href);
+  if(news.image_url)setMetaProperty('og:image',news.image_url);
 
 
   document

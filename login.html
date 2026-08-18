@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Admin Login</title>
+  <title>Admin / Editor / Author Login</title>
 
   <meta
     name="robots"
@@ -607,7 +607,9 @@ async function checkExistingSession(){
       data &&
       data.success &&
       data.user &&
-      data.user.role === "admin" &&
+      ["admin","editor","author"].includes(
+        String(data.user.role || "").toLowerCase()
+      ) &&
       data.user.status === "active"
     ){
 
