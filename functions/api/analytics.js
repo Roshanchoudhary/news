@@ -71,7 +71,7 @@ export async function onRequestPost(context) {
     return Response.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('ANALYTICS POST ERROR:', error);
-    return Response.json({ success: false, error: error.message || 'Analytics save नहि भ' सकल' }, { status: 500 });
+    return Response.json({ success: false, error: error.message || "Analytics save नहि भ' सकल" }, { status: 500 });
   }
 }
 
@@ -120,7 +120,7 @@ export async function onRequestGet(context) {
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('ANALYTICS GET ERROR:', error);
-    return Response.json({ success: false, error: error.message || 'Analytics load नहि भ' सकल' }, { status: 500 });
+    return Response.json({ success: false, error: error.message || "Analytics load नहि भ' सकल" }, { status: 500 });
   }
 }
 
