@@ -922,12 +922,20 @@ async function loadPublicComments(newsId){
 
   try{
 
+    const commentNewsSlug =
+      window.currentNewsSlug ||
+      getSlug();
+
+    const commentUrl =
+      "/api/comments?news_id=" +
+      encodeURIComponent(newsId) +
+      (commentNewsSlug
+        ? "&slug=" + encodeURIComponent(commentNewsSlug)
+        : "");
+
     const response =
       await fetch(
-        "/api/comments?news_id=" +
-        encodeURIComponent(
-          newsId
-        ),
+        commentUrl,
         {
           method:"GET",
           cache:"no-store",
@@ -1209,6 +1217,11 @@ async function submitPublicComment(
                 Number(
                   newsId
                 ),
+
+              news_slug:
+                window.currentNewsSlug ||
+                getSlug() ||
+                "",
 
               name,
 
@@ -1629,6 +1642,9 @@ async function loadArticle(){
 
     window.currentNewsId =
       Number(news.id);
+
+    window.currentNewsSlug =
+      String(news.slug || slug || "");
 
     trackAnalytics(news.id);
     setTimeout(()=>{document.querySelectorAll('.adsbygoogle').forEach(()=>{window.adsbygoogle=window.adsbygoogle||[];try{window.adsbygoogle.push({});}catch(e){}});},100);

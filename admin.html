@@ -10634,11 +10634,18 @@ function renderAdminComments(
             </td>
 
             <td class="comment-td">
-              ${escapeHtml(
-                comment.news_title ||
-                comment.title ||
-                "—"
-              )}
+              <strong>
+                ${escapeHtml(
+                  comment.news_title ||
+                  comment.title ||
+                  "—"
+                )}
+              </strong>
+              ${comment.news_slug ? `
+                <div style="font-size:10px;color:#999;margin-top:3px;">
+                  /news/${escapeHtml(comment.news_slug)}
+                </div>
+              ` : ""}
             </td>
 
             <td class="comment-td">
@@ -11048,6 +11055,32 @@ function setText(
   if(element){
 
     element.textContent =
+      value ??
+      "";
+
+  }
+
+}
+
+
+/* =====================================================
+   UTILITY — SET HTML
+===================================================== */
+
+function setHtml(
+  id,
+  value
+){
+
+  const element =
+    document.getElementById(
+      id
+    );
+
+
+  if(element){
+
+    element.innerHTML =
       value ??
       "";
 
