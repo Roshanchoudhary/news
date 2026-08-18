@@ -82,6 +82,8 @@ export async function onRequestGet(context) {
 
   try {
 
+    await ensureNewsCategoriesTable(env);
+
     // ========================================================
     // SINGLE NEWS
     // ========================================================
@@ -246,6 +248,12 @@ export async function onRequestGet(context) {
           news.id
         );
 
+      news.category_ids =
+        await getNewsCategoryIds(
+          env,
+          news.id
+        );
+
 
       return json({
         success: true,
@@ -290,11 +298,20 @@ export async function onRequestGet(context) {
 
     if (categoryId) {
 
-      conditions.push(
-        "n.category_id = ?"
-      );
+      conditions.push(`
+        (
+          n.category_id = ?
+          OR EXISTS (
+            SELECT 1
+            FROM news_categories nc_filter
+            WHERE nc_filter.news_id = n.id
+              AND nc_filter.category_id = ?
+          )
+        )
+      `);
 
       params.push(
+        Number(categoryId),
         Number(categoryId)
       );
 
@@ -315,8 +332,15 @@ export async function onRequestGet(context) {
           FROM categories c_filter
 
           WHERE
-            c_filter.id =
-              n.category_id
+            (
+              c_filter.id = n.category_id
+              OR EXISTS (
+                SELECT 1
+                FROM news_categories nc_slug
+                WHERE nc_slug.news_id = n.id
+                  AND nc_slug.category_id = c_filter.id
+              )
+            )
 
             AND
             c_filter.slug = ?
@@ -509,6 +533,11 @@ export async function onRequestGet(context) {
       news
     );
 
+    await attachCategoryIds(
+      env,
+      news
+    );
+
 
     // --------------------------------------------------------
     // TOTAL COUNT
@@ -657,6 +686,8 @@ export async function onRequestPost(
 
   try {
 
+    await ensureNewsCategoriesTable(env);
+
     const user =
       await requireAdmin(
         request,
@@ -717,11 +748,21 @@ export async function onRequestPost(
       ).trim();
 
 
+    const rawCategoryIds =
+      Array.isArray(body.category_ids)
+        ? body.category_ids
+        : (body.category_id ? [body.category_id] : []);
+
+    const category_ids =
+      [...new Set(
+        rawCategoryIds
+          .map(value => Number(value))
+          .filter(value => Number.isInteger(value) && value > 0)
+      )];
+
     const category_id =
-      body.category_id
-        ? Number(
-            body.category_id
-          )
+      category_ids.length
+        ? category_ids[0]
         : null;
 
 
@@ -843,37 +884,34 @@ export async function onRequestPost(
 
 
     // --------------------------------------------------------
-    // CATEGORY
+    // CATEGORIES
     // --------------------------------------------------------
 
-    if (category_id) {
+    if (category_ids.length) {
 
-      const category =
+      const placeholders = category_ids.map(() => "?").join(",");
+
+      const categoryResult =
         await env.DB
           .prepare(`
             SELECT id
-
             FROM categories
-
-            WHERE id = ?
-
-            LIMIT 1
+            WHERE id IN (${placeholders})
           `)
-          .bind(category_id)
-          .first();
+          .bind(...category_ids)
+          .all();
 
+      const found = new Set(
+        (categoryResult.results || []).map(row => Number(row.id))
+      );
 
-      if (!category) {
+      const missing = category_ids.filter(id => !found.has(id));
 
-        return json(
-          {
-            success: false,
-            error:
-              "चयन कएल Category नहि भेटल"
-          },
-          400
-        );
-
+      if (missing.length) {
+        return json({
+          success: false,
+          error: "चयन कएल Category में सँ किछु नहि भेटल"
+        }, 400);
       }
 
     }
@@ -990,6 +1028,12 @@ export async function onRequestPost(
       body.tags
     );
 
+    await syncNewsCategories(
+      env,
+      newsId,
+      category_ids
+    );
+
 
     return json({
 
@@ -1057,6 +1101,8 @@ export async function onRequestPut(
 
 
   try {
+
+    await ensureNewsCategoriesTable(env);
 
     const user =
       await requireAdmin(
@@ -1176,11 +1222,21 @@ export async function onRequestPut(
       ).trim();
 
 
+    const rawCategoryIds =
+      Array.isArray(body.category_ids)
+        ? body.category_ids
+        : (body.category_id ? [body.category_id] : []);
+
+    const category_ids =
+      [...new Set(
+        rawCategoryIds
+          .map(value => Number(value))
+          .filter(value => Number.isInteger(value) && value > 0)
+      )];
+
     const category_id =
-      body.category_id
-        ? Number(
-            body.category_id
-          )
+      category_ids.length
+        ? category_ids[0]
         : null;
 
 
@@ -1295,37 +1351,34 @@ export async function onRequestPut(
 
 
     // --------------------------------------------------------
-    // CATEGORY
+    // CATEGORIES
     // --------------------------------------------------------
 
-    if (category_id) {
+    if (category_ids.length) {
 
-      const category =
+      const placeholders = category_ids.map(() => "?").join(",");
+
+      const categoryResult =
         await env.DB
           .prepare(`
             SELECT id
-
             FROM categories
-
-            WHERE id = ?
-
-            LIMIT 1
+            WHERE id IN (${placeholders})
           `)
-          .bind(category_id)
-          .first();
+          .bind(...category_ids)
+          .all();
 
+      const found = new Set(
+        (categoryResult.results || []).map(row => Number(row.id))
+      );
 
-      if (!category) {
+      const missing = category_ids.filter(id => !found.has(id));
 
-        return json(
-          {
-            success: false,
-            error:
-              "चयन कएल Category नहि भेटल"
-          },
-          400
-        );
-
+      if (missing.length) {
+        return json({
+          success: false,
+          error: "चयन कएल Category में सँ किछु नहि भेटल"
+        }, 400);
       }
 
     }
@@ -1440,6 +1493,12 @@ export async function onRequestPut(
       env,
       id,
       body.tags
+    );
+
+    await syncNewsCategories(
+      env,
+      id,
+      category_ids
     );
 
 
@@ -1867,6 +1926,136 @@ async function syncNewsTags(
 
 }
 
+
+
+// ============================================================
+// MULTI CATEGORY RELATIONS
+// ============================================================
+
+async function ensureNewsCategoriesTable(env) {
+
+  await env.DB
+    .prepare(`
+      CREATE TABLE IF NOT EXISTS news_categories (
+        news_id INTEGER NOT NULL,
+        category_id INTEGER NOT NULL,
+        PRIMARY KEY (news_id, category_id)
+      )
+    `)
+    .run();
+
+  await env.DB
+    .prepare(`
+      CREATE INDEX IF NOT EXISTS idx_news_categories_category
+      ON news_categories(category_id)
+    `)
+    .run();
+
+  // Backfill the legacy single category relation once.
+  await env.DB
+    .prepare(`
+      INSERT OR IGNORE INTO news_categories
+        (news_id, category_id)
+      SELECT id, category_id
+      FROM news
+      WHERE category_id IS NOT NULL
+    `)
+    .run();
+}
+
+
+async function syncNewsCategories(env, newsId, categoryIds) {
+
+  await ensureNewsCategoriesTable(env);
+
+  await env.DB
+    .prepare(`
+      DELETE FROM news_categories
+      WHERE news_id = ?
+    `)
+    .bind(newsId)
+    .run();
+
+  const ids = [...new Set(
+    (categoryIds || [])
+      .map(Number)
+      .filter(id => Number.isInteger(id) && id > 0)
+  )];
+
+  for (const categoryId of ids) {
+    await env.DB
+      .prepare(`
+        INSERT OR IGNORE INTO news_categories
+          (news_id, category_id)
+        VALUES (?, ?)
+      `)
+      .bind(newsId, categoryId)
+      .run();
+  }
+}
+
+
+async function getNewsCategoryIds(env, newsId) {
+
+  await ensureNewsCategoriesTable(env);
+
+  const result = await env.DB
+    .prepare(`
+      SELECT category_id
+      FROM news_categories
+      WHERE news_id = ?
+      ORDER BY category_id
+    `)
+    .bind(newsId)
+    .all();
+
+  const ids = (result.results || []).map(row => Number(row.category_id));
+
+  if (!ids.length) {
+    const legacy = await env.DB
+      .prepare(`SELECT category_id FROM news WHERE id = ?`)
+      .bind(newsId)
+      .first();
+    return legacy && legacy.category_id ? [Number(legacy.category_id)] : [];
+  }
+
+  return ids;
+}
+
+
+async function attachCategoryIds(env, newsList) {
+
+  if (!newsList.length) return;
+
+  await ensureNewsCategoriesTable(env);
+
+  const ids = newsList.map(item => Number(item.id)).filter(Number.isFinite);
+  const placeholders = ids.map(() => "?").join(",");
+
+  const result = await env.DB
+    .prepare(`
+      SELECT news_id, category_id
+      FROM news_categories
+      WHERE news_id IN (${placeholders})
+      ORDER BY news_id, category_id
+    `)
+    .bind(...ids)
+    .all();
+
+  const map = new Map(ids.map(id => [id, []]));
+
+  for (const row of (result.results || [])) {
+    if (!map.has(Number(row.news_id))) map.set(Number(row.news_id), []);
+    map.get(Number(row.news_id)).push(Number(row.category_id));
+  }
+
+  for (const item of newsList) {
+    const list = map.get(Number(item.id)) || [];
+    item.category_ids = list.length
+      ? list
+      : (item.category_id ? [Number(item.category_id)] : []);
+  }
+}
 
 
 // ============================================================
