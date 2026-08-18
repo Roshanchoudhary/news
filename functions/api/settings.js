@@ -34,7 +34,7 @@ export async function onRequestGet(context) {
     }, { headers: { 'Cache-Control': 'public, max-age=60' } });
   } catch (error) {
     console.error('SETTINGS GET ERROR:', error);
-    return Response.json({ success:false, error:error.message || 'Settings load नहि भ' सकल' }, {status:500});
+    return Response.json({ success:false, error:error.message || "Settings load नहि भ' सकल" }, {status:500});
   }
 }
 
@@ -59,10 +59,10 @@ export async function onRequestPut(context) {
     if (newsId) {
       await env.DB.prepare(`INSERT INTO news_ads(news_id,enabled,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(news_id) DO UPDATE SET enabled=excluded.enabled, updated_at=CURRENT_TIMESTAMP`).bind(newsId, body.news_ads_enabled ? 1 : 0).run();
     }
-    return Response.json({success:true,message:'Ad settings save भ' गेल'});
+    return Response.json({success:true,message:"Ad settings save भ' गेल"});
   } catch (error) {
     console.error('SETTINGS PUT ERROR:',error);
-    return Response.json({success:false,error:error.message || 'Settings save नहि भ' सकल'}, {status:500});
+    return Response.json({success:false,error:error.message || "Settings save नहि भ' सकल"}, {status:500});
   }
 }
 
