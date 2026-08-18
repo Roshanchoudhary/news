@@ -27,6 +27,101 @@
 
 
 // ============================================================
+// MULTI-CATEGORY RELATION
+// ============================================================
+
+async function ensureNewsCategoriesTable(env) {
+
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS news_categories (
+      news_id INTEGER NOT NULL,
+      category_id INTEGER NOT NULL,
+      PRIMARY KEY (news_id, category_id)
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_news_categories_news_id
+    ON news_categories(news_id)
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_news_categories_category_id
+    ON news_categories(category_id)
+  `).run();
+}
+
+
+async function getNewsCategoryIds(env, newsId) {
+
+  try {
+    await ensureNewsCategoriesTable(env);
+
+    const result = await env.DB.prepare(`
+      SELECT category_id
+      FROM news_categories
+      WHERE news_id = ?
+      ORDER BY category_id
+    `).bind(newsId).all();
+
+    return (result.results || [])
+      .map(row => Number(row.category_id))
+      .filter(Boolean);
+
+  } catch (error) {
+    console.error("GET NEWS CATEGORY IDS ERROR:", error);
+    return [];
+  }
+}
+
+
+async function syncNewsCategories(env, newsId, categoryIds, fallbackCategoryId = null) {
+
+  await ensureNewsCategoriesTable(env);
+
+  let ids = Array.isArray(categoryIds)
+    ? categoryIds.map(Number).filter(Boolean)
+    : [];
+
+  if(!ids.length && fallbackCategoryId){
+    ids = [Number(fallbackCategoryId)].filter(Boolean);
+  }
+
+  ids = [...new Set(ids)];
+
+  if(ids.length){
+    const placeholders = ids.map(() => "?").join(",");
+    const valid = await env.DB.prepare(`
+      SELECT id
+      FROM categories
+      WHERE id IN (${placeholders})
+    `).bind(...ids).all();
+
+    const validIds = new Set(
+      (valid.results || []).map(row => Number(row.id))
+    );
+
+    ids = ids.filter(id => validIds.has(id));
+  }
+
+  await env.DB.prepare(`
+    DELETE FROM news_categories
+    WHERE news_id = ?
+  `).bind(newsId).run();
+
+  for(const categoryId of ids){
+    await env.DB.prepare(`
+      INSERT OR IGNORE INTO news_categories
+        (news_id, category_id)
+      VALUES (?, ?)
+    `).bind(newsId, categoryId).run();
+  }
+
+  return ids;
+}
+
+
+// ============================================================
 // GET NEWS
 // ============================================================
 
@@ -81,8 +176,6 @@ export async function onRequestGet(context) {
 
 
   try {
-
-    await ensureNewsCategoriesTable(env);
 
     // ========================================================
     // SINGLE NEWS
@@ -185,24 +278,13 @@ export async function onRequestGet(context) {
         news.status !== "published"
       ) {
 
-        const admin =
-          await isAdmin(
-            request,
-            env
-          );
+        const viewer = await getAuthenticatedUser(request, env);
+        const allowed = viewer && viewer.status === "active" &&
+          (viewer.role === "admin" || viewer.role === "editor" ||
+           (viewer.role === "author" && Number(viewer.id) === Number(news.author_id)));
 
-
-        if (!admin) {
-
-          return json(
-            {
-              success: false,
-              error:
-                "समाचार उपलब्ध नहि अछि"
-            },
-            404
-          );
-
+        if (!allowed) {
+          return json({ success:false, error:"समाचार उपलब्ध नहि अछि" }, 404);
         }
 
       }
@@ -254,6 +336,12 @@ export async function onRequestGet(context) {
           news.id
         );
 
+      if(!news.category_ids.length && news.category_id){
+        news.category_ids = [Number(news.category_id)];
+      }
+
+      news.ads_enabled = await getNewsAdsEnabled(env, news.id);
+
 
       return json({
         success: true,
@@ -267,9 +355,26 @@ export async function onRequestGet(context) {
     // NEWS LIST
     // ========================================================
 
+    const viewer = await getAuthenticatedUser(request, env);
+    const isStaff = !!(viewer && viewer.status === "active" && ["admin","editor","author"].includes(viewer.role));
+    await ensureNewsCategoriesTable(env);
     const conditions = [];
-
     const params = [];
+
+    // Public list = published only. Staff can see drafts. Author sees own news.
+    if(!isStaff && (!status || status === "all")) {
+      conditions.push("n.status = ?");
+      params.push("published");
+    }
+
+    if(status && status !== "published" && !isStaff){
+      return json({success:false,error:"Unauthorized"},401);
+    }
+
+    if(isStaff && viewer.role === "author") {
+      conditions.push("n.author_id = ?");
+      params.push(Number(viewer.id));
+    }
 
 
     // --------------------------------------------------------
@@ -299,19 +404,14 @@ export async function onRequestGet(context) {
     if (categoryId) {
 
       conditions.push(`
-        (
-          n.category_id = ?
-          OR EXISTS (
-            SELECT 1
-            FROM news_categories nc_filter
-            WHERE nc_filter.news_id = n.id
-              AND nc_filter.category_id = ?
-          )
+        EXISTS (
+          SELECT 1 FROM news_categories nc_filter
+          WHERE nc_filter.news_id = n.id
+            AND nc_filter.category_id = ?
         )
       `);
 
       params.push(
-        Number(categoryId),
         Number(categoryId)
       );
 
@@ -328,22 +428,11 @@ export async function onRequestGet(context) {
         `
         EXISTS (
           SELECT 1
-
-          FROM categories c_filter
-
-          WHERE
-            (
-              c_filter.id = n.category_id
-              OR EXISTS (
-                SELECT 1
-                FROM news_categories nc_slug
-                WHERE nc_slug.news_id = n.id
-                  AND nc_slug.category_id = c_filter.id
-              )
-            )
-
-            AND
-            c_filter.slug = ?
+          FROM news_categories nc_filter
+          INNER JOIN categories c_filter
+            ON c_filter.id = nc_filter.category_id
+          WHERE nc_filter.news_id = n.id
+            AND c_filter.slug = ?
         )
         `
       );
@@ -533,10 +622,12 @@ export async function onRequestGet(context) {
       news
     );
 
-    await attachCategoryIds(
-      env,
-      news
-    );
+    for(const item of news){
+      item.category_ids = await getNewsCategoryIds(env, item.id);
+      if(!item.category_ids.length && item.category_id){
+        item.category_ids = [Number(item.category_id)];
+      }
+    }
 
 
     // --------------------------------------------------------
@@ -686,10 +777,8 @@ export async function onRequestPost(
 
   try {
 
-    await ensureNewsCategoriesTable(env);
-
     const user =
-      await requireAdmin(
+      await requireStaff(
         request,
         env
       );
@@ -748,22 +837,15 @@ export async function onRequestPost(
       ).trim();
 
 
-    const rawCategoryIds =
-      Array.isArray(body.category_ids)
-        ? body.category_ids
-        : (body.category_id ? [body.category_id] : []);
+    const category_id =
+      body.category_id
+        ? Number(body.category_id)
+        : null;
 
     const category_ids =
-      [...new Set(
-        rawCategoryIds
-          .map(value => Number(value))
-          .filter(value => Number.isInteger(value) && value > 0)
-      )];
-
-    const category_id =
-      category_ids.length
-        ? category_ids[0]
-        : null;
+      Array.isArray(body.category_ids)
+        ? [...new Set(body.category_ids.map(Number).filter(Boolean))]
+        : (category_id ? [category_id] : []);
 
 
     const status =
@@ -771,6 +853,14 @@ export async function onRequestPost(
       "published"
         ? "published"
         : "draft";
+
+    if(user.role === "author" && status === "published") {
+      return json({success:false,error:"Author केवल Draft save कऽ सकैत छथि। Editor/Admin publish कऽ सकैत छथि।"},403);
+    }
+
+    if(user.role === "author" && status === "published") {
+      return json({success:false,error:"Author केवल Draft save कऽ सकैत छथि। Editor/Admin publish कऽ सकैत छथि।"},403);
+    }
 
 
     const featured =
@@ -884,7 +974,7 @@ export async function onRequestPost(
 
 
     // --------------------------------------------------------
-    // CATEGORIES
+    // CATEGORY
     // --------------------------------------------------------
 
     if (category_ids.length) {
@@ -892,26 +982,24 @@ export async function onRequestPost(
       const placeholders = category_ids.map(() => "?").join(",");
 
       const categoryResult =
-        await env.DB
-          .prepare(`
-            SELECT id
-            FROM categories
-            WHERE id IN (${placeholders})
-          `)
-          .bind(...category_ids)
-          .all();
+        await env.DB.prepare(`
+          SELECT id
+          FROM categories
+          WHERE id IN (${placeholders})
+        `).bind(...category_ids).all();
 
-      const found = new Set(
+      const validIds = new Set(
         (categoryResult.results || []).map(row => Number(row.id))
       );
 
-      const missing = category_ids.filter(id => !found.has(id));
-
-      if (missing.length) {
-        return json({
-          success: false,
-          error: "चयन कएल Category में सँ किछु नहि भेटल"
-        }, 400);
+      if (category_ids.some(id => !validIds.has(id))) {
+        return json(
+          {
+            success:false,
+            error:"चयन कएल Category में सँ कोनो Category नहि भेटल"
+          },
+          400
+        );
       }
 
     }
@@ -1017,6 +1105,13 @@ export async function onRequestPost(
     const newsId =
       result.meta.last_row_id;
 
+    await syncNewsCategories(
+      env,
+      newsId,
+      category_ids,
+      category_id
+    );
+
 
     // --------------------------------------------------------
     // TAGS
@@ -1028,11 +1123,7 @@ export async function onRequestPost(
       body.tags
     );
 
-    await syncNewsCategories(
-      env,
-      newsId,
-      category_ids
-    );
+    await setNewsAdsEnabled(env, newsId, body.ads_enabled === true);
 
 
     return json({
@@ -1102,10 +1193,8 @@ export async function onRequestPut(
 
   try {
 
-    await ensureNewsCategoriesTable(env);
-
     const user =
-      await requireAdmin(
+      await requireStaff(
         request,
         env
       );
@@ -1160,6 +1249,8 @@ export async function onRequestPut(
           SELECT
             id,
             slug,
+            author_id,
+            status,
             published_at
 
           FROM news
@@ -1185,6 +1276,9 @@ export async function onRequestPut(
 
     }
 
+    if(user.role === "author" && Number(oldNews.author_id) !== Number(user.id)){
+      return json({success:false,error:"Author केवल अपन समाचार edit कऽ सकैत छथि।"},403);
+    }
 
     const title =
       String(
@@ -1222,22 +1316,15 @@ export async function onRequestPut(
       ).trim();
 
 
-    const rawCategoryIds =
-      Array.isArray(body.category_ids)
-        ? body.category_ids
-        : (body.category_id ? [body.category_id] : []);
+    const category_id =
+      body.category_id
+        ? Number(body.category_id)
+        : null;
 
     const category_ids =
-      [...new Set(
-        rawCategoryIds
-          .map(value => Number(value))
-          .filter(value => Number.isInteger(value) && value > 0)
-      )];
-
-    const category_id =
-      category_ids.length
-        ? category_ids[0]
-        : null;
+      Array.isArray(body.category_ids)
+        ? [...new Set(body.category_ids.map(Number).filter(Boolean))]
+        : (category_id ? [category_id] : []);
 
 
     const status =
@@ -1351,34 +1438,37 @@ export async function onRequestPut(
 
 
     // --------------------------------------------------------
-    // CATEGORIES
+    // CATEGORY
     // --------------------------------------------------------
 
-    if (category_ids.length) {
+    if (category_id) {
 
-      const placeholders = category_ids.map(() => "?").join(",");
-
-      const categoryResult =
+      const category =
         await env.DB
           .prepare(`
             SELECT id
+
             FROM categories
-            WHERE id IN (${placeholders})
+
+            WHERE id = ?
+
+            LIMIT 1
           `)
-          .bind(...category_ids)
-          .all();
+          .bind(category_id)
+          .first();
 
-      const found = new Set(
-        (categoryResult.results || []).map(row => Number(row.id))
-      );
 
-      const missing = category_ids.filter(id => !found.has(id));
+      if (!category) {
 
-      if (missing.length) {
-        return json({
-          success: false,
-          error: "चयन कएल Category में सँ किछु नहि भेटल"
-        }, 400);
+        return json(
+          {
+            success: false,
+            error:
+              "चयन कएल Category नहि भेटल"
+          },
+          400
+        );
+
       }
 
     }
@@ -1498,8 +1588,11 @@ export async function onRequestPut(
     await syncNewsCategories(
       env,
       id,
-      category_ids
+      category_ids,
+      category_id
     );
+
+    await setNewsAdsEnabled(env, id, body.ads_enabled === true);
 
 
     return json({
@@ -1570,7 +1663,7 @@ export async function onRequestDelete(
   try {
 
     const user =
-      await requireAdmin(
+      await requireStaff(
         request,
         env
       );
@@ -1616,7 +1709,11 @@ export async function onRequestDelete(
     }
 
 
-    // Delete tags relation first.
+    const target = await env.DB.prepare(`SELECT id,author_id,status FROM news WHERE id=? LIMIT 1`).bind(id).first();
+    if(!target){ return json({success:false,error:"समाचार नहि भेटल"},404); }
+    if(user.role === "author" && (Number(target.author_id)!==Number(user.id) || target.status === "published")){
+      return json({success:false,error:"Author केवल अपन Draft समाचार delete कऽ सकैत छथि।"},403);
+    }
 
     await env.DB
       .prepare(`
@@ -1627,6 +1724,8 @@ export async function onRequestDelete(
       .bind(id)
       .run();
 
+
+    await env.DB.prepare(`DELETE FROM news_ads WHERE news_id=?`).bind(id).run().catch(()=>{});
 
     const result =
       await env.DB
@@ -1691,6 +1790,27 @@ export async function onRequestDelete(
 }
 
 
+
+// ============================================================
+// POST ADS
+// ============================================================
+
+async function ensureNewsAdsTable(env){
+  await env.DB.prepare(`CREATE TABLE IF NOT EXISTS news_ads (news_id INTEGER PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
+}
+
+async function setNewsAdsEnabled(env, newsId, enabled){
+  await ensureNewsAdsTable(env);
+  await env.DB.prepare(`INSERT INTO news_ads(news_id,enabled,updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT(news_id) DO UPDATE SET enabled=excluded.enabled, updated_at=CURRENT_TIMESTAMP`).bind(newsId,enabled?1:0).run();
+}
+
+async function getNewsAdsEnabled(env, newsId){
+  try{
+    await ensureNewsAdsTable(env);
+    const row=await env.DB.prepare(`SELECT enabled FROM news_ads WHERE news_id=? LIMIT 1`).bind(newsId).first();
+    return Number(row?.enabled||0)===1;
+  }catch{return false;}
+}
 
 // ============================================================
 // NEWS <-> TAGS
@@ -1926,136 +2046,6 @@ async function syncNewsTags(
 
 }
 
-
-
-// ============================================================
-// MULTI CATEGORY RELATIONS
-// ============================================================
-
-async function ensureNewsCategoriesTable(env) {
-
-  await env.DB
-    .prepare(`
-      CREATE TABLE IF NOT EXISTS news_categories (
-        news_id INTEGER NOT NULL,
-        category_id INTEGER NOT NULL,
-        PRIMARY KEY (news_id, category_id)
-      )
-    `)
-    .run();
-
-  await env.DB
-    .prepare(`
-      CREATE INDEX IF NOT EXISTS idx_news_categories_category
-      ON news_categories(category_id)
-    `)
-    .run();
-
-  // Backfill the legacy single category relation once.
-  await env.DB
-    .prepare(`
-      INSERT OR IGNORE INTO news_categories
-        (news_id, category_id)
-      SELECT id, category_id
-      FROM news
-      WHERE category_id IS NOT NULL
-    `)
-    .run();
-}
-
-
-async function syncNewsCategories(env, newsId, categoryIds) {
-
-  await ensureNewsCategoriesTable(env);
-
-  await env.DB
-    .prepare(`
-      DELETE FROM news_categories
-      WHERE news_id = ?
-    `)
-    .bind(newsId)
-    .run();
-
-  const ids = [...new Set(
-    (categoryIds || [])
-      .map(Number)
-      .filter(id => Number.isInteger(id) && id > 0)
-  )];
-
-  for (const categoryId of ids) {
-    await env.DB
-      .prepare(`
-        INSERT OR IGNORE INTO news_categories
-          (news_id, category_id)
-        VALUES (?, ?)
-      `)
-      .bind(newsId, categoryId)
-      .run();
-  }
-}
-
-
-async function getNewsCategoryIds(env, newsId) {
-
-  await ensureNewsCategoriesTable(env);
-
-  const result = await env.DB
-    .prepare(`
-      SELECT category_id
-      FROM news_categories
-      WHERE news_id = ?
-      ORDER BY category_id
-    `)
-    .bind(newsId)
-    .all();
-
-  const ids = (result.results || []).map(row => Number(row.category_id));
-
-  if (!ids.length) {
-    const legacy = await env.DB
-      .prepare(`SELECT category_id FROM news WHERE id = ?`)
-      .bind(newsId)
-      .first();
-    return legacy && legacy.category_id ? [Number(legacy.category_id)] : [];
-  }
-
-  return ids;
-}
-
-
-async function attachCategoryIds(env, newsList) {
-
-  if (!newsList.length) return;
-
-  await ensureNewsCategoriesTable(env);
-
-  const ids = newsList.map(item => Number(item.id)).filter(Number.isFinite);
-  const placeholders = ids.map(() => "?").join(",");
-
-  const result = await env.DB
-    .prepare(`
-      SELECT news_id, category_id
-      FROM news_categories
-      WHERE news_id IN (${placeholders})
-      ORDER BY news_id, category_id
-    `)
-    .bind(...ids)
-    .all();
-
-  const map = new Map(ids.map(id => [id, []]));
-
-  for (const row of (result.results || [])) {
-    if (!map.has(Number(row.news_id))) map.set(Number(row.news_id), []);
-    map.get(Number(row.news_id)).push(Number(row.category_id));
-  }
-
-  for (const item of newsList) {
-    const list = map.get(Number(item.id)) || [];
-    item.category_ids = list.length
-      ? list
-      : (item.category_id ? [Number(item.category_id)] : []);
-  }
-}
 
 
 // ============================================================
@@ -2357,33 +2347,16 @@ function tagDisplayName(
 // ADMIN AUTH
 // ============================================================
 
-async function requireAdmin(
-  request,
-  env
-) {
-
-  const user =
-    await getAuthenticatedUser(
-      request,
-      env
-    );
-
-
-  if (
-    !user ||
-    user.status !==
-      "active" ||
-    user.role !==
-      "admin"
-  ) {
-
-    return null;
-
-  }
-
-
+async function requireStaff(request, env) {
+  const user = await getAuthenticatedUser(request, env);
+  if(!user || user.status !== "active" || !["admin","editor","author"].includes(user.role)) return null;
   return user;
+}
 
+async function requireAdmin(request, env) {
+  const user = await getAuthenticatedUser(request, env);
+  if(!user || user.status !== "active" || user.role !== "admin") return null;
+  return user;
 }
 
 

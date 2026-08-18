@@ -75,7 +75,7 @@ export async function onRequestGet(context) {
     ) {
 
       adminUser =
-        await requireAdmin(
+        await requireModerator(
           request,
           env
         );
@@ -719,7 +719,7 @@ export async function onRequestPut(
     // ========================================================
 
     const user =
-      await requireAdmin(
+      await requireModerator(
         request,
         env
       );
@@ -905,7 +905,7 @@ export async function onRequestDelete(
   try {
 
     const user =
-      await requireAdmin(
+      await requireModerator(
         request,
         env
       );
@@ -1028,7 +1028,7 @@ export async function onRequestDelete(
 // ADMIN AUTH
 // ============================================================
 
-async function requireAdmin(
+async function requireModerator(
   request,
   env
 ) {
