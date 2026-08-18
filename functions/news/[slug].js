@@ -104,6 +104,13 @@ export async function onRequest(context) {
         "मैथिली समाचार"
       );
 
+    const shareDescription =
+      escapeHtml(
+        news.summary ||
+        news.seo_description ||
+        "मैथिली समाचार"
+      );
+
 
     const image =
       news.image_url
@@ -156,6 +163,55 @@ export async function onRequest(context) {
         : "";
 
 
+    const adConfig = await getAdConfig(env, news.id);
+
+    const adsScript =
+      adConfig.enabled && adConfig.publisherId
+        ? `
+          <script async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${escapeHtml(adConfig.publisherId)}"
+            crossorigin="anonymous"></script>
+        `
+        : "";
+
+    const adBlock =
+      adConfig.enabled && adConfig.publisherId && adConfig.displaySlot
+        ? `
+          <div class="article-ad" aria-label="Advertisement">
+            <ins class="adsbygoogle" style="display:block"
+              data-ad-client="${escapeHtml(adConfig.publisherId)}"
+              data-ad-slot="${escapeHtml(adConfig.displaySlot)}"
+              data-ad-format="auto"
+              data-full-width-responsive="true"></ins>
+          </div>
+        `
+        : "";
+
+    const shareSummary = String(
+      news.summary || news.seo_description || "मैथिली समाचार"
+    ).trim();
+
+    const shareText =
+      `${String(news.title || "मैथिली समाचार").trim()}\n\n${shareSummary}\n\n${canonical}`;
+
+    const encodedShareText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(canonical);
+
+    const shareHtml = `
+      <section class="share-box">
+        <div class="share-title">🔗 शेयर करू</div>
+        <div class="share-buttons">
+          <a class="share-btn whatsapp" href="https://api.whatsapp.com/send?text=${encodedShareText}" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+          <a class="share-btn facebook" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener noreferrer">Facebook</a>
+          <a class="share-btn x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(String(news.title || "मैथिली समाचार") + "\n\n" + shareSummary)}&url=${encodedUrl}" target="_blank" rel="noopener noreferrer">X</a>
+          <a class="share-btn telegram" href="https://t.me/share/url?url=${encodedUrl}&text=${encodedShareText}" target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a class="share-btn linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <button class="share-btn copy" type="button" onclick="copyNewsLink()">🔗 Copy Link</button>
+        </div>
+      </section>
+    `;
+
+
     // =====================================================
     // PAGE HTML
     // =====================================================
@@ -194,7 +250,7 @@ export async function onRequest(context) {
 
 <meta
   property="og:description"
-  content="${description}"
+  content="${shareDescription}"
 >
 
 <meta
@@ -208,6 +264,8 @@ export async function onRequest(context) {
 >
 
 ${image}
+
+${adsScript}
 
 
 <style>
@@ -517,6 +575,22 @@ h1 {
 
 
 /* =====================================================
+   SHARE + ADS
+===================================================== */
+.share-box{margin-top:30px;padding:20px 0 0;border-top:1px solid #eee;}
+.share-title{font-size:16px;font-weight:800;margin-bottom:12px;}
+.share-buttons{display:flex;flex-wrap:wrap;gap:8px;}
+.share-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 13px;border:0;border-radius:7px;color:#fff;font-size:12px;font-weight:800;cursor:pointer;text-decoration:none;}
+.share-btn.whatsapp{background:#25D366;}
+.share-btn.facebook{background:#1877F2;}
+.share-btn.x{background:#111;}
+.share-btn.telegram{background:#229ED9;}
+.share-btn.linkedin{background:#0A66C2;}
+.share-btn.copy{background:#555;}
+.article-ad{margin:25px 0;padding:8px 0;text-align:center;overflow:hidden;}
+.article-inline-content-image{display:block;width:auto;max-width:100%;height:auto;margin:24px auto;border-radius:10px;}
+
+/* =====================================================
    MOBILE
 ===================================================== */
 
@@ -585,40 +659,6 @@ h1 {
   font-size:12px;
 }
 
-
-.social-share{
-  margin-top:30px;
-  padding:20px 0;
-  border-top:1px solid #eee;
-}
-.social-share-title{
-  font-size:16px;
-  font-weight:800;
-  margin-bottom:12px;
-}
-.social-share-buttons{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-}
-.share-btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  min-height:38px;
-  padding:8px 13px;
-  border:1px solid #ddd;
-  border-radius:7px;
-  background:#fff;
-  color:#333;
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  text-decoration:none;
-}
-.share-btn:hover{
-  background:#f5f5f5;
-}
 </style>
 
 </head>
@@ -721,95 +761,13 @@ ${imageHtml}
 
 ${summary}
 
+${adBlock}
 
 <div class="content">
 ${content}
 </div>
 
-
-<!-- =====================================================
-     SOCIAL SHARE
-===================================================== -->
-
-<div class="social-share">
-
-  <div class="social-share-title">
-    📤 शेयर करू
-  </div>
-
-  <div class="social-share-buttons">
-
-    <a
-      class="share-btn whatsapp"
-      href="https://wa.me/?text=${encodeURIComponent(news.title + "\n" + canonical)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      WhatsApp
-    </a>
-
-    <a
-      class="share-btn facebook"
-      href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonical)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Facebook
-    </a>
-
-    <a
-      class="share-btn xshare"
-      href="https://twitter.com/intent/tweet?text=${encodeURIComponent(news.title)}&url=${encodeURIComponent(canonical)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      X
-    </a>
-
-    <a
-      class="share-btn telegram"
-      href="https://t.me/share/url?url=${encodeURIComponent(canonical)}&text=${encodeURIComponent(news.title)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      Telegram
-    </a>
-
-    <a
-      class="share-btn linkedin"
-      href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonical)}"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      LinkedIn
-    </a>
-
-    <button
-      type="button"
-      class="share-btn copylink"
-      onclick="copyNewsLink()"
-    >
-      🔗 Copy Link
-    </button>
-
-  </div>
-
-</div>
-
-<script>
-function copyNewsLink(){
-  const url = ${JSON.stringify(canonical)};
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(function(){
-      alert("News link copy भ' गेल।");
-    }).catch(function(){
-      window.prompt("News URL copy करू:", url);
-    });
-  }else{
-    window.prompt("News URL copy करू:", url);
-  }
-}
-</script>
+${shareHtml}
 
 <div class="back">
 
@@ -990,6 +948,39 @@ function copyNewsLink(){
 
 const NEWS_ID =
   ${Number(news.id)};
+
+
+function copyNewsLink(){
+  const url=window.location.href;
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(url).then(()=>alert("News link copy भ' गेल।")).catch(()=>fallbackCopy(url));
+  }else{ fallbackCopy(url); }
+}
+function fallbackCopy(text){
+  const input=document.createElement("input");
+  input.value=text; document.body.appendChild(input); input.select();
+  try{document.execCommand("copy");alert("News link copy भ' गेल।");}finally{input.remove();}
+}
+
+(function trackNewsView(){
+  try{
+    let visitorId=localStorage.getItem("mn_visitor_id");
+    if(!visitorId){
+      visitorId=(crypto.randomUUID ? crypto.randomUUID() : "v-"+Date.now()+"-"+Math.random().toString(36).slice(2));
+      localStorage.setItem("mn_visitor_id",visitorId);
+    }
+    const body=JSON.stringify({visitor_id:visitorId,news_id:NEWS_ID,path:location.pathname,referrer:document.referrer||"",language:navigator.language||"",screen:(screen.width||0)+"x"+(screen.height||0)});
+    if(navigator.sendBeacon){navigator.sendBeacon("/api/analytics",new Blob([body],{type:"application/json"}));}
+    else{fetch("/api/analytics",{method:"POST",headers:{"Content-Type":"application/json"},body,keepalive:true});}
+  }catch(e){}
+})();
+
+(function initAds(){
+  const ads=document.querySelectorAll(".adsbygoogle");
+  if(!ads.length)return;
+  window.adsbygoogle=window.adsbygoogle||[];
+  ads.forEach(()=>{try{window.adsbygoogle.push({});}catch(e){}});
+})();
 
 
 /* =====================================================
@@ -1490,99 +1481,57 @@ loadComments();
    FORMAT CONTENT
 ====================================================== */
 
+async function getAdConfig(env, newsId) {
+  try {
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS site_settings (key TEXT PRIMARY KEY, value TEXT, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS news_ads (news_id INTEGER PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
+    const rows=await env.DB.prepare(`SELECT key,value FROM site_settings WHERE key IN ('ads_enabled','adsense_publisher_id','adsense_display_slot','adsense_inarticle_slot','adsense_auto_ads')`).all();
+    const settings={}; for(const r of (rows.results||[]))settings[r.key]=r.value;
+    const post=await env.DB.prepare(`SELECT enabled FROM news_ads WHERE news_id=? LIMIT 1`).bind(newsId).first();
+    return {enabled:settings.ads_enabled==='1' && Number(post?.enabled||0)===1,publisherId:settings.adsense_publisher_id||'',displaySlot:settings.adsense_display_slot||'',inArticleSlot:settings.adsense_inarticle_slot||'',autoAds:settings.adsense_auto_ads==='1'};
+  }catch(error){console.error('AD CONFIG ERROR:',error);return {enabled:false,publisherId:'',displaySlot:'',inArticleSlot:'',autoAds:false};}
+}
+
 function formatContent(text) {
+  let value=String(text||"").trim();
+  if(!value)return "";
 
-  const value = String(text || "").trim();
+  value=value
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,"")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,"")
+    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi,"")
+    .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi,"")
+    .replace(/<div>\s*<br\s*\/?>\s*<\/div>/gi,"\n\n")
+    .replace(/<div>\s*<\/div>/gi,"\n\n")
+    .replace(/<div>([\s\S]*?)<\/div>/gi,"<p>$1</p>");
 
-  if (!value) {
-    return "";
+  const placeholders=[];
+  value=value.replace(/<\/?(p|br|strong|b|em|i|u|ul|ol|li|blockquote|a|img|h2|h3)(\s[^>]*)?>/gi,tag=>{
+    const i=placeholders.length;
+    if(/^<img\b/i.test(tag)){
+      const src=(tag.match(/\bsrc\s*=\s*["']([^"']+)["']/i)||[])[1];
+      if(!src || !/^https?:\/\//i.test(src))return "";
+      const alt=(tag.match(/\balt\s*=\s*["']([^"']*)["']/i)||[])[1]||"चित्र";
+      placeholders.push(`<img class="article-inline-content-image" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" referrerpolicy="no-referrer">`);
+      return `___HTML_${i}___`;
+    }
+    if(/^<a\b/i.test(tag)){
+      if(/^<\/a/i.test(tag)){placeholders.push("</a>");return `___HTML_${i}___`;}
+      const href=(tag.match(/\bhref\s*=\s*["']([^"']+)["']/i)||[])[1];
+      if(!href || !/^(https?:\/\/|mailto:|\/)/i.test(href))return "";
+      placeholders.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">`);
+      return `___HTML_${i}___`;
+    }
+    placeholders.push(tag);
+    return `___HTML_${i}___`;
+  });
+
+  value=escapeHtml(value);
+  placeholders.forEach((html,i)=>{value=value.replace(`___HTML_${i}___`,html);});
+  if(!/<p\b|<h2\b|<h3\b|<ul\b|<ol\b/i.test(value)){
+    value=value.split(/\n\s*\n/).map(p=>p.trim()?`<p>${p.trim().replace(/\n/g,"<br>")}</p>`:"").join("");
   }
-
-  const imagePattern = /\{\{image:(https?:\/\/[^|}]+)(?:\|([^}]*))?\}\}/g;
-
-  return value
-    .split(/\n\s*\n/)
-    .map(function (paragraph) {
-
-      const raw = paragraph.trim();
-
-      if (!raw) {
-        return "";
-      }
-
-      imagePattern.lastIndex = 0;
-
-      // A paragraph containing only an image marker.
-      if (
-        imagePattern.test(raw) &&
-        raw.replace(imagePattern, "").trim() === ""
-      ) {
-
-        imagePattern.lastIndex = 0;
-
-        return raw.replace(
-          imagePattern,
-          function (_, url, alt) {
-
-            const safeUrl =
-              escapeHtml(url);
-
-            const safeAlt =
-              escapeHtml(
-                alt || "चित्र"
-              );
-
-            return `
-              <figure class="article-inline-image">
-                <img
-                  src="${safeUrl}"
-                  alt="${safeAlt}"
-                  loading="lazy"
-                  referrerpolicy="no-referrer"
-                >
-                ${alt ? `<figcaption>${safeAlt}</figcaption>` : ""}
-              </figure>
-            `;
-
-          }
-        );
-      }
-
-      // Normal text paragraph. Image markers inside text are preserved.
-      const safe =
-        escapeHtml(raw)
-          .replace(
-            /\{\{image:(https?:\/\/[^|}]+)(?:\|([^}]*))?\}\}/g,
-            function (_, url, alt) {
-
-              const safeUrl =
-                escapeHtml(url);
-
-              const safeAlt =
-                escapeHtml(
-                  alt || "चित्र"
-                );
-
-              return `
-                <figure class="article-inline-image">
-                  <img
-                    src="${safeUrl}"
-                    alt="${safeAlt}"
-                    loading="lazy"
-                    referrerpolicy="no-referrer"
-                  >
-                  ${alt ? `<figcaption>${safeAlt}</figcaption>` : ""}
-                </figure>
-              `;
-
-            }
-          );
-
-      return `<p>${safe.replace(/\n/g, "<br>")}</p>`;
-
-    })
-    .join("");
-
+  return value;
 }
 
 
