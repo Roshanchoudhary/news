@@ -45,6 +45,14 @@ export async function onRequestGet(context) {
         "news_id"
       );
 
+    const newsSlug =
+      url.searchParams.get(
+        "slug"
+      ) ||
+      url.searchParams.get(
+        "news_slug"
+      );
+
 
     const status =
       url.searchParams.get(
@@ -69,7 +77,7 @@ export async function onRequestGet(context) {
 
 
     if (
-      !newsId ||
+      (!newsId && !newsSlug) ||
       status ||
       adminParam === "1"
     ) {
@@ -102,10 +110,12 @@ export async function onRequestGet(context) {
           c.comment,
           c.status,
           c.created_at,
-          n.title AS news_title
+          n.title AS news_title,
+          n.slug AS news_slug
         FROM comments c
         LEFT JOIN news n
-          ON n.id = c.news_id
+          ON CAST(n.id AS TEXT) = CAST(c.news_id AS TEXT)
+          OR n.slug = CAST(c.news_id AS TEXT)
       `;
 
 
@@ -114,39 +124,39 @@ export async function onRequestGet(context) {
       const conditions = [];
 
 
-      if (newsId) {
+      if (newsId || newsSlug) {
 
-        const numericNewsId =
-          Number(newsId);
+        if (newsId) {
 
+          const numericNewsId =
+            Number(newsId);
 
-        if (
-          !Number.isInteger(
-            numericNewsId
-          ) ||
-          numericNewsId <= 0
-        ) {
+          if (
+            !Number.isInteger(numericNewsId) ||
+            numericNewsId <= 0
+          ) {
+            return json(
+              {
+                success: false,
+                error: "News ID सही नहि अछि"
+              },
+              400
+            );
+          }
 
-          return json(
-            {
-              success: false,
-              error:
-                "News ID सही नहि अछि"
-            },
-            400
+          conditions.push(
+            "CAST(c.news_id AS TEXT) = ?"
           );
+          params.push(String(numericNewsId));
+
+        } else {
+
+          conditions.push(
+            "(n.slug = ? OR CAST(c.news_id AS TEXT) = ?)"
+          );
+          params.push(String(newsSlug), String(newsSlug));
 
         }
-
-
-        conditions.push(
-          "c.news_id = ?"
-        );
-
-
-        params.push(
-          numericNewsId
-        );
 
       }
 
@@ -246,13 +256,12 @@ export async function onRequestGet(context) {
      */
 
 
-    if (!newsId) {
+    if (!newsId && !newsSlug) {
 
       return json(
         {
           success: false,
-          error:
-            "News ID जरूरी अछि"
+          error: "News ID अथवा News URL जरूरी अछि"
         },
         400
       );
@@ -260,26 +269,30 @@ export async function onRequestGet(context) {
     }
 
 
-    const numericNewsId =
-      Number(newsId);
+    let numericNewsId = null;
 
+    if (newsId) {
+      numericNewsId = Number(newsId);
+      if (!Number.isInteger(numericNewsId) || numericNewsId <= 0) {
+        return json(
+          { success: false, error: "News ID सही नहि अछि" },
+          400
+        );
+      }
+    } else {
+      const article = await env.DB
+        .prepare(`SELECT id FROM news WHERE slug = ? LIMIT 1`)
+        .bind(String(newsSlug))
+        .first();
 
-    if (
-      !Number.isInteger(
-        numericNewsId
-      ) ||
-      numericNewsId <= 0
-    ) {
+      if (!article) {
+        return json(
+          { success: false, error: "समाचार नहि भेटल" },
+          404
+        );
+      }
 
-      return json(
-        {
-          success: false,
-          error:
-            "News ID सही नहि अछि"
-        },
-        400
-      );
-
+      numericNewsId = Number(article.id);
     }
 
 
@@ -287,22 +300,20 @@ export async function onRequestGet(context) {
       await env.DB
         .prepare(`
           SELECT
-            id,
-            news_id,
-            name,
-            comment,
-            created_at
-          FROM comments
+            c.id,
+            c.news_id,
+            c.name,
+            c.comment,
+            c.created_at
+          FROM comments c
           WHERE
-            news_id = ?
-            AND status = 'approved'
+            CAST(c.news_id AS TEXT) = ?
+            AND c.status = 'approved'
           ORDER BY
-            created_at ASC,
-            id ASC
+            c.created_at ASC,
+            c.id ASC
         `)
-        .bind(
-          numericNewsId
-        )
+        .bind(String(numericNewsId))
         .all();
 
 
@@ -310,11 +321,11 @@ export async function onRequestGet(context) {
 
       success: true,
 
-      comments:
-        result.results || []
+      news_id: numericNewsId,
+
+      comments: result.results || []
 
     });
-
 
   } catch (error) {
 
@@ -360,10 +371,17 @@ export async function onRequestPost(
       await request.json();
 
 
-    const newsId =
+    let newsId =
       Number(
         body.news_id
       );
+
+    const newsSlug =
+      String(
+        body.news_slug ||
+        body.slug ||
+        ""
+      ).trim();
 
 
     const name =
@@ -397,20 +415,36 @@ export async function onRequestPost(
     // ========================================================
 
     if (
-      !Number.isInteger(
-        newsId
-      ) ||
-      newsId <= 0
+      (!Number.isInteger(newsId) || newsId <= 0) &&
+      !newsSlug
     ) {
 
       return json(
         {
           success: false,
-          error:
-            "News ID सही नहि अछि"
+          error: "News ID अथवा News URL जरूरी अछि"
         },
         400
       );
+
+    }
+
+
+    if ((!Number.isInteger(newsId) || newsId <= 0) && newsSlug) {
+
+      const article = await env.DB
+        .prepare(`SELECT id FROM news WHERE slug = ? LIMIT 1`)
+        .bind(newsSlug)
+        .first();
+
+      if (!article) {
+        return json(
+          { success: false, error: "समाचार नहि भेटल" },
+          404
+        );
+      }
+
+      newsId = Number(article.id);
 
     }
 
