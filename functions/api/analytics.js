@@ -87,24 +87,24 @@ export async function onRequestGet(context) {
     const newsId = Number(url.searchParams.get('news_id') || 0) || null;
     const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 19).replace('T', ' ');
 
-    const where = ['created_at >= ?'];
+    const where = ['a.created_at >= ?'];
     const params = [since];
     if (newsId) { where.push('news_id = ?'); params.push(newsId); }
     const w = where.join(' AND ');
 
     const [summary, posts, countries, cities, devices, browsers, daily] = await Promise.all([
-      env.DB.prepare(`SELECT COUNT(*) AS pageviews, COUNT(DISTINCT visitor_id) AS unique_visitors FROM analytics_events WHERE ${w}`).bind(...params).first(),
+      env.DB.prepare(`SELECT COUNT(*) AS pageviews, COUNT(DISTINCT visitor_id) AS unique_visitors FROM analytics_events a WHERE ${w}`).bind(...params).first(),
       env.DB.prepare(`
         SELECT a.news_id, COALESCE(n.title, 'Homepage / Other') AS title,
                COUNT(*) AS views, COUNT(DISTINCT a.visitor_id) AS unique_visitors
         FROM analytics_events a LEFT JOIN news n ON n.id = a.news_id
         WHERE ${w} GROUP BY a.news_id, n.title ORDER BY unique_visitors DESC, views DESC LIMIT 100
       `).bind(...params).all(),
-      env.DB.prepare(`SELECT COALESCE(country,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events WHERE ${w} GROUP BY country ORDER BY visitors DESC LIMIT 30`).bind(...params).all(),
-      env.DB.prepare(`SELECT COALESCE(city,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events WHERE ${w} GROUP BY city ORDER BY visitors DESC LIMIT 30`).bind(...params).all(),
-      env.DB.prepare(`SELECT COALESCE(device,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events WHERE ${w} GROUP BY device ORDER BY visitors DESC`).bind(...params).all(),
-      env.DB.prepare(`SELECT COALESCE(browser,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events WHERE ${w} GROUP BY browser ORDER BY visitors DESC LIMIT 20`).bind(...params).all(),
-      env.DB.prepare(`SELECT substr(created_at,1,10) AS day, COUNT(*) AS views, COUNT(DISTINCT visitor_id) AS visitors FROM analytics_events WHERE ${w} GROUP BY day ORDER BY day DESC LIMIT 60`).bind(...params).all()
+      env.DB.prepare(`SELECT COALESCE(country,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events a WHERE ${w} GROUP BY country ORDER BY visitors DESC LIMIT 30`).bind(...params).all(),
+      env.DB.prepare(`SELECT COALESCE(city,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events a WHERE ${w} GROUP BY city ORDER BY visitors DESC LIMIT 30`).bind(...params).all(),
+      env.DB.prepare(`SELECT COALESCE(device,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events a WHERE ${w} GROUP BY device ORDER BY visitors DESC`).bind(...params).all(),
+      env.DB.prepare(`SELECT COALESCE(browser,'Unknown') AS name, COUNT(DISTINCT visitor_id) AS visitors, COUNT(*) AS views FROM analytics_events a WHERE ${w} GROUP BY browser ORDER BY visitors DESC LIMIT 20`).bind(...params).all(),
+      env.DB.prepare(`SELECT substr(a.created_at,1,10) AS day, COUNT(*) AS views, COUNT(DISTINCT visitor_id) AS visitors FROM analytics_events a WHERE ${w} GROUP BY day ORDER BY day DESC LIMIT 60`).bind(...params).all()
     ]);
 
     return Response.json({
