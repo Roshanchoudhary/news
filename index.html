@@ -806,10 +806,10 @@ footer p{
     font-size:14px;
   }
 }
-</style><link rel="stylesheet" href="/assets/universal-shell.css"></head>
+</style></head>
 
 
-<body><span id="year" hidden></span>
+<body>
 
 
 <!-- =====================================================
@@ -835,7 +835,12 @@ footer p{
       </div>
 
 
-      
+      <a
+        href="/admin.html"
+        class="admin-link"
+      >
+        Admin Login
+      </a>
 
     </div>
 
@@ -1035,8 +1040,10 @@ document.addEventListener(
 
 async function start(){
 
-  const yearEl=document.getElementById("year");
-  if(yearEl) yearEl.textContent=new Date().getFullYear();
+  document
+    .getElementById("year")
+    .textContent =
+    new Date().getFullYear();
 
 
   document
@@ -1053,10 +1060,9 @@ async function start(){
     );
 
 
-  await Promise.all([
-    loadCategories(),
-    loadNews()
-  ]);
+  await loadCategories();
+
+  await loadNews();
 
 }
 
@@ -2250,6 +2256,6 @@ document.addEventListener("DOMContentLoaded",async()=>{
     }
   }catch(e){console.warn("footer settings",e)}
 });
-</script><script src="/assets/universal-shell.js"></script></body>
+</script></body>
 
 </html>
