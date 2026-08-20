@@ -762,6 +762,318 @@ export async function onRequestGet(context) {
 
 
 // ============================================================
+// BULK NEWS IMPORT
+// ============================================================
+
+async function bulkSaveNews(context, user) {
+
+  const { request, env } = context;
+
+  try {
+
+    const body = await request.json();
+    const rows = Array.isArray(body.rows) ? body.rows : [];
+
+    if (!rows.length) {
+      return json({
+        success: false,
+        error: "CSV में कोनो news row नहि भेटल"
+      }, 400);
+    }
+
+    if (rows.length > 500) {
+      return json({
+        success: false,
+        error: "एक बेर में अधिकतम 500 news upload करू"
+      }, 400);
+    }
+
+    // --------------------------------------------------------
+    // CATEGORY MAP
+    // CSV में category name, slug अथवा numeric id देल जा सकैत अछि।
+    // --------------------------------------------------------
+
+    const categoryResult = await env.DB.prepare(`
+      SELECT id, name, slug
+      FROM categories
+    `).all();
+
+    const categoryMap = new Map();
+
+    for (const category of (categoryResult.results || [])) {
+
+      categoryMap.set(
+        String(category.id).trim().toLowerCase(),
+        Number(category.id)
+      );
+
+      categoryMap.set(
+        String(category.name || '').trim().toLowerCase(),
+        Number(category.id)
+      );
+
+      categoryMap.set(
+        String(category.slug || '').trim().toLowerCase(),
+        Number(category.id)
+      );
+
+    }
+
+
+    const errors = [];
+    const prepared = [];
+    const uploadSlugs = new Set();
+
+
+    // --------------------------------------------------------
+    // VALIDATE EACH ROW
+    // --------------------------------------------------------
+
+    for (let index = 0; index < rows.length; index++) {
+
+      const row = rows[index] || {};
+      const rowNumber = Number(row._row) || (index + 2);
+
+      const title = String(row.title || '').trim();
+      const content = String(row.content || '').trim();
+
+      if (!title || !content) {
+        errors.push({
+          row: rowNumber,
+          error: "title आ content जरूरी अछि"
+        });
+        continue;
+      }
+
+
+      // ------------------------------------------------------
+      // SLUG
+      // ------------------------------------------------------
+
+      let slug = String(row.slug || '').trim().toLowerCase();
+
+      if (!slug) {
+        slug = slugify(title);
+      }
+
+      if (!slug || !isValidSlug(slug)) {
+        errors.push({
+          row: rowNumber,
+          error: "slug केवल English अक्षर, number आ hyphen में होयबाक चाही"
+        });
+        continue;
+      }
+
+
+      // Same upload में duplicate slug होय त suffix जोड़ू।
+      const originalSlug = slug;
+      let suffix = 2;
+
+      while (uploadSlugs.has(slug)) {
+        slug = `${originalSlug}-${suffix++}`;
+      }
+
+      uploadSlugs.add(slug);
+
+
+      // ------------------------------------------------------
+      // STATUS
+      // ------------------------------------------------------
+
+      let status = String(row.status || 'draft').trim().toLowerCase();
+
+      if (status !== 'published' && status !== 'draft') {
+        errors.push({
+          row: rowNumber,
+          error: "status केवल published अथवा draft होयबाक चाही"
+        });
+        continue;
+      }
+
+      // Existing system में author publish नहि कऽ सकैत छथि।
+      if (user.role === 'author' && status === 'published') {
+        status = 'draft';
+      }
+
+
+      // ------------------------------------------------------
+      // CATEGORY
+      // ------------------------------------------------------
+
+      const categoryValue = String(
+        row.category || row.category_slug || row.category_id || ''
+      ).trim().toLowerCase();
+
+      let categoryId = null;
+
+      if (categoryValue) {
+
+        categoryId = categoryMap.get(categoryValue) || null;
+
+        if (!categoryId) {
+          errors.push({
+            row: rowNumber,
+            error: `Category नहि भेटल: ${row.category}`
+          });
+          continue;
+        }
+
+      }
+
+
+      // ------------------------------------------------------
+      // FEATURED
+      // ------------------------------------------------------
+
+      const featuredValue = String(row.featured || '')
+        .trim()
+        .toLowerCase();
+
+      const featured = [
+        '1', 'true', 'yes', 'y', 'on', 'हाँ', 'हां'
+      ].includes(featuredValue) ? 1 : 0;
+
+
+      prepared.push({
+        row: rowNumber,
+        title,
+        slug,
+        summary: String(row.summary || '').trim(),
+        content,
+        imageUrl: String(row.image_url || row.image || '').trim(),
+        categoryId,
+        status,
+        featured,
+        seoTitle: String(row.seo_title || '').trim(),
+        seoDescription: String(row.seo_description || '').trim()
+      });
+
+    }
+
+
+    // --------------------------------------------------------
+    // CHECK EXISTING SLUGS
+    // --------------------------------------------------------
+
+    for (let index = prepared.length - 1; index >= 0; index--) {
+
+      const item = prepared[index];
+
+      const existing = await env.DB.prepare(`
+        SELECT id
+        FROM news
+        WHERE slug = ?
+        LIMIT 1
+      `).bind(item.slug).first();
+
+      if (existing) {
+        errors.push({
+          row: item.row,
+          error: `ई News URL पहिले सँ मौजूद अछि: ${item.slug}`
+        });
+        prepared.splice(index, 1);
+      }
+
+    }
+
+
+    // --------------------------------------------------------
+    // INSERT ONE BY ONE
+    // एक row fail भेल त बाकी news upload होयत।
+    // --------------------------------------------------------
+
+    let imported = 0;
+
+    for (const item of prepared) {
+
+      try {
+
+        const publishedAt = item.status === 'published'
+          ? new Date().toISOString()
+          : null;
+
+        const result = await env.DB.prepare(`
+          INSERT INTO news (
+            title,
+            slug,
+            summary,
+            content,
+            image_url,
+            category_id,
+            author_id,
+            status,
+            featured,
+            views,
+            seo_title,
+            seo_description,
+            published_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+        `).bind(
+          item.title,
+          item.slug,
+          item.summary || null,
+          item.content,
+          item.imageUrl || null,
+          item.categoryId,
+          user.id,
+          item.status,
+          item.featured,
+          item.seoTitle || null,
+          item.seoDescription || null,
+          publishedAt
+        ).run();
+
+
+        const newsId = result.meta.last_row_id;
+
+        await syncNewsCategories(
+          env,
+          newsId,
+          item.categoryId ? [item.categoryId] : [],
+          item.categoryId
+        );
+
+        // Bulk upload में ads default रूप सँ disabled रहत।
+        await setNewsAdsEnabled(env, newsId, false);
+
+        imported++;
+
+      } catch (error) {
+
+        errors.push({
+          row: item.row,
+          error: error.message || 'Database error'
+        });
+
+      }
+
+    }
+
+
+    return json({
+      success: true,
+      total: rows.length,
+      imported,
+      failed: errors.length,
+      errors
+    });
+
+  } catch (error) {
+
+    console.error('BULK NEWS IMPORT ERROR:', error);
+
+    return json({
+      success: false,
+      error: error.message || 'Bulk news upload failed'
+    }, 500);
+
+  }
+
+}
+
+
+// ============================================================
 // CREATE NEWS
 // ============================================================
 
@@ -797,219 +1109,14 @@ export async function onRequestPost(
     }
 
 
+    // Bulk CSV import
+    if (new URL(request.url).searchParams.get("bulk") === "1") {
+      return await bulkSaveNews(context, user);
+    }
+
+
     const body =
       await request.json();
-
-    // ========================================================
-    // BULK IMPORT
-    // ========================================================
-    if(body.bulk_import === true){
-      if(!["admin","editor"].includes(user.role)){
-        return json({
-          success:false,
-          error:"Bulk upload केवल Admin/Editor लेल उपलब्ध अछि।"
-        },403);
-      }
-
-      const rows=Array.isArray(body.rows) ? body.rows : [];
-
-      if(!rows.length){
-        return json({success:false,error:"Upload file में कोनो news नहि अछि।"},400);
-      }
-
-      if(rows.length>500){
-        return json({success:false,error:"एक बेर में अधिकतम 500 news upload करू।"},400);
-      }
-
-      const categoryResult=await env.DB.prepare(`
-        SELECT id,name,slug
-        FROM categories
-      `).all();
-
-      const categoryMap=new Map();
-
-      for(const c of (categoryResult.results || [])){
-        categoryMap.set(String(c.id).trim().toLowerCase(),Number(c.id));
-        categoryMap.set(String(c.name || "").trim().toLowerCase(),Number(c.id));
-        categoryMap.set(String(c.slug || "").trim().toLowerCase(),Number(c.id));
-      }
-
-      const errors=[];
-      const prepared=[];
-      const seenSlugs=new Set();
-
-      for(let i=0;i<rows.length;i++){
-        const r=rows[i] || {};
-        const rowNo=Number(r._row) || (i+2);
-
-        const title=String(r.title || "").trim();
-        const content=String(r.content || "").trim();
-
-        if(!title || !content){
-          errors.push({row:rowNo,error:"title और content जरूरी अछि।"});
-          continue;
-        }
-
-        let slug=String(r.slug || "").trim().toLowerCase();
-
-        if(!slug){
-          slug=slugify(title);
-        }
-
-        if(!slug){
-          errors.push({row:rowNo,error:"slug नहि बना सकल।"});
-          continue;
-        }
-
-        if(!isValidSlug(slug)){
-          errors.push({
-            row:rowNo,
-            error:"slug केवल English अक्षर, number आ hyphen में होयबाक चाही।"
-          });
-          continue;
-        }
-
-        const baseSlug=slug;
-        let suffix=2;
-
-        while(seenSlugs.has(slug)){
-          slug=baseSlug+"-"+suffix++;
-        }
-
-        seenSlugs.add(slug);
-
-        const statusRaw=String(r.status || "draft").trim().toLowerCase();
-        const status=statusRaw==="published" ? "published" : "draft";
-
-        let category_id=null;
-        const categoryValue=String(
-          r.category ?? r.category_slug ?? r.category_id ?? ""
-        ).trim().toLowerCase();
-
-        if(categoryValue){
-          category_id=categoryMap.get(categoryValue) || null;
-
-          if(!category_id){
-            errors.push({
-              row:rowNo,
-              error:"Category नहि भेटल: "+String(r.category || "")
-            });
-            continue;
-          }
-        }
-
-        const featuredValue=String(r.featured || "").trim().toLowerCase();
-        const featured=
-          ["true","1","yes","y","हाँ","हां"].includes(featuredValue)
-            ? 1
-            : 0;
-
-        prepared.push({
-          row:rowNo,
-          title,
-          slug,
-          summary:String(r.summary || "").trim(),
-          content,
-          image_url:String(r.image_url || r.image || "").trim(),
-          category_id,
-          status,
-          featured,
-          seo_title:String(r.seo_title || "").trim(),
-          seo_description:String(r.seo_description || "").trim()
-        });
-      }
-
-      // Check duplicate slugs already present in DB.
-      for(let i=prepared.length-1;i>=0;i--){
-        const item=prepared[i];
-
-        const existing=await env.DB.prepare(`
-          SELECT id
-          FROM news
-          WHERE slug=?
-          LIMIT 1
-        `).bind(item.slug).first();
-
-        if(existing){
-          errors.push({
-            row:item.row,
-            error:"यह slug पहले से मौजूद अछि: "+item.slug
-          });
-          prepared.splice(i,1);
-        }
-      }
-
-      let imported=0;
-
-      for(const item of prepared){
-        try{
-          const published_at=
-            item.status==="published"
-              ? new Date().toISOString()
-              : null;
-
-          const result=await env.DB.prepare(`
-            INSERT INTO news(
-              title,
-              slug,
-              summary,
-              content,
-              image_url,
-              category_id,
-              author_id,
-              status,
-              featured,
-              views,
-              seo_title,
-              seo_description,
-              published_at
-            )
-            VALUES(?,?,?,?,?,?,?,?,?,0,?,?,?)
-          `).bind(
-            item.title,
-            item.slug,
-            item.summary || null,
-            item.content,
-            item.image_url || null,
-            item.category_id,
-            user.id,
-            item.status,
-            item.featured,
-            item.seo_title || null,
-            item.seo_description || null,
-            published_at
-          ).run();
-
-          const newsId=result.meta.last_row_id;
-
-          await syncNewsCategories(
-            env,
-            newsId,
-            item.category_id ? [item.category_id] : [],
-            item.category_id
-          );
-
-          await syncNewsTags(env,newsId,[]);
-          await setNewsAdsEnabled(env,newsId,false);
-
-          imported++;
-
-        }catch(error){
-          errors.push({
-            row:item.row,
-            error:error.message || "Database error"
-          });
-        }
-      }
-
-      return json({
-        success:true,
-        total:rows.length,
-        imported,
-        failed:errors.length,
-        errors
-      });
-    }
 
 
     const title =
