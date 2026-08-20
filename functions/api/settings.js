@@ -5,12 +5,6 @@ async function ensureSettings(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS news_ads (news_id INTEGER PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
 }
 
-
-const SITE_CHROME_KEYS = [
-  'logo_url','footer_about_title','footer_about','footer_links_title',
-  'footer_social_title','footer_copyright','social_links'
-];
-
 export async function onRequestGet(context) {
   const { env, request } = context;
   try {
@@ -35,7 +29,7 @@ export async function onRequestGet(context) {
         footer_about: settings.footer_about || 'मैथिली भाषामे विश्वसनीय आ ताजा समाचार।',
         footer_links_title: settings.footer_links_title || 'महत्वपूर्ण लिंक',
         footer_social_title: settings.footer_social_title || 'सामाजिक साइट',
-        footer_copyright: settings.footer_copyright || '© मैथिली समाचार',
+        footer_copyright: settings.footer_copyright || 'मैथिली समाचार',
         social_links: (() => { try { return JSON.parse(settings.social_links || '[]'); } catch(e) { return []; } })(),
         ads_enabled: settings.ads_enabled === '1',
         adsense_publisher_id: settings.adsense_publisher_id || '',
@@ -59,6 +53,13 @@ export async function onRequestPut(context) {
     await ensureSettings(env);
     const body = await request.json();
     const values = {
+      logo_url: String(body.logo_url || '').trim(),
+      footer_about_title: String(body.footer_about_title || 'हमर विषय मे').trim(),
+      footer_about: String(body.footer_about || '').trim(),
+      footer_links_title: String(body.footer_links_title || 'महत्वपूर्ण लिंक').trim(),
+      footer_social_title: String(body.footer_social_title || 'सामाजिक साइट').trim(),
+      footer_copyright: String(body.footer_copyright || 'मैथिली समाचार').trim(),
+      social_links: JSON.stringify(Array.isArray(body.social_links) ? body.social_links : (()=>{try{return JSON.parse(body.social_links||'[]')}catch(e){return []}})()),
       ads_enabled: body.ads_enabled ? '1' : '0',
       adsense_publisher_id: String(body.adsense_publisher_id || '').trim(),
       adsense_display_slot: String(body.adsense_display_slot || '').trim(),
