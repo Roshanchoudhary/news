@@ -1188,59 +1188,116 @@ tr:hover td{
 }
 
 
+
 /* =====================================================
-   BULK UPLOAD - MOBILE FRIENDLY
+   BULK NEWS UPLOAD
 ===================================================== */
-.bulk-modal{
-  position:fixed!important;
-  inset:0!important;
-  z-index:5000!important;
+.bulk-upload-overlay{
   display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:5000;
+  padding:20px;
+  overflow-y:auto;
+}
+.bulk-upload-overlay.show{
+  display:flex;
   align-items:center;
   justify-content:center;
-  padding:12px;
-  background:rgba(0,0,0,.55);
 }
-.bulk-modal.show{display:flex!important;}
-.bulk-box{
+.bulk-upload-box{
   width:min(760px,100%);
-  max-height:94vh;
-  overflow:auto;
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
   background:#fff;
-  border-radius:16px;
-  padding:18px;
+  border-radius:14px;
   box-shadow:0 20px 60px rgba(0,0,0,.25);
+  padding:20px;
 }
-.bulk-box h2{margin:0;font-size:20px;}
-.bulk-close{
-  border:0;background:#f1f3f5;border-radius:10px;
-  width:40px;height:40px;font-size:18px;cursor:pointer;
+.bulk-upload-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
 }
-.bulk-help{
-  background:#f7f8fa;border:1px solid #e5e7eb;border-radius:10px;
-  padding:12px;font-size:13px;line-height:1.6;margin:12px 0;
-  overflow-wrap:anywhere;
+.bulk-upload-head h2{
+  margin:0;
+  font-size:19px;
 }
-.bulk-file{
-  width:100%;padding:12px;border:1px solid #d8dce2;
-  border-radius:10px;background:#fff;font-size:14px;
+.bulk-upload-close{
+  width:36px;
+  height:36px;
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:18px;
 }
-.bulk-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
-.bulk-actions button{min-height:44px;}
-.bulk-result{margin-top:12px;font-size:13px;}
-.bulk-table-wrap{overflow:auto;max-width:100%;}
-
-@media(max-width:700px){
-  .bulk-modal{padding:0;align-items:flex-end;}
-  .bulk-box{
-    width:100%;
-    max-height:96vh;
-    border-radius:18px 18px 0 0;
-    padding:14px;
-  }
-  .bulk-box h2{font-size:18px;}
-  .bulk-actions{display:grid;grid-template-columns:1fr;}
-  .bulk-actions button{width:100%;}
+.bulk-upload-help{
+  background:#f8f9fa;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  font-size:12px;
+  line-height:1.65;
+  margin-bottom:14px;
+}
+.bulk-upload-help code{
+  display:block;
+  margin-top:7px;
+  padding:8px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:7px;
+  overflow:auto;
+  white-space:nowrap;
+}
+.bulk-upload-file{
+  width:100%;
+  min-height:46px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px;
+  background:#fff;
+  font-size:13px;
+}
+.bulk-upload-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.bulk-upload-result{
+  margin-top:14px;
+  font-size:12px;
+}
+.bulk-upload-result .bulk-success{
+  background:#eaf7ee;
+  color:#176b2c;
+  border:1px solid #cdebd5;
+  border-radius:8px;
+  padding:10px;
+}
+.bulk-upload-result .bulk-error{
+  background:#fff1f1;
+  color:#a00000;
+  border:1px solid #f0caca;
+  border-radius:8px;
+  padding:10px;
+  margin-top:8px;
+}
+.bulk-upload-result ul{
+  margin:8px 0 0 18px;
+  padding:0;
+}
+@media(max-width:600px){
+  .bulk-upload-overlay{padding:8px;align-items:flex-end;}
+  .bulk-upload-box{max-height:94vh;border-radius:14px;padding:14px;}
+  .bulk-upload-head h2{font-size:17px;}
+  .bulk-upload-actions .btn{flex:1 1 100%;min-height:44px;}
+  .bulk-upload-file{font-size:12px;}
 }
 
 </style>
@@ -1929,20 +1986,24 @@ tr:hover td{
         <div class="toolbar-right">
 
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button
-            class="btn"
-            type="button"
-            onclick="openBulkUpload()"
-          >
-            ⬆ Bulk Upload
-          </button>
-          <button
-            class="btn primary"
-            onclick="addNews()"
-          >
-            + नया समाचार
-          </button>
-        </div>
+
+            <button
+              class="btn primary"
+              onclick="addNews()"
+            >
+              + नया समाचार
+            </button>
+
+            <button
+              class="btn"
+              type="button"
+              onclick="openBulkNewsUpload()"
+              style="border-color:#8b0000;color:#8b0000;"
+            >
+              ⬆ Bulk Upload
+            </button>
+
+          </div>
 
         </div>
 
@@ -3878,6 +3939,54 @@ tr:hover td{
 
   </div>
 
+</div>
+
+
+
+
+<!-- =====================================================
+     BULK NEWS UPLOAD
+===================================================== -->
+<div id="bulkNewsUploadOverlay" class="bulk-upload-overlay" aria-hidden="true">
+  <div class="bulk-upload-box" role="dialog" aria-modal="true" aria-labelledby="bulkNewsTitle">
+    <div class="bulk-upload-head">
+      <div>
+        <h2 id="bulkNewsTitle">⬆ एक साथ समाचार Upload</h2>
+        <div style="color:#70757a;font-size:11px;margin-top:4px;">
+          CSV file में प्रत्येक row एक अलग समाचार होय।
+        </div>
+      </div>
+      <button type="button" class="bulk-upload-close" onclick="closeBulkNewsUpload()">×</button>
+    </div>
+
+    <div class="bulk-upload-help">
+      <b>CSV UTF-8 encoding में save करू।</b><br>
+      <span>जरूरी column: </span><b>title</b> आ <b>content</b>।
+      <br>
+      <span>Status: </span><b>published</b> अथवा <b>draft</b>।
+      <code>title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description</code>
+    </div>
+
+    <input
+      id="bulkNewsFile"
+      class="bulk-upload-file"
+      type="file"
+      accept=".csv,.txt,text/csv,text/plain"
+    >
+
+    <div id="bulkNewsFileInfo" style="font-size:11px;color:#70757a;margin-top:7px;"></div>
+
+    <div class="bulk-upload-actions">
+      <button type="button" class="btn" onclick="downloadBulkNewsTemplate()">
+        Template Download
+      </button>
+      <button type="button" class="btn primary" id="bulkNewsUploadButton" onclick="uploadBulkNews()">
+        Upload All News
+      </button>
+    </div>
+
+    <div id="bulkNewsUploadResult" class="bulk-upload-result"></div>
+  </div>
 </div>
 
 
@@ -13343,46 +13452,59 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-/* =====================================================
+
+/* =========================================================
    BULK NEWS UPLOAD
-===================================================== */
+========================================================= */
 
-function openBulkUpload(){
-  const modal=document.getElementById("bulkUploadModal");
-  if(!modal) return;
-  modal.classList.add("show");
-  modal.setAttribute("aria-hidden","false");
-  const file=document.getElementById("bulkNewsFile");
-  if(file) file.value="";
-  const result=document.getElementById("bulkUploadResult");
-  if(result) result.innerHTML="";
-  const info=document.getElementById("bulkUploadInfo");
-  if(info) info.textContent="";
+function openBulkNewsUpload(){
+  const overlay=document.getElementById('bulkNewsUploadOverlay');
+  const file=document.getElementById('bulkNewsFile');
+  const info=document.getElementById('bulkNewsFileInfo');
+  const result=document.getElementById('bulkNewsUploadResult');
+  if(file) file.value='';
+  if(info) info.textContent='';
+  if(result) result.innerHTML='';
+  if(overlay){
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+  }
 }
 
-function closeBulkUpload(){
-  const modal=document.getElementById("bulkUploadModal");
-  if(!modal) return;
-  modal.classList.remove("show");
-  modal.setAttribute("aria-hidden","true");
+function closeBulkNewsUpload(){
+  const overlay=document.getElementById('bulkNewsUploadOverlay');
+  if(overlay){
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+  }
 }
 
-function parseBulkCSV(text){
-  text=String(text||'')
+function bulkEscapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g,function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+
+function parseBulkNewsCSV(text){
+  text=String(text ?? '')
     .replace(/^\uFEFF/,'')
     .replace(/^ï»¿/,'')
     .replace(/\r\n/g,'\n')
     .replace(/\r/g,'\n');
 
   const rows=[];
-  let row=[], cell='', quoted=false;
+  let row=[];
+  let cell='';
+  let quoted=false;
 
   for(let i=0;i<text.length;i++){
-    const ch=text[i], nx=text[i+1];
+    const ch=text[i];
+    const next=text[i+1];
 
     if(quoted){
-      if(ch==='"' && nx==='"'){
-        cell+='"'; i++;
+      if(ch==='"' && next==='"'){
+        cell+='"';
+        i++;
       }else if(ch==='"'){
         quoted=false;
       }else{
@@ -13392,129 +13514,182 @@ function parseBulkCSV(text){
       if(ch==='"'){
         quoted=true;
       }else if(ch===','){
-        row.push(cell); cell='';
+        row.push(cell);
+        cell='';
       }else if(ch==='\n'){
         row.push(cell);
-        if(row.some(v=>String(v).trim()!=='')) rows.push(row);
-        row=[]; cell='';
+        if(row.some(function(v){return String(v).trim()!=='';})) rows.push(row);
+        row=[];
+        cell='';
       }else{
         cell+=ch;
       }
     }
   }
 
-  if(quoted) throw new Error('CSV में quote ठीक नहीं अछि।');
+  if(quoted){
+    throw new Error('CSV में quote ठीक नहि अछि।');
+  }
+
   if(cell!=='' || row.length){
     row.push(cell);
-    if(row.some(v=>String(v).trim()!=='')) rows.push(row);
+    if(row.some(function(v){return String(v).trim()!=='';})) rows.push(row);
   }
 
   if(rows.length<2) return [];
 
-  const headers=rows[0].map(v=>String(v||'').trim().toLowerCase().replace(/^\uFEFF/,''));
+  const headers=rows[0].map(function(v){
+    return String(v ?? '').trim().toLowerCase().replace(/^\uFEFF/,'');
+  });
+
   if(!headers.includes('title') || !headers.includes('content')){
-    throw new Error('CSV header में title और content column जरूरी अछि।');
+    throw new Error('CSV header में title आ content column जरूरी अछि।');
   }
 
-  return rows.slice(1).map((r,idx)=>{
-    const o={};
-    headers.forEach((h,j)=>o[h]=String(r[j]??'').trim());
-    o._row=idx+2;
-    return o;
-  }).filter(r=>r.title || r.content);
+  return rows.slice(1).map(function(values,index){
+    const item={};
+    headers.forEach(function(header,col){
+      item[header]=String(values[col] ?? '').trim();
+    });
+    item._row=index+2;
+    return item;
+  }).filter(function(item){
+    return item.title || item.content;
+  });
 }
 
-async function readBulkFileUtf8(file){
+async function readBulkNewsUTF8(file){
   const bytes=new Uint8Array(await file.arrayBuffer());
-  if(bytes.length>=3 && bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
-    return new TextDecoder('utf-8').decode(bytes);
-  }
+
   try{
     return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
-  }catch(e){
+  }catch(error){
     return new TextDecoder('utf-8').decode(bytes);
   }
 }
 
-function bulkCsvCell(v){
-  v=String(v??'');
-  return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+function bulkNewsCSVCell(value){
+  const v=String(value ?? '');
+  return /[",\r\n]/.test(v)
+    ? '"'+v.replace(/"/g,'""')+'"'
+    : v;
 }
 
-function downloadBulkTemplate(){
-  const h='title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description';
-  const data=h+'\r\n'
-    +bulkCsvCell('पहिल समाचार')+','+bulkCsvCell('first-news')+','+bulkCsvCell('छोट summary')+','+bulkCsvCell('पूरा समाचार content')+','+bulkCsvCell('darbhanga')+','+bulkCsvCell('published')+','+bulkCsvCell('')+','+bulkCsvCell('true')+',,'
-    +'\r\n'
-    +bulkCsvCell('दोसर समाचार')+','+bulkCsvCell('second-news')+','+bulkCsvCell('Draft summary')+','+bulkCsvCell('दोसर समाचारक content')+','+bulkCsvCell('darbhanga')+','+bulkCsvCell('draft')+','+bulkCsvCell('')+','+bulkCsvCell('false')+',,';
+function downloadBulkNewsTemplate(){
+  const header=[
+    'title','slug','summary','content','category','status',
+    'image_url','featured','seo_title','seo_description'
+  ].join(',');
 
+  const row1=[
+    'पहिल समाचार','first-news','छोट summary','पूरा समाचार content',
+    'darbhanga','published','','true','',''
+  ].map(bulkNewsCSVCell).join(',');
+
+  const row2=[
+    'दोसर समाचार','second-news','Draft summary','दोसर समाचारक content',
+    'darbhanga','draft','','false','',''
+  ].map(bulkNewsCSVCell).join(',');
+
+  const csv='\uFEFF'+header+'\r\n'+row1+'\r\n'+row2+'\r\n';
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF',data],{type:'text/csv;charset=utf-8'}));
+  a.href=url;
   a.download='news-upload-template.csv';
+  document.body.appendChild(a);
   a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
 }
 
 async function uploadBulkNews(){
-  const file=document.getElementById('bulkFile')?.files[0];
+  const fileInput=document.getElementById('bulkNewsFile');
+  const file=fileInput?.files?.[0];
+  const button=document.getElementById('bulkNewsUploadButton');
+  const info=document.getElementById('bulkNewsFileInfo');
+  const result=document.getElementById('bulkNewsUploadResult');
+
   if(!file){
     alert('पहिने CSV अथवा TXT file चुनू।');
     return;
   }
 
-  const btn=document.getElementById('bulkUploadBtn');
-  const info=document.getElementById('bulkInfo');
-  const result=document.getElementById('bulkResult');
-
-  btn.disabled=true;
-  btn.textContent='Upload भ\' रहल अछि...';
+  button.disabled=true;
+  button.textContent='Upload भ\' रहल अछि...';
   result.innerHTML='';
 
   try{
-    const text=await readBulkFileUtf8(file);
-    const rows=parseBulkCSV(text);
+    const text=await readBulkNewsUTF8(file);
+    const rows=parseBulkNewsCSV(text);
 
     if(!rows.length){
-      throw new Error('File में कोनो news row नहि भेटल।');
+      throw new Error('File में कोनो news row नहि भेटल। CSV में header के बाद कम-से-कम एक news row होयबाक चाही।');
     }
 
     if(rows.length>500){
       throw new Error('एक बेर में अधिकतम 500 news upload करू।');
     }
 
-    info.textContent=`${rows.length} news upload लेल तैयार अछि।`;
+    if(info){
+      info.textContent=rows.length+' news upload लेल तैयार अछि।';
+    }
 
-    const response=await fetch(API + '/news?bulk=1',{
+    const response=await fetch(API+'/news?bulk=1',{
       method:'POST',
+      credentials:'include',
       headers:{
-        'Content-Type':'application/json; charset=UTF-8'
+        'Content-Type':'application/json; charset=UTF-8',
+        'Accept':'application/json'
       },
-      credentials:'same-origin',
-      body:JSON.stringify({rows})
+      body:JSON.stringify({rows:rows})
     });
 
-    const d=await response.json();
+    const data=await response.json().catch(function(){return {};});
 
-    if(!response.ok || d.success===false){
-      throw new Error(d.error || 'Server upload failed');
+    if(!response.ok || data.success===false){
+      throw new Error(data.error || ('Server error: '+response.status));
     }
 
-    let h=`<div class="panel"><b>Upload पूरा।</b><br>कुल: ${rows.length} · सफल: ${d.imported||0} · असफल: ${d.failed||0}</div>`;
+    let html='<div class="bulk-success">'+
+      '<b>Upload पूरा भेल।</b><br>' +
+      'कुल: '+rows.length+' · सफल: '+Number(data.imported||0)+' · असफल: '+Number(data.failed||0)+
+      '</div>';
 
-    if(d.errors?.length){
-      h+=`<div class="panel"><b>Errors:</b><ul>${
-        d.errors.map(e=>`<li>Row ${e.row}: ${String(e.error||'').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</li>`).join('')
-      }</ul></div>`;
+    if(Array.isArray(data.errors) && data.errors.length){
+      html+='<div class="bulk-error"><b>Error वाली row:</b><ul>'+
+        data.errors.map(function(error){
+          return '<li>Row '+bulkEscapeHtml(error.row)+': '+bulkEscapeHtml(error.error)+'</li>';
+        }).join('')+
+        '</ul></div>';
     }
 
-    result.innerHTML=h;
-    if(typeof loadNews==='function') loadNews();
+    result.innerHTML=html;
 
-  }catch(e){
-    result.innerHTML=`<div class="panel" style="color:#b91c1c">${String(e.message||e).replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</div>`;
+    if(typeof loadNews==='function'){
+      try{ await loadNews(); }catch(e){ console.error(e); }
+    }
+
+  }catch(error){
+    result.innerHTML='<div class="bulk-error"><b>Upload failed:</b><br>'+
+      bulkEscapeHtml(error.message || error)+
+      '</div>';
   }finally{
-    btn.disabled=false;
-    btn.textContent='Upload All News';
+    button.disabled=false;
+    button.textContent='Upload All News';
   }
 }
 
+window.addEventListener('click',function(event){
+  const overlay=document.getElementById('bulkNewsUploadOverlay');
+  if(event.target===overlay){
+    closeBulkNewsUpload();
+  }
+});
+
+</script>
+
+
+</body>
+
+</html>
