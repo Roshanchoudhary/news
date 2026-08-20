@@ -404,14 +404,18 @@ export async function onRequestGet(context) {
     if (categoryId) {
 
       conditions.push(`
-        EXISTS (
-          SELECT 1 FROM news_categories nc_filter
-          WHERE nc_filter.news_id = n.id
-            AND nc_filter.category_id = ?
+        (
+          n.category_id = ?
+          OR EXISTS (
+            SELECT 1 FROM news_categories nc_filter
+            WHERE nc_filter.news_id = n.id
+              AND nc_filter.category_id = ?
+          )
         )
       `);
 
       params.push(
+        Number(categoryId),
         Number(categoryId)
       );
 
@@ -426,18 +430,22 @@ export async function onRequestGet(context) {
 
       conditions.push(
         `
-        EXISTS (
-          SELECT 1
-          FROM news_categories nc_filter
-          INNER JOIN categories c_filter
-            ON c_filter.id = nc_filter.category_id
-          WHERE nc_filter.news_id = n.id
-            AND c_filter.slug = ?
+        (
+          c.slug = ?
+          OR EXISTS (
+            SELECT 1
+            FROM news_categories nc_filter
+            INNER JOIN categories c_filter
+              ON c_filter.id = nc_filter.category_id
+            WHERE nc_filter.news_id = n.id
+              AND c_filter.slug = ?
+          )
         )
         `
       );
 
       params.push(
+        categorySlug,
         categorySlug
       );
 

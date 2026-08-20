@@ -3,6 +3,11 @@
 // Category + Sub-category API
 // ======================================================
 
+
+async function ensureHomeOrderColumn(env) {
+  try { await env.DB.prepare(`ALTER TABLE categories ADD COLUMN home_order INTEGER DEFAULT 0`).run(); } catch(e) {}
+}
+
 export async function onRequest(context) {
 
   const { request, env } = context;
@@ -112,6 +117,7 @@ async function getCategories(
   request,
   env
 ) {
+  await ensureHomeOrderColumn(env);
 
   const url =
     new URL(request.url);
@@ -396,6 +402,7 @@ async function createCategory(
   request,
   env
 ) {
+  await ensureHomeOrderColumn(env);
 
   const user =
     await requireAdmin(
@@ -474,6 +481,11 @@ async function createCategory(
   const menuOrder =
     normalizeNumber(
       body.menu_order
+    );
+
+  const homeOrder =
+    normalizeNumber(
+      body.home_order ?? body.homeOrder
     );
 
 
@@ -697,6 +709,7 @@ async function createCategory(
           status,
           menu_visible,
           menu_order,
+          home_order,
           parent_id,
           updated_at
         )
@@ -719,6 +732,7 @@ async function createCategory(
         status,
         menuVisible,
         menuOrder,
+        homeOrder,
         parentId
       )
       .run();
@@ -756,6 +770,9 @@ async function createCategory(
       menu_order:
         menuOrder,
 
+      home_order:
+        homeOrder,
+
       parent_id:
         parentId,
 
@@ -777,6 +794,7 @@ async function updateCategory(
   request,
   env
 ) {
+  await ensureHomeOrderColumn(env);
 
   const user =
     await requireAdmin(
@@ -931,6 +949,13 @@ async function updateCategory(
             1
           );
 
+
+  const homeOrder =
+    body.home_order !== undefined
+      ? normalizeNumber(body.home_order)
+      : body.homeOrder !== undefined
+        ? normalizeNumber(body.homeOrder)
+        : Number(oldCategory.home_order || 0);
 
   const menuOrder =
     body.menu_order !== undefined
@@ -1276,6 +1301,9 @@ async function updateCategory(
 
       menu_order:
         menuOrder,
+
+      home_order:
+        homeOrder,
 
       parent_id:
         parentId,
