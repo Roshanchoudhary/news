@@ -7570,6 +7570,20 @@ function openCategoryModal(category = null){
         </div>
 
 
+        <!-- ORDER SETTINGS -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:800;margin-bottom:7px;">Menu Order</label>
+            <input id="categoryFormMenuOrder" type="number" min="0" value="${category?.menu_order ?? 0}" style="width:100%;height:42px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px;">
+            <div style="margin-top:5px;color:#888;font-size:10px;">Header/Menu में क्रम</div>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:800;margin-bottom:7px;">Home Page Order</label>
+            <input id="categoryFormHomeOrder" type="number" min="0" value="${category?.home_order ?? category?.menu_order ?? 0}" style="width:100%;height:42px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:13px;">
+            <div style="margin-top:5px;color:#888;font-size:10px;">Home पर category/sub-category का क्रम</div>
+          </div>
+        </div>
+
         <!-- PARENT CATEGORY -->
 
         <div style="margin-bottom:16px;">
@@ -8130,6 +8144,9 @@ async function saveCategory(){
 
   }
 
+
+  const menuOrder = Number(document.getElementById("categoryFormMenuOrder")?.value || 0);
+  const homeOrder = Number(document.getElementById("categoryFormHomeOrder")?.value || 0);
 
   const payload = {
 
@@ -13718,6 +13735,39 @@ document.addEventListener('click',async e=>{
  }
 });
 document.addEventListener('DOMContentLoaded',load);
+})();
+</script>
+<section id="categoryOrderManager" style="margin:20px 0;padding:18px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;">
+  <h3 style="margin:0 0 6px;">श्रेणी क्रम व्यवस्था</h3>
+  <p style="margin:0 0 14px;color:#777;font-size:12px;">Header/Menu क्रम आ Home Page क्रम अलग-अलग तय करू। Main category आ sub-category दुनू एतय दिखत।</p>
+  <div id="categoryOrderRows"></div>
+  <button type="button" id="saveCategoryOrders" style="margin-top:12px;padding:10px 16px;border:0;border-radius:8px;background:#8b0000;color:#fff;font-weight:700;cursor:pointer;">क्रम Save करू</button>
+  <span id="categoryOrderMsg" style="margin-left:10px;font-size:12px;"></span>
+</section>
+<script>
+(function(){
+async function loadOrders(){
+ try{
+  const r=await fetch('/api/categories?status=all',{credentials:'same-origin',cache:'no-store'}),d=await r.json();
+  const rows=(d.categories||[]).sort((a,b)=>Number(a.home_order??a.menu_order??0)-Number(b.home_order??b.menu_order??0));
+  const box=document.getElementById('categoryOrderRows');
+  box.innerHTML=rows.map(c=>`<div data-id="${c.id}" style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0;padding:8px;background:${c.parent_id?'#fafafa':'#f3f3f3'};border-radius:8px"><div style="padding-left:${c.parent_id?'22px':'0'};font-weight:${c.parent_id?'500':'800'}">${c.parent_id?'↳ ':''}${String(c.name||'')}</div><input class="ord-menu" type="number" min="0" value="${Number(c.menu_order||0)}" title="Menu Order"><input class="ord-home" type="number" min="0" value="${Number(c.home_order??c.menu_order??0)}" title="Home Order"></div>`).join('');
+ }catch(e){document.getElementById('categoryOrderMsg').textContent='Load failed';}
+}
+document.addEventListener('DOMContentLoaded',loadOrders);
+document.addEventListener('click',async e=>{
+ if(e.target.id!=='saveCategoryOrders')return;
+ const rows=[...document.querySelectorAll('#categoryOrderRows>[data-id]')];
+ const msg=document.getElementById('categoryOrderMsg'); msg.textContent='Saving...';
+ try{
+  for(const r of rows){
+   const body={id:Number(r.dataset.id),menu_order:Number(r.querySelector('.ord-menu').value||0),home_order:Number(r.querySelector('.ord-home').value||0)};
+   const resp=await fetch('/api/categories?id='+encodeURIComponent(body.id),{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+   const data=await resp.json(); if(!resp.ok||!data.success) throw new Error(data.error||'Save failed');
+  }
+  msg.textContent='✓ क्रम save भ’ गेल';
+ }catch(e){msg.textContent='✕ '+e.message}
+});
 })();
 </script></body>
 

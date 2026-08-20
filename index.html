@@ -591,7 +591,7 @@ main{
   .category-home-card img,.category-home-image{height:95px}
   .category-home-body{padding:9px 10px}
   .category-home-card h3{font-size:15px;line-height:1.4;margin:0 0 5px}
-  .category-home-summary{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .category-home-summary{font-size:12px;line-height:1.45;display:block;overflow:hidden}
   .category-home-date{font-size:10px;margin-top:5px}
 }
 
@@ -776,15 +776,15 @@ img{content-visibility:auto}
 </style>
 <style id="header-search-final">
 .search-section{padding:0;background:transparent;border:0}
-.header-main .search-section{margin-left:auto;flex:0 0 min(380px,38%)}
+.header-main .search-section{margin-left:auto;flex:0 0 300px;max-width:300px}
 .header-main .search-box{display:flex;gap:7px}
-.header-main .search-box input{height:42px;background:#fff;border:0;border-radius:9px;padding:0 13px;font-size:15px;min-width:0}
-.header-main .search-box button{height:42px;min-width:72px;border:0;background:#650000;color:#fff;border-radius:9px;font-weight:700}
+.header-main .search-box input{height:36px;background:#fff;border:0;border-radius:9px;padding:0 13px;font-size:15px;min-width:0}
+.header-main .search-box button{height:36px;min-width:72px;border:0;background:#650000;color:#fff;border-radius:9px;font-weight:700}
 @media(max-width:700px){
-  .header-main .search-section{flex:1;min-width:0;margin-left:10px}
+  .header-main .search-section{flex:0 0 210px;min-width:0;margin-left:10px}
   .header-main .search-box button{font-size:0;min-width:44px;width:44px;padding:0}
   .header-main .search-box button::after{content:'⌕';font-size:23px}
-  .header-main .search-box input{height:42px;font-size:16px}
+  .header-main .search-box input{height:36px;font-size:16px}
   .header-main .search-box input::placeholder{color:#777}
 }
 </style></head>
@@ -1436,9 +1436,38 @@ async function loadNews(){
   if(!container) return;
   container.innerHTML='<div class="loading" style="grid-column:1/-1">समाचार लोड भ\' रहल अछि...</div>';
   try{
-    const activeCategories=categories.filter(c=>String(c.status||"active").toLowerCase()==="active").filter(c=>Number(c.menu_visible ?? c.show_in_menu ?? 1)===1);
-    if(!activeCategories.length){container.innerHTML='<div class="empty">कोनो श्रेणी नहि भेटल।</div>';return;}
-    const results=await Promise.all(activeCategories.map(async category=>{
+    const active=categories
+      .filter(c=>String(c.status||"active").toLowerCase()==="active")
+      .filter(c=>Number(c.menu_visible ?? c.show_in_menu ?? 1)===1);
+
+    if(!active.length){container.innerHTML='<div class="empty">कोनो श्रेणी नहि भेटल।</div>';return;}
+
+    // Home order: main categories first, then sub-categories according to their own home_order.
+    active.sort((a,b)=>{
+      const ao=Number(a.home_order ?? a.homeOrder ?? a.menu_order ?? 0);
+      const bo=Number(b.home_order ?? b.homeOrder ?? b.menu_order ?? 0);
+      return ao-bo || Number(a.menu_order??0)-Number(b.menu_order??0) || String(a.name||"").localeCompare(String(b.name||""));
+    });
+
+    // If a parent has children, keep the parent's position and then its children.
+    const byParent={};
+    active.forEach(c=>{
+      const p=(c.parent_id===null||c.parent_id===undefined||c.parent_id===""||Number(c.parent_id)===0)?"root":String(c.parent_id);
+      (byParent[p] ||= []).push(c);
+    });
+    Object.values(byParent).forEach(list=>list.sort((a,b)=>{
+      const ao=Number(a.home_order ?? a.homeOrder ?? a.menu_order ?? 0);
+      const bo=Number(b.home_order ?? b.homeOrder ?? b.menu_order ?? 0);
+      return ao-bo || Number(a.menu_order??0)-Number(b.menu_order??0);
+    }));
+    const ordered=[];
+    const add=(c)=>{
+      ordered.push(c);
+      (byParent[String(c.id)]||[]).forEach(add);
+    };
+    (byParent.root||[]).forEach(add);
+
+    const results=await Promise.all(ordered.map(async category=>{
       const response=await fetch("/api/news?status=published&category_id="+encodeURIComponent(category.id)+"&page=1&limit=6",{cache:"no-store"});
       const data=await response.json();
       if(!response.ok||!data.success) throw new Error(data.error||"समाचार लोड नहि भ' सकल");
@@ -1446,11 +1475,31 @@ async function loadNews(){
     }));
     const withNews=results.filter(x=>x.news.length);
     if(!withNews.length){container.innerHTML='<div class="empty">एखन कोनो प्रकाशित समाचार नहि अछि।</div>';return;}
+
     container.innerHTML=withNews.map(({category,news})=>{
       const slug=category.slug||"";
-      return `<section class="category-home-section"><div class="category-home-head"><h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2><a class="category-home-all" href="/category/${encodeURIComponent(slug)}">एहि श्रेणीक सभ समाचार पढ़ू →</a></div><div class="category-home-grid">${news.slice(0,6).map(item=>{const nslug=item.slug||item.id;const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3><div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`}).join("")}</div></section>`;
+      const desc=category.description||"";
+      return `<section class="category-home-section ${category.parent_id?'is-subcategory':''}">
+        <div class="category-home-head">
+          <div class="category-home-heading">
+            <h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2>
+            ${desc?`<p class="category-home-desc">${escapeHtml(desc)}</p>`:""}
+          </div>
+          <a class="category-home-all" href="/category/${encodeURIComponent(slug)}">क सभ समाचार पढ़ू →</a>
+        </div>
+        <div class="category-home-grid">
+          ${news.slice(0,6).map(item=>{
+            const nslug=item.slug||item.id;
+            const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy" decoding="async">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;
+            return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3>${item.summary?`<p class="category-home-summary">${escapeHtml(item.summary)}</p>`:""}<div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`;
+          }).join("")}
+        </div>
+      </section>`;
     }).join("");
-  }catch(error){console.error("HOME CATEGORY NEWS ERROR:",error);container.innerHTML=`<div class="error" style="grid-column:1/-1">समाचार लोड नहि भ' सकल।<br>${escapeHtml(error.message||"त्रुटि भेल")}</div>`;}
+  }catch(error){
+    console.error("HOME CATEGORY NEWS ERROR:",error);
+    container.innerHTML=`<div class="error" style="grid-column:1/-1">समाचार लोड नहि भ' सकल।<br>${escapeHtml(error.message||"त्रुटि भेल")}</div>`;
+  }
 }
 
 /* ======================================================

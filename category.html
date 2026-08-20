@@ -1063,127 +1063,35 @@ async function loadCategory(){
 async function loadNews(
   search = ""
 ){
-
-  const container =
-    document.getElementById(
-      "newsContainer"
-    );
-
-
-  container.innerHTML =
-    `
-      <div class="loading">
-        समाचार लोड भ' रहल अछि...
-      </div>
-    `;
-
-
-  if(!category){
-    return;
-  }
-
+  const container=document.getElementById("newsContainer");
+  container.innerHTML=`<div class="loading">समाचार लोड भ' रहल अछि...</div>`;
+  if(!category) return;
 
   try{
+    const ids=[Number(category.id), ...(Array.isArray(category.children)?category.children.map(x=>Number(x.id)):[])].filter(Boolean);
+    const responses=await Promise.all(ids.map(id=>{
+      let u="/api/news?status=published&category_id="+encodeURIComponent(id)+"&page=1&limit=100";
+      if(search) u+="&search="+encodeURIComponent(search);
+      return fetch(u,{cache:"no-store"}).then(r=>r.json());
+    }));
+    let all=[];
+    responses.forEach(d=>{if(d.success) all=all.concat(d.news||[])});
+    const unique=new Map(all.map(n=>[n.id,n]));
+    all=[...unique.values()].sort((a,b)=>new Date(b.published_at||b.created_at)-new Date(a.published_at||a.created_at));
 
-    let apiUrl =
-      "/api/news?status=published" +
-      "&category_id=" +
-      encodeURIComponent(
-        category.id
-      ) +
-      "&page=" +
-      currentPage +
-      "&limit=20";
-
-
-    if(search){
-
-      apiUrl +=
-        "&search=" +
-        encodeURIComponent(
-          search
-        );
-
-    }
-
-
-    const response =
-      await fetch(
-        apiUrl,
-        {
-          cache:"no-store"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if(
-      !response.ok ||
-      !data.success
-    ){
-
-      throw new Error(
-        data.error ||
-        "समाचार नहि भेटल"
-      );
-
-    }
-
-
-    const news =
-      data.news || [];
-
-
-    const pagination =
-      data.pagination || {
-        page:currentPage,
-        pages:1,
-        total:news.length
-      };
-
-
-    renderNews(
-      news
-    );
-
-
-    renderPagination(
-      pagination
-    );
-
-
+    const pageSize=20;
+    const total=all.length;
+    const pages=Math.max(1,Math.ceil(total/pageSize));
+    if(currentPage>pages) currentPage=pages;
+    const pageNews=all.slice((currentPage-1)*pageSize,currentPage*pageSize);
+    renderNews(pageNews);
+    renderPagination({page:currentPage,pages,total});
   }catch(error){
-
-    console.error(
-      "NEWS ERROR:",
-      error
-    );
-
-
-    container.innerHTML =
-      `
-        <div class="error">
-          ${escapeHtml(
-            error.message ||
-            "समाचार लोड नहि भ' सकल"
-          )}
-        </div>
-      `;
-
-    document
-      .getElementById(
-        "pagination"
-      )
-      .innerHTML =
-      "";
-
+    console.error("NEWS ERROR:",error);
+    container.innerHTML=`<div class="error">${escapeHtml(error.message||"समाचार लोड नहि भ' सकल")}</div>`;
+    document.getElementById("pagination").innerHTML="";
   }
-
 }
-
 
 /* ======================================================
    RENDER NEWS
