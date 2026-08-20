@@ -135,7 +135,101 @@ main>.container{max-width:1180px}
  .header-main .header-inner{gap:4px}
 }
 </style>
-</head><body><header class="top-header">
+<style id="footer-three-part-fix">
+.site-footer{
+  background:#242428;
+  color:#fff;
+  margin-top:45px;
+}
+.footer-three{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:40px;
+  padding:38px 0;
+}
+.footer-column{
+  min-width:0;
+}
+.footer-column h3{
+  margin:0 0 12px;
+  font-size:17px;
+  color:#fff;
+}
+.footer-about p{
+  color:#d1d1d1;
+  font-size:14px;
+  line-height:1.75;
+  margin:8px 0 0;
+}
+.footer-logo-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+}
+.footer-logo{
+  max-width:135px;
+  max-height:48px;
+  object-fit:contain;
+  display:none;
+}
+.footer-logo-wrap strong{
+  font-size:21px;
+}
+.footer-links a,
+.footer-social a{
+  display:block;
+  color:#ddd;
+  text-decoration:none;
+  font-size:14px;
+  line-height:1.7;
+  padding:3px 0;
+}
+.footer-links a:hover,
+.footer-social a:hover{
+  color:#fff;
+  text-decoration:underline;
+}
+.social-links{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.social-links span{
+  color:#aaa;
+  font-size:13px;
+}
+.footer-bottom{
+  border-top:1px solid #3d3d42;
+  text-align:center;
+  padding:14px 12px;
+  color:#aaa;
+  font-size:12px;
+}
+@media(max-width:700px){
+  .footer-three{
+    grid-template-columns:1fr;
+    gap:25px;
+    padding:28px 0;
+  }
+  .footer-column{
+    padding-bottom:18px;
+    border-bottom:1px solid #3a3a3f;
+  }
+  .footer-column:last-child{
+    border-bottom:0;
+    padding-bottom:0;
+  }
+  .footer-column h3{
+    font-size:17px;
+  }
+  .footer-about p,
+  .footer-links a,
+  .footer-social a{
+    font-size:14px;
+  }
+}
+</style></head><body><header class="top-header">
   <div class="header-main">
     <div class="container header-inner">
       <a href="/" class="brand-link" aria-label="मैथिली समाचार">
@@ -159,12 +253,35 @@ main>.container{max-width:1180px}
       <span class="nav-loading" id="categoryNavLoading">श्रेणी लोड भ' रहल अछि...</span>
     </div>
   </nav>
-</header><main><article class="card"><h1>हमर विषय मे</h1><p class="intro">मैथिली समाचार एक मैथिली भाषा समाचार मंच अछि। एतय मिथिला आ बिहार सहित देश-दुनियाक महत्वपूर्ण समाचार सरल मैथिली मे प्रस्तुत करबाक प्रयास कएल जाइत अछि।</p><h2>हमर उद्देश्य</h2><p>मिथिला आ मैथिली भाषी समाज लेल उपयोगी, समय पर आ सरल मैथिली समाचार उपलब्ध करेनाइ हमर उद्देश्य अछि।</p><h2>समाचारक स्रोत</h2><p>समाचार उपलब्ध स्रोतक आधार पर तैयार कएल जाइत अछि। तथ्यात्मक सुधार लेल पाठक हमरा सँ सम्पर्क कए सकैत छथि।</article></main><footer id="siteFooter" class="site-footer">
-<div class="footer-wrap">
-<div class="footer-col"><div class="footer-logo-wrap"><img id="footerLogo" class="footer-logo" src="" alt="मैथिली समाचार"><strong id="footerBrand">मैथिली समाचार</strong></div><h3 id="footerAboutTitle">हमर विषय मे</h3><p id="footerAboutText">मैथिली भाषामे ताजा आ विश्वसनीय समाचार।</p></div>
-<div class="footer-col"><h3>महत्वपूर्ण लिंक</h3><a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a></div>
-<div class="footer-col"><h3 id="footerSocialTitle">सामाजिक साइट</h3><div id="footerSocialLinks"></div></div>
-</div><div class="footer-bottom">© <span id="year"></span> <span id="footerCopyrightText">मैथिली समाचार</span></div>
+</header><main><article class="card"><h1>हमर विषय मे</h1><p class="intro">मैथिली समाचार एक मैथिली भाषा समाचार मंच अछि। एतय मिथिला आ बिहार सहित देश-दुनियाक महत्वपूर्ण समाचार सरल मैथिली मे प्रस्तुत करबाक प्रयास कएल जाइत अछि।</p><h2>हमर उद्देश्य</h2><p>मिथिला आ मैथिली भाषी समाज लेल उपयोगी, समय पर आ सरल मैथिली समाचार उपलब्ध करेनाइ हमर उद्देश्य अछि।</p><h2>समाचारक स्रोत</h2><p>समाचार उपलब्ध स्रोतक आधार पर तैयार कएल जाइत अछि। तथ्यात्मक सुधार लेल पाठक हमरा सँ सम्पर्क कए सकैत छथि।</article></main><footer class="site-footer">
+  <div class="container footer-three">
+    <section class="footer-column footer-about">
+      <div class="footer-logo-wrap">
+        <img id="footerLogo" src="" alt="मैथिली समाचार लोगो" class="footer-logo">
+        <strong id="footerSiteName">मैथिली समाचार</strong>
+      </div>
+      <h3>हमर विषय मे</h3>
+      <p id="footerAbout">मैथिली भाषामे ताजा आ विश्वसनीय समाचार।</p>
+    </section>
+
+    <section class="footer-column footer-links">
+      <h3>महत्वपूर्ण लिंक</h3>
+      <a href="/about.html">हमर विषय मे</a>
+      <a href="/contact.html">सम्पर्क करू</a>
+      <a href="/privacy-policy.html">गोपनीयता नीति</a>
+      <a href="/terms.html">नियम आ शर्त</a>
+    </section>
+
+    <section class="footer-column footer-social">
+      <h3>सामाजिक साइट</h3>
+      <div id="footerSocialLinks" class="social-links">
+        <span>सामाजिक लिंक</span>
+      </div>
+    </section>
+  </div>
+  <div class="footer-bottom">
+    <span id="footerCopyright">© 2026 मैथिली समाचार</span>
+  </div>
 </footer><script>document.getElementById("year").textContent=new Date().getFullYear()</script><script>
 (async()=>{try{const r=await fetch('/api/settings',{cache:'no-store'}),d=await r.json(),s=d.settings||{};
 const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.textContent=v};
@@ -226,5 +343,38 @@ document.addEventListener("DOMContentLoaded",()=>{
    location.href="/?search="+encodeURIComponent(q);
   });
  }
+});
+</script><script id="footer-settings-sync">
+document.addEventListener("DOMContentLoaded",async()=>{
+  try{
+    const r=await fetch("/api/settings",{cache:"no-store"});
+    const d=await r.json();
+    const s=d.settings||{};
+    if(s.logo_url){
+      const l=document.getElementById("footerLogo");
+      if(l){l.src=s.logo_url;l.style.display="block";}
+    }
+    if(s.site_name){
+      const n=document.getElementById("footerSiteName");
+      if(n)n.textContent=s.site_name;
+    }
+    if(s.footer_about){
+      const a=document.getElementById("footerAbout");
+      if(a)a.textContent=s.footer_about;
+    }
+    if(s.footer_copyright){
+      const c=document.getElementById("footerCopyright");
+      if(c)c.textContent=s.footer_copyright;
+    }else if(s.copyright){
+      const c=document.getElementById("footerCopyright");
+      if(c)c.textContent=s.copyright;
+    }
+    const box=document.getElementById("footerSocialLinks");
+    if(box && Array.isArray(s.social_links)){
+      box.innerHTML=s.social_links.map(x=>
+        `<a href="${String(x.url||"#").replace(/"/g,"&quot;")}" target="_blank" rel="noopener">${String(x.name||"Social").replace(/[&<>]/g,"")}</a>`
+      ).join("") || "<span>सामाजिक लिंक</span>";
+    }
+  }catch(e){console.warn("footer settings",e)}
 });
 </script></body></html>
