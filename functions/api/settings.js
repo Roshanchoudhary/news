@@ -5,6 +5,12 @@ async function ensureSettings(env) {
   await env.DB.prepare(`CREATE TABLE IF NOT EXISTS news_ads (news_id INTEGER PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 0, updated_at DATETIME DEFAULT CURRENT_TIMESTAMP)`).run();
 }
 
+
+const SITE_CHROME_KEYS = [
+  'logo_url','footer_about_title','footer_about','footer_links_title',
+  'footer_social_title','footer_copyright','social_links'
+];
+
 export async function onRequestGet(context) {
   const { env, request } = context;
   try {
@@ -24,6 +30,13 @@ export async function onRequestGet(context) {
     return Response.json({
       success: true,
       settings: {
+        logo_url: settings.logo_url || '',
+        footer_about_title: settings.footer_about_title || 'हमर विषय मे',
+        footer_about: settings.footer_about || 'मैथिली भाषामे विश्वसनीय आ ताजा समाचार।',
+        footer_links_title: settings.footer_links_title || 'महत्वपूर्ण लिंक',
+        footer_social_title: settings.footer_social_title || 'सामाजिक साइट',
+        footer_copyright: settings.footer_copyright || '© मैथिली समाचार',
+        social_links: (() => { try { return JSON.parse(settings.social_links || '[]'); } catch(e) { return []; } })(),
         ads_enabled: settings.ads_enabled === '1',
         adsense_publisher_id: settings.adsense_publisher_id || '',
         adsense_display_slot: settings.adsense_display_slot || '',
