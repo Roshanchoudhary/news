@@ -441,10 +441,7 @@ footer{
   padding:30px 0;
 }
 
-footer p{
-  color:#bbb;
-  font-size:13px;
-}
+footer p{color:#bbb;font-size:13px}.footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin:15px 0}.footer-links a{color:#fff;font-size:13px}.footer-links a:hover{text-decoration:underline}
 
 
 /* =====================================================
@@ -618,7 +615,7 @@ footer p{
       <input
         type="search"
         id="searchInput"
-        placeholder="समाचार खोजू..."
+        placeholder="समाचार ताकू..."
       >
 
       <button type="submit">
@@ -728,25 +725,17 @@ footer p{
 ===================================================== -->
 
 <footer>
-
   <div class="container">
-
-    <strong>
-      मैथिली समाचार
-    </strong>
-
-    <p>
-      मैथिली भाषामे समाचार आ जानकारी।
-    </p>
-
-    <p>
-      ©
-      <span id="year"></span>
-      मैथिली समाचार
-    </p>
-
+    <strong>मैथिली समाचार</strong>
+    <p>मैथिली भाषामे समाचार आ जानकारी।</p>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/about.html">हमर विषय मे</a>
+      <a href="/contact.html">सम्पर्क करू</a>
+      <a href="/privacy-policy.html">गोपनीयता नीति</a>
+      <a href="/terms.html">नियम आ शर्त</a>
+    </nav>
+    <p>© <span id="year"></span> मैथिली समाचार</p>
   </div>
-
 </footer>
 
 
@@ -760,7 +749,7 @@ let category = null;
 
 let currentPage = 1;
 
-const limit = 12;
+const limit = 20;
 
 
 /* ======================================================
@@ -1104,8 +1093,7 @@ async function loadNews(
       ) +
       "&page=" +
       currentPage +
-      "&limit=" +
-      limit;
+      "&limit=20";
 
 
     if(search){

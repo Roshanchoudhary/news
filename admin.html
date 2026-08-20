@@ -13642,7 +13642,7 @@ async function uploadBulkNews(){
         'Content-Type':'application/json; charset=UTF-8',
         'Accept':'application/json'
       },
-      body:JSON.stringify({rows:rows})
+      body:JSON.stringify({bulk:true, rows:rows})
     });
 
     const data=await response.json().catch(function(){return {};});
