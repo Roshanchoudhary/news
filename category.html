@@ -793,7 +793,7 @@ main>.container{max-width:1180px}
 </style></head>
 
 
-<body>
+<body><span id="year" hidden></span>
 
 
 <!-- =====================================================
@@ -982,10 +982,8 @@ document.addEventListener(
 
 async function start(){
 
-  document
-    .getElementById("year")
-    .textContent =
-    new Date().getFullYear();
+  const yearEl=document.getElementById("year");
+  if(yearEl) yearEl.textContent=new Date().getFullYear();
 
 
   document

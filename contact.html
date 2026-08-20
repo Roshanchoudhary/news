@@ -229,31 +229,111 @@ main>.container{max-width:1180px}
     font-size:14px;
   }
 }
-</style></head><body><header class="top-header">
+</style></head><body><span id="year" hidden></span>
+<header class="top-header">
+
   <div class="header-main">
+
     <div class="container header-inner">
-      <a href="/" class="brand-link" aria-label="मैथिली समाचार">
-        <div>
-          <div class="logo"><img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार" onerror="this.style.display='none'"><span id="siteLogoText">मैथिली समाचार</span></div>
-          <div class="tagline">मैथिली भाषामे ताजा आ विश्वसनीय समाचार</div>
+
+      <div>
+
+        <div class="logo">
+          मैथिली समाचार
         </div>
+
+        <div class="tagline">
+          मैथिली भाषामे नवीनतम समाचार
+        </div>
+
+      </div>
+
+
+      <a
+        href="/admin.html"
+        class="admin-link"
+      >
+        Admin Login
       </a>
-      <section class="search-section header-search">
-        <form class="search-box" id="searchForm">
-          <input type="search" id="searchInput" placeholder="ताकू..." autocomplete="off" aria-label="समाचार ताकू">
-          <button type="submit">ताकू</button>
-        </form>
-      </section>
+
     </div>
+
   </div>
-  <nav class="nav" aria-label="मुख्य मेनू">
-    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">☰ मेनू</button>
-    <div class="container nav-inner" id="categoryNav">
-      <a href="/" class="nav-link active" data-category="">सभ समाचार</a>
-      <span class="nav-loading" id="categoryNavLoading">श्रेणी लोड भ' रहल अछि...</span>
+
+
+  <!-- ===================================================
+       CATEGORY MENU
+  ==================================================== -->
+
+  <nav class="nav">
+
+    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">☰ Menu</button>
+
+    <div
+      class="container nav-inner"
+      id="categoryNav"
+    >
+
+      <a
+        href="/"
+        class="nav-link active"
+        data-category=""
+      >
+        सभ समाचार
+      </a>
+
+      <span
+        class="nav-loading"
+        id="categoryNavLoading"
+      >
+        श्रेणी लोड भ' रहल अछि...
+      </span>
+
     </div>
+
   </nav>
-</header><main><article class="card"><h1>सम्पर्क करू</h1><p class="intro">समाचार, सुझाव, सुधार अथवा अन्य जानकारी लेल मैथिली समाचार सं सम्पर्क करू।</p><h2>सम्पर्क</h2><p><strong>ईमेल:</strong> अपन आधिकारिक ईमेल पता एतय लिखू</p><p><strong>मोबाइल:</strong> अपन आधिकारिक मोबाइल नम्बर एतय लिखू</p></article></main><footer class="site-footer">
+
+</header>
+
+
+<!-- =====================================================
+     SEARCH
+===================================================== -->
+
+<section class="search-section">
+
+  <div class="container">
+
+    <form
+      class="search-box"
+      id="searchForm"
+    >
+
+      <input
+        type="search"
+        id="searchInput"
+        placeholder="समाचार खोजू..."
+        autocomplete="off"
+      >
+
+      <button type="submit">
+        खोजू
+      </button>
+
+    </form>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     MAIN
+===================================================== -->
+
+
+<main><div class="container static-unified"><div class="static-card"><main><article class="card"><h1>सम्पर्क करू</h1><p class="intro">समाचार, सुझाव, सुधार अथवा अन्य जानकारी लेल मैथिली समाचार सं सम्पर्क करू।</p><h2>सम्पर्क</h2><p><strong>ईमेल:</strong> अपन आधिकारिक ईमेल पता एतय लिखू</p><p><strong>मोबाइल:</strong> अपन आधिकारिक मोबाइल नम्बर एतय लिखू</p></article></main></div></div></main>
+<footer class="site-footer">
   <div class="container footer-three">
     <section class="footer-column footer-about">
       <div class="footer-logo-wrap">
@@ -282,99 +362,53 @@ main>.container{max-width:1180px}
   <div class="footer-bottom">
     <span id="footerCopyright">© 2026 मैथिली समाचार</span>
   </div>
-</footer><script>document.getElementById("year").textContent=new Date().getFullYear()</script><script>
-(async()=>{try{const r=await fetch('/api/settings',{cache:'no-store'}),d=await r.json(),s=d.settings||{};
-const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.textContent=v};
-if(s.logo_url){for(const id of ['footerLogo']){const e=document.getElementById(id);if(e)e.src=s.logo_url}}
-set('footerAboutTitle',s.footer_about_title||'हमर विषय मे');set('footerAboutText',s.footer_about||'मैथिली भाषामे ताजा आ विश्वसनीय समाचार।');set('footerSocialTitle',s.footer_social_title||'सामाजिक साइट');set('footerCopyrightText',s.footer_copyright||'मैथिली समाचार');
-const box=document.getElementById('footerSocialLinks');if(box){box.innerHTML=(Array.isArray(s.social_links)?s.social_links:[]).map(x=>`<a href="${String(x.url||'')}" target="_blank" rel="noopener">${String(x.name||'')}</a>`).join('')}}
-catch(e){console.warn(e)}})();
-</script><script id="shared-category-menu">
-(function(){
-  function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-  function render(cats){
-    const nav=document.getElementById("categoryNav"); if(!nav)return;
-    nav.innerHTML='<a href="/" class="nav-link" data-category="">सभ समाचार</a>';
-    const active=(cats||[]).filter(c=>String(c.status||"active").toLowerCase()==="active" && Number(c.menu_visible??c.show_in_menu??1)===1);
-    const roots=active.filter(c=>!c.parent_id||Number(c.parent_id)===0).sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
-    roots.forEach(c=>{
-      const kids=active.filter(x=>Number(x.parent_id||0)===Number(c.id)).sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
-      const group=document.createElement("div"); group.className="nav-group";
-      const a=document.createElement("a"); a.className="nav-link"; a.href="/category/"+encodeURIComponent(c.slug); a.dataset.category=c.slug;
-      a.innerHTML="<span>"+esc(c.name||"श्रेणी")+"</span>"+(kids.length?'<span class="menu-arrow">▾</span>':"");
-      group.appendChild(a);
-      if(kids.length){
-        const sub=document.createElement("div"); sub.className="nav-submenu";
-        kids.forEach(x=>{const s=document.createElement("a");s.href="/category/"+encodeURIComponent(x.slug);s.textContent=x.name||"उप-श्रेणी";sub.appendChild(s)});
-        group.appendChild(sub);
-        a.addEventListener("click",e=>{
-          if(window.innerWidth<=700 || !group.classList.contains("open")){
-            e.preventDefault();
-            document.querySelectorAll(".nav-group.open").forEach(g=>{if(g!==group)g.classList.remove("open")});
-            group.classList.add("open");
-          }
-        });
-      }
-      nav.appendChild(group);
-    });
-    const toggle=document.getElementById("mobileMenuToggle");
-    if(toggle && !toggle.dataset.bound){
-      toggle.dataset.bound="1";
-      toggle.addEventListener("click",()=>{nav.classList.toggle("mobile-open");toggle.setAttribute("aria-expanded",nav.classList.contains("mobile-open"))});
-    }
-  }
-  async function init(){
-    try{const r=await fetch("/api/categories?status=active",{cache:"no-store"}),d=await r.json();if(d.success)render(d.categories||[])}
-    catch(e){console.warn("menu",e)}
-  }
-  document.addEventListener("DOMContentLoaded",init);
-})();
-</script><script id="global-search-handler">
-document.addEventListener("DOMContentLoaded",()=>{
- const form=document.getElementById("searchForm");
- const input=document.getElementById("searchInput");
- if(form && !form.dataset.globalSearch){
-  form.dataset.globalSearch="1";
-  form.addEventListener("submit",e=>{
-   e.preventDefault();
-   const q=(input?.value||"").trim();
-   if(typeof performSearch==="function"){performSearch();return}
-   if(typeof searchNews==="function"){searchNews();return}
-   location.href="/?search="+encodeURIComponent(q);
-  });
- }
-});
-</script><script id="footer-settings-sync">
+</footer>
+<script id="unified-static-shell">
 document.addEventListener("DOMContentLoaded",async()=>{
+  const nav=document.getElementById("categoryNav");
   try{
-    const r=await fetch("/api/settings",{cache:"no-store"});
+    const r=await fetch("/api/categories?status=active",{cache:"no-store"});
     const d=await r.json();
-    const s=d.settings||{};
-    if(s.logo_url){
-      const l=document.getElementById("footerLogo");
-      if(l){l.src=s.logo_url;l.style.display="block";}
+    const cats=(d.categories||[]).filter(c=>Number(c.menu_visible??c.show_in_menu??1)===1)
+      .sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
+    if(nav){
+      const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      nav.innerHTML='<a href="/" class="nav-link" data-category="">सभ समाचार</a>';
+      cats.filter(c=>!c.parent_id||Number(c.parent_id)===0).forEach(c=>{
+        const kids=cats.filter(x=>Number(x.parent_id||0)===Number(c.id));
+        const g=document.createElement("div");g.className="nav-group";
+        const a=document.createElement("a");a.className="nav-link";a.href="/category/"+encodeURIComponent(c.slug);
+        a.innerHTML=esc(c.name)+(kids.length?" ▾":"");g.appendChild(a);
+        if(kids.length){
+          const sub=document.createElement("div");sub.className="nav-submenu";
+          kids.forEach(x=>{const s=document.createElement("a");s.href="/category/"+encodeURIComponent(x.slug);s.textContent=x.name;sub.appendChild(s)});
+          g.appendChild(sub);
+          a.onclick=e=>{if(innerWidth<=600){e.preventDefault();g.classList.toggle("open")}};
+        }
+        nav.appendChild(g);
+      });
     }
-    if(s.site_name){
-      const n=document.getElementById("footerSiteName");
-      if(n)n.textContent=s.site_name;
-    }
-    if(s.footer_about){
-      const a=document.getElementById("footerAbout");
-      if(a)a.textContent=s.footer_about;
-    }
-    if(s.footer_copyright){
-      const c=document.getElementById("footerCopyright");
-      if(c)c.textContent=s.footer_copyright;
-    }else if(s.copyright){
-      const c=document.getElementById("footerCopyright");
-      if(c)c.textContent=s.copyright;
-    }
-    const box=document.getElementById("footerSocialLinks");
-    if(box && Array.isArray(s.social_links)){
-      box.innerHTML=s.social_links.map(x=>
-        `<a href="${String(x.url||"#").replace(/"/g,"&quot;")}" target="_blank" rel="noopener">${String(x.name||"Social").replace(/[&<>]/g,"")}</a>`
-      ).join("") || "<span>सामाजिक लिंक</span>";
-    }
-  }catch(e){console.warn("footer settings",e)}
+  }catch(e){console.warn("menu",e)}
+  document.getElementById("mobileMenuToggle")?.addEventListener("click",()=>{
+    nav?.classList.toggle("mobile-open");
+  });
+  document.getElementById("searchForm")?.addEventListener("submit",e=>{
+    e.preventDefault();const q=document.getElementById("searchInput")?.value.trim();if(q)location.href="/?search="+encodeURIComponent(q);
+  });
+  try{
+    const r=await fetch("/api/settings",{cache:"no-store"}),d=await r.json(),s=d.settings||{};
+    if(s.logo_url)document.querySelectorAll("#footerLogo").forEach(x=>{x.src=s.logo_url;x.style.display="block"});
+    if(s.site_name)document.querySelectorAll("#footerSiteName").forEach(x=>x.textContent=s.site_name);
+    if(s.footer_about){const x=document.getElementById("footerAbout");if(x)x.textContent=s.footer_about}
+    if(s.footer_copyright||s.copyright){const x=document.getElementById("footerCopyright");if(x)x.textContent=s.footer_copyright||s.copyright}
+    const social=document.getElementById("footerSocialLinks");
+    if(social&&Array.isArray(s.social_links))social.innerHTML=s.social_links.map(x=>`<a href="${x.url||"#"}" target="_blank" rel="noopener">${x.name||"Social"}</a>`).join("")||"<span>सामाजिक लिंक</span>";
+  }catch(e){}
 });
-</script></body></html>
+</script>
+<style>
+.static-unified{max-width:950px;padding:30px 0 55px}
+.static-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
+@media(max-width:600px){.static-card{padding:19px}.static-unified{padding-top:18px}}
+</style>
+</body></html>
