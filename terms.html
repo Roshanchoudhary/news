@@ -229,7 +229,8 @@ main>.container{max-width:1180px}
     font-size:14px;
   }
 }
-</style></head><body><span id="year" hidden></span>
+</style></head><body>
+<span id="year" hidden></span>
 <header class="top-header">
 
   <div class="header-main">
@@ -249,12 +250,7 @@ main>.container{max-width:1180px}
       </div>
 
 
-      <a
-        href="/admin.html"
-        class="admin-link"
-      >
-        Admin Login
-      </a>
+      
 
     </div>
 
@@ -332,7 +328,7 @@ main>.container{max-width:1180px}
 ===================================================== -->
 
 
-<main><div class="container static-unified"><div class="static-card"><main><article class="card"><h1>नियम आ शर्त</h1><p class="intro">मैथिली समाचार वेबसाइटक उपयोग करैत समय ई सामान्य नियम आ शर्त लागू होइत अछि।</p><h2>सामग्री</h2><p>समाचार आ सामग्री जानकारीक उद्देश्य सँ प्रकाशित कएल जाइत अछि।</p><h2>बाहरी लिंक</h2><p>बाहरी वेबसाइटक सामग्री लेल मैथिली समाचार जिम्मेवार नहि अछि।</article></main></div></div></main>
+<main><div class="container static-unified"><div class="static-card"><main><article class="card"><h1>नियम आ शर्त</h1><p class="intro">मैथिली समाचार वेबसाइटक उपयोग करैत समय ई सामान्य नियम आ शर्त लागू होइत अछि।</p><h2>सामग्री</h2><p>समाचार आ सामग्री जानकारीक उद्देश्य सँ प्रकाशित कएल जाइत अछि।</p><h2>बाहरी लिंक</h2><p>बाहरी वेबसाइटक सामग्री लेल मैथिली समाचार जिम्मेवार नहि अछि।</article></main>
 <footer class="site-footer">
   <div class="container footer-three">
     <section class="footer-column footer-about">
@@ -363,52 +359,60 @@ main>.container{max-width:1180px}
     <span id="footerCopyright">© 2026 मैथिली समाचार</span>
   </div>
 </footer>
-<script id="unified-static-shell">
-document.addEventListener("DOMContentLoaded",async()=>{
+
+<script id="shared-menu-loader">
+document.addEventListener("DOMContentLoaded", async function(){
   const nav=document.getElementById("categoryNav");
+  if(!nav) return;
   try{
     const r=await fetch("/api/categories?status=active",{cache:"no-store"});
     const d=await r.json();
-    const cats=(d.categories||[]).filter(c=>Number(c.menu_visible??c.show_in_menu??1)===1)
+    if(!d.success) throw new Error(d.error||"menu");
+    const cats=(d.categories||[])
+      .filter(c=>Number(c.menu_visible ?? c.show_in_menu ?? 1)===1)
       .sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
-    if(nav){
-      const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-      nav.innerHTML='<a href="/" class="nav-link" data-category="">सभ समाचार</a>';
-      cats.filter(c=>!c.parent_id||Number(c.parent_id)===0).forEach(c=>{
-        const kids=cats.filter(x=>Number(x.parent_id||0)===Number(c.id));
-        const g=document.createElement("div");g.className="nav-group";
-        const a=document.createElement("a");a.className="nav-link";a.href="/category/"+encodeURIComponent(c.slug);
-        a.innerHTML=esc(c.name)+(kids.length?" ▾":"");g.appendChild(a);
-        if(kids.length){
-          const sub=document.createElement("div");sub.className="nav-submenu";
-          kids.forEach(x=>{const s=document.createElement("a");s.href="/category/"+encodeURIComponent(x.slug);s.textContent=x.name;sub.appendChild(s)});
-          g.appendChild(sub);
-          a.onclick=e=>{if(innerWidth<=600){e.preventDefault();g.classList.toggle("open")}};
-        }
-        nav.appendChild(g);
-      });
-    }
-  }catch(e){console.warn("menu",e)}
-  document.getElementById("mobileMenuToggle")?.addEventListener("click",()=>{
-    nav?.classList.toggle("mobile-open");
-  });
-  document.getElementById("searchForm")?.addEventListener("submit",e=>{
-    e.preventDefault();const q=document.getElementById("searchInput")?.value.trim();if(q)location.href="/?search="+encodeURIComponent(q);
-  });
-  try{
-    const r=await fetch("/api/settings",{cache:"no-store"}),d=await r.json(),s=d.settings||{};
-    if(s.logo_url)document.querySelectorAll("#footerLogo").forEach(x=>{x.src=s.logo_url;x.style.display="block"});
-    if(s.site_name)document.querySelectorAll("#footerSiteName").forEach(x=>x.textContent=s.site_name);
-    if(s.footer_about){const x=document.getElementById("footerAbout");if(x)x.textContent=s.footer_about}
-    if(s.footer_copyright||s.copyright){const x=document.getElementById("footerCopyright");if(x)x.textContent=s.footer_copyright||s.copyright}
-    const social=document.getElementById("footerSocialLinks");
-    if(social&&Array.isArray(s.social_links))social.innerHTML=s.social_links.map(x=>`<a href="${x.url||"#"}" target="_blank" rel="noopener">${x.name||"Social"}</a>`).join("")||"<span>सामाजिक लिंक</span>";
-  }catch(e){}
+    const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+    nav.innerHTML='<a href="/" class="nav-link" data-category="">सभ समाचार</a>';
+    cats.filter(c=>!c.parent_id||Number(c.parent_id)===0).forEach(c=>{
+      if(!c.slug)return;
+      const kids=cats.filter(x=>Number(x.parent_id||0)===Number(c.id));
+      const g=document.createElement("div");g.className="nav-group";
+      const a=document.createElement("a");a.className="nav-link";
+      a.href="/category/"+encodeURIComponent(c.slug);
+      a.innerHTML=esc(c.name)+(kids.length?' <span aria-hidden="true">▾</span>':'');
+      g.appendChild(a);
+      if(kids.length){
+        const sub=document.createElement("div");sub.className="nav-submenu";
+        kids.forEach(x=>{
+          if(!x.slug)return;
+          const s=document.createElement("a");
+          s.href="/category/"+encodeURIComponent(x.slug);
+          s.textContent=x.name||"उप-श्रेणी";
+          sub.appendChild(s);
+        });
+        g.appendChild(sub);
+        a.addEventListener("click",e=>{
+          if(window.innerWidth<=600){e.preventDefault();g.classList.toggle("open")}
+        });
+      }
+      nav.appendChild(g);
+    });
+    const current=location.pathname.replace(/\/+$/,"")||"/";
+    nav.querySelectorAll(".nav-link").forEach(a=>{
+      const h=(a.getAttribute("href")||"").replace(/\/+$/,"")||"/";
+      if(h===current)a.classList.add("active");
+    });
+  }catch(e){console.error("Shared menu:",e)}
+  const toggle=document.getElementById("mobileMenuToggle");
+  if(toggle&&!toggle.dataset.bound){
+    toggle.dataset.bound="1";
+    toggle.addEventListener("click",function(){
+      nav.classList.toggle("mobile-open");
+      this.setAttribute("aria-expanded",String(nav.classList.contains("mobile-open")));
+    });
+  }
 });
 </script>
-<style>
-.static-unified{max-width:950px;padding:30px 0 55px}
-.static-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px;box-shadow:0 4px 18px rgba(0,0,0,.06)}
-@media(max-width:600px){.static-card{padding:19px}.static-unified{padding-top:18px}}
-</style>
+
+
 </body></html>
