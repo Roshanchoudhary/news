@@ -158,3 +158,7 @@ footer {
   background: #222;
   color: white;
 }
+
+/* Professional site chrome */
+.site-footer{background:#171717;color:#fff;margin-top:40px}
+@media(max-width:700px){.footer-wrap{grid-template-columns:1fr!important}.social-row{grid-template-columns:1fr!important}.social-row .btn{width:100%}}

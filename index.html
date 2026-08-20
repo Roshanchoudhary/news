@@ -757,6 +757,24 @@ input[type="search"]::-webkit-search-cancel-button{margin-right:6px}
 }
 img{content-visibility:auto}
 </style>
+
+<style id="header-search-pro">
+@media(min-width:701px){
+  .top-header{position:relative}
+  .top-header .search-section{position:absolute;right:3%;top:10px;width:min(360px,34%);padding:0;background:transparent;border:0;z-index:20}
+  .top-header .search-box{background:rgba(255,255,255,.12);padding:4px;border-radius:10px}
+  .top-header .search-box input{height:40px;background:#fff;border:0}
+  .top-header .search-box button{height:40px;min-width:72px;padding:0 12px}
+  .header-inner{padding-right:390px}
+}
+@media(max-width:700px){
+  .top-header .search-section{padding:8px 12px}
+  .top-header .search-box{display:flex;gap:7px}
+  .top-header .search-box input{height:44px;font-size:16px}
+  .top-header .search-box button{min-width:58px;width:58px;height:44px;padding:0;font-size:0}
+  .top-header .search-box button::after{content:'🔎';font-size:18px}
+}
+</style>
 </head>
 
 
@@ -775,9 +793,10 @@ img{content-visibility:auto}
 
       <div>
 
-        <div class="logo">
-          मैथिली समाचार
-        </div>
+        <a class="site-brand" href="/" aria-label="मैथिली समाचार">
+          <img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार" loading="eager" decoding="async" onerror="this.style.display='none'">
+          <span id="siteLogoText" class="logo">मैथिली समाचार</span>
+        </a>
 
         <div class="tagline">
           मैथिली भाषामे नवीनतम समाचार
@@ -1398,7 +1417,7 @@ async function loadNews(){
     if(!withNews.length){container.innerHTML='<div class="empty">एखन कोनो प्रकाशित समाचार नहि अछि।</div>';return;}
     container.innerHTML=withNews.map(({category,news})=>{
       const slug=category.slug||"";
-      return `<section class="category-home-section"><div class="category-home-head"><h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2><a class="category-home-all" href="/category/${encodeURIComponent(slug)}">एहि श्रेणीक सभ समाचार पढ़ू →</a></div><div class="category-home-grid">${news.slice(0,5).map(item=>{const nslug=item.slug||item.id;const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3><div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`}).join("")}</div></section>`;
+      return `<section class="category-home-section"><div class="category-home-head"><h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2><a class="category-home-all" href="/category/${encodeURIComponent(slug)}">एहि श्रेणीक सभ पढ़ू →</a></div><div class="category-home-grid">${news.slice(0,5).map(item=>{const nslug=item.slug||item.id;const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3><div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`}).join("")}</div></section>`;
     }).join("");
   }catch(error){console.error("HOME CATEGORY NEWS ERROR:",error);container.innerHTML=`<div class="error" style="grid-column:1/-1">समाचार लोड नहि भ' सकल।<br>${escapeHtml(error.message||"त्रुटि भेल")}</div>`;}
 }
@@ -2071,6 +2090,54 @@ function escapeAttribute(
 
 </script>
 
+
+<script>
+(function(){
+  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  async function loadSiteChrome(){
+    try{
+      const r=await fetch('/api/settings',{cache:'no-store'});
+      const d=await r.json();
+      const s=d.settings||{};
+      if(s.logo_url){
+        const img=document.getElementById('siteLogo');
+        const text=document.getElementById('siteLogoText');
+        if(img){img.src=s.logo_url;img.style.display='block';}
+        if(text) text.style.display='none';
+      }
+      const footer=document.getElementById('siteFooter');
+      if(footer){
+        const social=Array.isArray(s.social_links)?s.social_links:[];
+        footer.innerHTML=`
+          <div class="footer-wrap">
+            <div class="footer-col"><h3>${esc(s.footer_about_title||'हमर विषय मे')}</h3><p>${esc(s.footer_about||'मैथिली भाषामे विश्वसनीय आ ताजा समाचार।')}</p></div>
+            <div class="footer-col"><h3>${esc(s.footer_links_title||'महत्वपूर्ण लिंक')}</h3>
+              <a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a>
+            </div>
+            <div class="footer-col"><h3>${esc(s.footer_social_title||'सामाजिक साइट')}</h3>
+              ${social.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join('')||'<span>सामाजिक लिंक शीघ्र जोड़ल जाएत।</span>'}
+            </div>
+          </div>
+          <div class="footer-bottom">${esc(s.footer_copyright||'© मैथिली समाचार')}</div>`;
+      }
+    }catch(e){console.warn('site settings:',e);}
+  }
+  document.addEventListener('DOMContentLoaded',loadSiteChrome);
+})();
+</script>
+<style>
+.site-brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.site-logo{max-height:52px;max-width:220px;width:auto;object-fit:contain}
+.footer-wrap{width:min(1200px,94%);margin:auto;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;padding:30px 0}
+.footer-col h3{margin:0 0 10px;font-size:16px}
+.footer-col p{margin:0;color:#666;line-height:1.7}
+.footer-col a{display:block;margin:7px 0;color:inherit}
+.footer-bottom{border-top:1px solid #ddd;padding:14px 3%;text-align:center;color:#777;font-size:13px}
+@media(max-width:600px){
+  .site-logo{max-width:150px;max-height:42px}
+  .footer-wrap{grid-template-columns:1fr;gap:18px;padding:24px 12px}
+}
+</style>
 </body>
 
 </html>

@@ -3635,7 +3635,31 @@ tr:hover td{
 </section>
 
 
-  </main>
+  
+<section class="card" id="siteAppearanceSettings" style="margin-top:18px">
+  <div class="card-header"><h2>वेबसाइट रूप-रंग आ Footer</h2></div>
+  <div class="card-body">
+    <p style="color:#70757a;margin-top:0">Header/Footer के logo, social links आ footer text एतय सँ manage करू।</p>
+    <div class="form-grid">
+      <label>Logo Image URL<input id="siteLogoUrl" class="input" type="url" placeholder="https://.../logo.png"></label>
+      <label>Footer Copyright<input id="footerCopyright" class="input" placeholder="© 2026 मैथिली समाचार"></label>
+      <label>Footer About Title<input id="footerAboutTitle" class="input" value="हमर विषय मे"></label>
+      <label>Footer Links Title<input id="footerLinksTitle" class="input" value="महत्वपूर्ण लिंक"></label>
+      <label>Social Section Title<input id="footerSocialTitle" class="input" value="सामाजिक साइट"></label>
+      <label style="grid-column:1/-1">Footer About Text<textarea id="footerAbout" class="input" rows="3" placeholder="मैथिली समाचारक बारे मे छोट परिचय"></textarea></label>
+    </div>
+    <div style="margin-top:16px">
+      <b>सामाजिक साइट</b>
+      <div id="socialLinksEditor"></div>
+      <button type="button" class="btn btn-light" id="addSocialLink">+ सामाजिक लिंक जोड़ू</button>
+    </div>
+    <div style="margin-top:16px">
+      <button type="button" class="btn btn-primary" id="saveSiteAppearance">Save Website Settings</button>
+      <span id="siteAppearanceMsg" style="margin-left:10px"></span>
+    </div>
+  </div>
+</section>
+</main>
 
 </div>
 
@@ -13690,6 +13714,59 @@ window.addEventListener('click',function(event){
 </script>
 
 
+
+<script>
+(function(){
+  let social=[];
+  const $=id=>document.getElementById(id);
+  function socialRow(x={},i=0){
+    return `<div class="social-row" data-i="${i}" style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;margin:8px 0">
+      <input class="input social-name" placeholder="Facebook" value="${String(x.name||'').replace(/"/g,'&quot;')}">
+      <input class="input social-url" type="url" placeholder="https://..." value="${String(x.url||'').replace(/"/g,'&quot;')}">
+      <button type="button" class="btn btn-light remove-social">हटाउ</button>
+    </div>`;
+  }
+  function renderSocial(){ const e=$('socialLinksEditor'); if(e)e.innerHTML=social.map(socialRow).join(''); }
+  async function loadAppearance(){
+    try{
+      const r=await fetch('/api/settings',{credentials:'same-origin'});
+      const d=await r.json(),s=d.settings||{};
+      if($('siteLogoUrl')) $('siteLogoUrl').value=s.logo_url||'';
+      if($('footerCopyright')) $('footerCopyright').value=s.footer_copyright||'';
+      if($('footerAboutTitle')) $('footerAboutTitle').value=s.footer_about_title||'हमर विषय मे';
+      if($('footerLinksTitle')) $('footerLinksTitle').value=s.footer_links_title||'महत्वपूर्ण लिंक';
+      if($('footerSocialTitle')) $('footerSocialTitle').value=s.footer_social_title||'सामाजिक साइट';
+      if($('footerAbout')) $('footerAbout').value=s.footer_about||'';
+      social=Array.isArray(s.social_links)?s.social_links:[];
+      renderSocial();
+    }catch(e){console.warn(e);}
+  }
+  document.addEventListener('click',async e=>{
+    if(e.target.id==='addSocialLink'){social.push({name:'',url:''});renderSocial();}
+    if(e.target.classList.contains('remove-social')){
+      const r=e.target.closest('.social-row'); if(r){social.splice(Number(r.dataset.i),1);renderSocial();}
+    }
+    if(e.target.id==='saveSiteAppearance'){
+      const rows=[...document.querySelectorAll('.social-row')].map(r=>({name:r.querySelector('.social-name').value.trim(),url:r.querySelector('.social-url').value.trim()})).filter(x=>x.name&&x.url);
+      const payload={
+        logo_url:$('siteLogoUrl')?.value.trim()||'',
+        footer_copyright:$('footerCopyright')?.value.trim()||'',
+        footer_about_title:$('footerAboutTitle')?.value.trim()||'हमर विषय मे',
+        footer_about:$('footerAbout')?.value.trim()||'',
+        footer_links_title:$('footerLinksTitle')?.value.trim()||'महत्वपूर्ण लिंक',
+        footer_social_title:$('footerSocialTitle')?.value.trim()||'सामाजिक साइट',
+        social_links:JSON.stringify(rows)
+      };
+      try{
+        const r=await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
+        const d=await r.json();
+        const m=$('siteAppearanceMsg'); if(m){m.textContent=d.success?'✓ Saved':'✕ '+(d.error||'Save failed');m.style.color=d.success?'green':'#c00';}
+      }catch(err){if($('siteAppearanceMsg'))$('siteAppearanceMsg').textContent='✕ Save failed';}
+    }
+  });
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadAppearance);else loadAppearance();
+})();
+</script>
 </body>
 
 </html>
