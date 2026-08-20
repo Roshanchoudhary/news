@@ -809,7 +809,7 @@ footer p{
 </style></head>
 
 
-<body>
+<body><span id="year" hidden></span>
 
 
 <!-- =====================================================
@@ -1040,10 +1040,8 @@ document.addEventListener(
 
 async function start(){
 
-  document
-    .getElementById("year")
-    .textContent =
-    new Date().getFullYear();
+  const yearEl=document.getElementById("year");
+  if(yearEl) yearEl.textContent=new Date().getFullYear();
 
 
   document
@@ -1060,9 +1058,10 @@ async function start(){
     );
 
 
-  await loadCategories();
-
-  await loadNews();
+  await Promise.all([
+    loadCategories(),
+    loadNews()
+  ]);
 
 }
 
