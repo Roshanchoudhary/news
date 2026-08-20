@@ -135,36 +135,42 @@ main>.container{max-width:1180px}
  .header-main .header-inner{gap:4px}
 }
 </style>
-</head><body><header class="top-header">
-  <div class="header-main">
-    <div class="container header-inner">
-      <a href="/" class="brand-link" aria-label="मैथिली समाचार">
-        <div>
-          <div class="logo"><img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार" onerror="this.style.display='none'"><span id="siteLogoText">मैथिली समाचार</span></div>
-          <div class="tagline">मैथिली भाषामे ताजा आ विश्वसनीय समाचार</div>
-        </div>
+<style id="complete-redesign-v3">
+:root{--brand:#761326;--brand2:#5c0c1c;--paper:#fffdf9;--ink:#202124;--muted:#68707a;--line:#e4e5e7;--card:#fff;--max:1180px}
+html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Noto Sans Devanagari","Nirmala UI",Arial,sans-serif;font-size:16px}.site-container{width:min(var(--max),calc(100% - 32px));margin:auto}
+.header-brandbar{background:var(--brand);color:#fff}.brand-row{min-height:72px;display:flex;align-items:center;gap:20px}.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;min-width:0}.site-logo{max-height:48px;max-width:165px;object-fit:contain;display:none}.brand-text{display:flex;flex-direction:column}.brand-text strong{font-size:24px;line-height:1.15}.brand-text small{font-size:11px;opacity:.85;margin-top:3px}.global-search{margin-left:auto;display:flex;gap:6px}.global-search input{width:235px;height:38px;border:0;border-radius:8px;padding:0 12px;font-size:15px;outline:0}.global-search button{height:38px;width:46px;border:0;border-radius:8px;background:var(--brand2);color:#fff;font-size:21px}.main-nav{background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:1000}.main-menu{min-height:46px;display:flex;align-items:stretch;gap:2px}.main-menu>a,.menu-link{display:flex;align-items:center;gap:5px;padding:0 13px;color:#292929;text-decoration:none;font-size:14px;font-weight:750;white-space:nowrap}.main-menu>a:hover,.menu-link:hover{background:#f7ecef;color:var(--brand)}.menu-group{position:relative}.menu-dropdown{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff;border:1px solid var(--line);box-shadow:0 10px 25px rgba(0,0,0,.14);padding:5px;border-radius:0 0 9px 9px}.menu-dropdown a{display:block;padding:11px 12px;color:#222;text-decoration:none;font-size:14px;border-radius:6px}.menu-dropdown a:hover{background:#f7ecef;color:var(--brand)}.menu-group:hover>.menu-dropdown,.menu-group.open>.menu-dropdown{display:block}.mobile-menu-btn{display:none}
+.site-footer{margin-top:45px;background:#242428;color:#fff}.footer-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:35px;padding:35px 0}.footer-grid section{display:flex;flex-direction:column;gap:9px}.footer-grid h3{margin:0 0 5px;font-size:17px}.footer-grid p{margin:0;color:#d0d0d0;font-size:14px;line-height:1.7}.footer-grid a{color:#ddd;text-decoration:none;font-size:14px}.footer-grid a:hover{color:#fff}.footer-brand{display:flex;align-items:center;gap:10px}.footer-brand img{max-width:130px;max-height:40px;object-fit:contain;display:none}.footer-brand strong{font-size:21px}.footer-bottom{border-top:1px solid #3b3b40;text-align:center;padding:14px;color:#bbb;font-size:12px}
+@media(max-width:768px){body{font-size:16px}.site-container{width:calc(100% - 24px)}.brand-row{min-height:58px;flex-wrap:wrap;gap:6px;padding:7px 0}.brand-text strong{font-size:20px}.brand-text small{font-size:9px}.global-search{order:3;width:100%;margin:0;padding:5px 0 2px}.global-search input{width:auto;flex:1;height:42px;font-size:15px;border-radius:9px}.global-search button{height:42px;width:50px;border-radius:9px}.mobile-menu-btn{display:block;margin-left:auto;border:0;background:transparent;color:#fff;font-size:24px}.main-menu{display:none;flex-direction:column;align-items:stretch;padding:5px 0}.main-menu.mobile-open{display:flex}.main-menu>a,.menu-link{min-height:44px;padding:0 12px}.menu-group{width:100%}.menu-dropdown{position:static;box-shadow:none;border:0;background:#f8f2f3;border-radius:0;padding-left:12px}.menu-group:hover>.menu-dropdown{display:none}.menu-group.open>.menu-dropdown{display:block}.footer-grid{grid-template-columns:1fr;gap:22px;padding:27px 0}.footer-grid h3{font-size:16px}.footer-grid p,.footer-grid a{font-size:14px}}
+</style><style id="static-v3-mobile">
+.page-content{font-size:17px;line-height:1.8}
+@media(max-width:768px){.page-content{font-size:16px;line-height:1.75}.page-content h1{font-size:26px}.page-content h2{font-size:21px}}
+</style></head><body><header class="site-header">
+  <div class="header-brandbar">
+    <div class="site-container brand-row">
+      <a class="brand" href="/" aria-label="मैथिली समाचार">
+        <img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार">
+        <span class="brand-text"><strong id="siteName">मैथिली समाचार</strong><small>मैथिली भाषामे ताजा आ विश्वसनीय समाचार</small></span>
       </a>
-      <section class="search-section header-search">
-        <form class="search-box" id="searchForm">
-          <input type="search" id="searchInput" placeholder="ताकू..." autocomplete="off" aria-label="समाचार ताकू">
-          <button type="submit">ताकू</button>
-        </form>
-      </section>
+      <form id="globalSearchForm" class="global-search" role="search">
+        <input id="globalSearchInput" type="search" placeholder="ताकू..." autocomplete="off" aria-label="समाचार ताकू">
+        <button type="submit" aria-label="Search">⌕</button>
+      </form>
+      <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-expanded="false">☰</button>
     </div>
   </div>
-  <nav class="nav" aria-label="मुख्य मेनू">
-    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">☰ मेनू</button>
-    <div class="container nav-inner" id="categoryNav">
-      <a href="/" class="nav-link active" data-category="">सभ समाचार</a>
-      <span class="nav-loading" id="categoryNavLoading">श्रेणी लोड भ' रहल अछि...</span>
+  <nav class="main-nav">
+    <div id="mainMenu" class="site-container main-menu">
+      <a href="/" class="menu-home">होम</a>
+      <span class="menu-loading">श्रेणी...</span>
     </div>
   </nav>
-</header><main><article class="card"><h1>सम्पर्क करू</h1><p class="intro">समाचार, सुझाव, सुधार अथवा अन्य जानकारी लेल मैथिली समाचार सं सम्पर्क करू।</p><h2>सम्पर्क</h2><p><strong>ईमेल:</strong> अपन आधिकारिक ईमेल पता एतय लिखू</p><p><strong>मोबाइल:</strong> अपन आधिकारिक मोबाइल नम्बर एतय लिखू</p></article></main><footer id="siteFooter" class="site-footer">
-<div class="footer-wrap">
-<div class="footer-col"><div class="footer-logo-wrap"><img id="footerLogo" class="footer-logo" src="" alt="मैथिली समाचार"><strong id="footerBrand">मैथिली समाचार</strong></div><h3 id="footerAboutTitle">हमर विषय मे</h3><p id="footerAboutText">मैथिली भाषामे ताजा आ विश्वसनीय समाचार।</p></div>
-<div class="footer-col"><h3>महत्वपूर्ण लिंक</h3><a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a></div>
-<div class="footer-col"><h3 id="footerSocialTitle">सामाजिक साइट</h3><div id="footerSocialLinks"></div></div>
-</div><div class="footer-bottom">© <span id="year"></span> <span id="footerCopyrightText">मैथिली समाचार</span></div>
+</header><main><article class="card"><h1>सम्पर्क करू</h1><p class="intro">समाचार, सुझाव, सुधार अथवा अन्य जानकारी लेल मैथिली समाचार सं सम्पर्क करू।</p><h2>सम्पर्क</h2><p><strong>ईमेल:</strong> अपन आधिकारिक ईमेल पता एतय लिखू</p><p><strong>मोबाइल:</strong> अपन आधिकारिक मोबाइल नम्बर एतय लिखू</p></article></main><footer class="site-footer">
+  <div class="site-container footer-grid">
+    <section><div class="footer-brand"><img id="footerLogo" src="" alt=""><strong id="footerName">मैथिली समाचार</strong></div><h3 id="footerAboutTitle">हमर विषय मे</h3><p id="footerAbout">मैथिली भाषामे ताजा आ विश्वसनीय समाचार।</p></section>
+    <section><h3 id="footerLinksTitle">महत्वपूर्ण लिंक</h3><a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a></section>
+    <section><h3 id="footerSocialTitle">सामाजिक साइट</h3><div id="footerSocial"></div></section>
+  </div>
+  <div class="footer-bottom">© <span id="footerYear"></span> <span id="footerCopyright">मैथिली समाचार</span></div>
 </footer><script>document.getElementById("year").textContent=new Date().getFullYear()</script><script>
 (async()=>{try{const r=await fetch('/api/settings',{cache:'no-store'}),d=await r.json(),s=d.settings||{};
 const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.textContent=v};
@@ -227,4 +233,64 @@ document.addEventListener("DOMContentLoaded",()=>{
   });
  }
 });
+</script><script id="site-shell-v3">
+(()=>{
+const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+const slugPath=s=>"/category/"+encodeURIComponent(s);
+function buildMenu(cats){
+ const box=document.getElementById("mainMenu"); if(!box)return;
+ const active=(cats||[]).filter(c=>String(c.status||"active")==="active" && Number(c.menu_visible??1)!==0)
+   .sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
+ const roots=active.filter(c=>!c.parent_id||Number(c.parent_id)===0);
+ box.innerHTML='<a href="/" class="menu-home">होम</a>';
+ roots.forEach(c=>{
+   const kids=active.filter(x=>Number(x.parent_id||0)===Number(c.id)).sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
+   const g=document.createElement("div");g.className="menu-group";
+   const a=document.createElement("a");a.className="menu-link";a.href=slugPath(c.slug);a.innerHTML=esc(c.name)+(kids.length?' <span>▾</span>':'');
+   g.appendChild(a);
+   if(kids.length){
+     const sub=document.createElement("div");sub.className="menu-dropdown";
+     kids.forEach(x=>{const s=document.createElement("a");s.href=slugPath(x.slug);s.textContent=x.name;sub.appendChild(s)});
+     g.appendChild(sub);
+     a.addEventListener("click",e=>{
+       if(innerWidth<769 && !g.classList.contains("open")){e.preventDefault();document.querySelectorAll(".menu-group.open").forEach(z=>z.classList.remove("open"));g.classList.add("open");}
+     });
+   }
+   box.appendChild(g);
+ });
+}
+async function loadShell(){
+ try{
+   const [cr,sr]=await Promise.all([
+     fetch("/api/categories?status=active",{cache:"force-cache"}),
+     fetch("/api/settings",{cache:"force-cache"})
+   ]);
+   const [cd,sd]=await Promise.all([cr.json(),sr.json()]);
+   if(cd.success) buildMenu(cd.categories||[]);
+   const s=sd.settings||{};
+   if(s.logo_url){document.querySelectorAll("#siteLogo,#footerLogo").forEach(e=>{e.src=s.logo_url;e.style.display="block"})}
+   if(s.site_name) document.querySelectorAll("#siteName,#footerName").forEach(e=>e.textContent=s.site_name);
+   if(s.footer_about) document.getElementById("footerAbout").textContent=s.footer_about;
+   if(s.footer_about_title) document.getElementById("footerAboutTitle").textContent=s.footer_about_title;
+   if(s.footer_links_title) document.getElementById("footerLinksTitle").textContent=s.footer_links_title;
+   if(s.footer_social_title) document.getElementById("footerSocialTitle").textContent=s.footer_social_title;
+   if(s.footer_copyright) document.getElementById("footerCopyright").textContent=s.footer_copyright;
+   const social=document.getElementById("footerSocial");
+   if(social) social.innerHTML=(Array.isArray(s.social_links)?s.social_links:[]).map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join("");
+ }catch(e){console.warn("site shell",e)}
+}
+function search(q){
+ q=String(q||"").trim(); if(!q)return;
+ const path=location.pathname;
+ if(path.startsWith("/category/") && typeof searchNews==="function"){searchNews(q);return}
+ location.href="/?search="+encodeURIComponent(q);
+}
+document.addEventListener("DOMContentLoaded",()=>{
+ const btn=document.getElementById("mobileMenuBtn"),menu=document.getElementById("mainMenu");
+ btn?.addEventListener("click",()=>{menu.classList.toggle("mobile-open");btn.setAttribute("aria-expanded",menu.classList.contains("mobile-open"))});
+ document.getElementById("globalSearchForm")?.addEventListener("submit",e=>{e.preventDefault();search(document.getElementById("globalSearchInput")?.value)});
+ document.getElementById("footerYear")?.append(new Date().getFullYear());
+ loadShell();
+});
+})();
 </script></body></html>
