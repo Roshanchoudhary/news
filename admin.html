@@ -13368,212 +13368,153 @@ function closeBulkUpload(){
 }
 
 function parseBulkCSV(text){
-  text=String(text||"").replace(/^\uFEFF/,"");
+  text=String(text||'')
+    .replace(/^\uFEFF/,'')
+    .replace(/^ï»¿/,'')
+    .replace(/\r\n/g,'\n')
+    .replace(/\r/g,'\n');
+
   const rows=[];
-  let row=[], cell="", quoted=false;
+  let row=[], cell='', quoted=false;
 
   for(let i=0;i<text.length;i++){
-    const ch=text[i], next=text[i+1];
+    const ch=text[i], nx=text[i+1];
 
     if(quoted){
-      if(ch==='"' && next==='"'){ cell+='"'; i++; }
-      else if(ch==='"'){ quoted=false; }
-      else { cell+=ch; }
+      if(ch==='"' && nx==='"'){
+        cell+='"'; i++;
+      }else if(ch==='"'){
+        quoted=false;
+      }else{
+        cell+=ch;
+      }
     }else{
-      if(ch==='"' && cell===""){ quoted=true; }
-      else if(ch===","){ row.push(cell); cell=""; }
-      else if(ch==="\r"){
-        if(next==="\n") i++;
-        row.push(cell); cell="";
-        if(row.some(v=>String(v).trim()!=="")) rows.push(row);
-        row=[];
-      }else if(ch==="\n"){
-        row.push(cell); cell="";
-        if(row.some(v=>String(v).trim()!=="")) rows.push(row);
-        row=[];
-      }else if(ch==="\t"){
-        row.push(cell); cell="";
+      if(ch==='"'){
+        quoted=true;
+      }else if(ch===','){
+        row.push(cell); cell='';
+      }else if(ch==='\n'){
+        row.push(cell);
+        if(row.some(v=>String(v).trim()!=='')) rows.push(row);
+        row=[]; cell='';
       }else{
         cell+=ch;
       }
     }
   }
 
-  if(quoted) throw new Error("CSV में quote सही तरह बंद नहि अछि।");
+  if(quoted) throw new Error('CSV में quote ठीक नहीं अछि।');
+  if(cell!=='' || row.length){
+    row.push(cell);
+    if(row.some(v=>String(v).trim()!=='')) rows.push(row);
+  }
 
-  row.push(cell);
-  if(row.some(v=>String(v).trim()!=="")) rows.push(row);
+  if(rows.length<2) return [];
 
-  if(!rows.length) return [];
+  const headers=rows[0].map(v=>String(v||'').trim().toLowerCase().replace(/^\uFEFF/,''));
+  if(!headers.includes('title') || !headers.includes('content')){
+    throw new Error('CSV header में title और content column जरूरी अछि।');
+  }
 
-  const headers=rows[0].map(v=>String(v).trim().toLowerCase());
-
-  return rows.slice(1).map((r,index)=>{
-    const item={};
-    headers.forEach((h,i)=>item[h]=(r[i] ?? "").trim());
-    item._row=index+2;
-    return item;
-  });
+  return rows.slice(1).map((r,idx)=>{
+    const o={};
+    headers.forEach((h,j)=>o[h]=String(r[j]??'').trim());
+    o._row=idx+2;
+    return o;
+  }).filter(r=>r.title || r.content);
 }
 
-function bulkEscape(value){
-  return String(value ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
+async function readBulkFileUtf8(file){
+  const bytes=new Uint8Array(await file.arrayBuffer());
+  if(bytes.length>=3 && bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  try{
+    return new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  }catch(e){
+    return new TextDecoder('utf-8').decode(bytes);
+  }
 }
 
-function bulkCsvCell(value){
-  const v=String(value ?? "");
-  return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v;
+function bulkCsvCell(v){
+  v=String(v??'');
+  return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
 }
 
 function downloadBulkTemplate(){
-  const header="title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description";
-  const row1=[
-    "पहिल समाचार","first-news","छोट summary","पूरा समाचार content",
-    "Darbhanga","published","","true","SEO Title","SEO Description"
-  ].map(bulkCsvCell).join(",");
-  const row2=[
-    "दोसर समाचार","second-news","Draft summary","दोसर समाचारक content",
-    "Darbhanga","draft","","false","SEO Title","SEO Description"
-  ].map(bulkCsvCell).join(",");
+  const h='title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description';
+  const data=h+'\r\n'
+    +bulkCsvCell('पहिल समाचार')+','+bulkCsvCell('first-news')+','+bulkCsvCell('छोट summary')+','+bulkCsvCell('पूरा समाचार content')+','+bulkCsvCell('darbhanga')+','+bulkCsvCell('published')+','+bulkCsvCell('')+','+bulkCsvCell('true')+',,'
+    +'\r\n'
+    +bulkCsvCell('दोसर समाचार')+','+bulkCsvCell('second-news')+','+bulkCsvCell('Draft summary')+','+bulkCsvCell('दोसर समाचारक content')+','+bulkCsvCell('darbhanga')+','+bulkCsvCell('draft')+','+bulkCsvCell('')+','+bulkCsvCell('false')+',,';
 
-  const blob=new Blob(
-    [header+"\r\n"+row1+"\r\n"+row2],
-    {type:"text/csv;charset=utf-8"}
-  );
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="news-upload-template.csv";
-  document.body.appendChild(a);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF',data],{type:'text/csv;charset=utf-8'}));
+  a.download='news-upload-template.csv';
   a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
 async function uploadBulkNews(){
-  const file=document.getElementById("bulkNewsFile")?.files?.[0];
-  const result=document.getElementById("bulkUploadResult");
-  const info=document.getElementById("bulkUploadInfo");
-  const button=document.getElementById("bulkUploadSubmit");
-
+  const file=document.getElementById('bulkFile')?.files[0];
   if(!file){
-    if(result) result.innerHTML='<div style="color:#b00020;">पहिने CSV/TXT file चुनू।</div>';
+    alert('पहिने CSV अथवा TXT file चुनू।');
     return;
   }
 
-  try{
-    button.disabled=true;
-    button.textContent="Upload भ' रहल अछि...";
-    result.innerHTML="";
+  const btn=document.getElementById('bulkUploadBtn');
+  const info=document.getElementById('bulkInfo');
+  const result=document.getElementById('bulkResult');
 
-    const text=await file.arrayBuffer();
+  btn.disabled=true;
+  btn.textContent='Upload भ\' रहल अछि...';
+  result.innerHTML='';
+
+  try{
+    const text=await readBulkFileUtf8(file);
     const rows=parseBulkCSV(text);
 
-    if(!rows.length) throw new Error("File में कोनो news row नहि भेटल।");
-    if(rows.length>500) throw new Error("एक बेर में अधिकतम 500 news upload करू।");
-
-    if(info) info.textContent=`${rows.length} news upload लेल तैयार अछि।`;
-
-    // IMPORTANT: use the existing API constant from this admin page.
-    const response=await fetch(
-      API + "/news",
-      {
-        method:"POST",
-        credentials:"include",
-        cache:"no-store",
-        headers:{
-          "Content-Type":"application/json",
-          "Accept":"application/json"
-        },
-        body:JSON.stringify({
-          bulk_import:true,
-          rows:rows
-        })
-      }
-    );
-
-    const data=await response.json().catch(()=>({}));
-
-    if(!response.ok || !data.success){
-      throw new Error(data.error || `Upload failed (${response.status})`);
+    if(!rows.length){
+      throw new Error('File में कोनो news row नहि भेटल।');
     }
 
-    let html=
-      `<div style="background:#e8f7ed;border:1px solid #b7dfc2;border-radius:10px;padding:12px;">
-        <b>✓ Upload पूरा भेल</b><br>
-        कुल: ${data.total || rows.length} · सफल: ${data.imported || 0} · असफल: ${data.failed || 0}
-      </div>`;
-
-    if(Array.isArray(data.errors) && data.errors.length){
-      html+=
-        `<div style="margin-top:10px;background:#fff4e5;border:1px solid #f1d39a;border-radius:10px;padding:12px;">
-          <b>जकरा में समस्या अछि:</b>
-          <ul style="margin:8px 0 0;padding-left:20px;">
-            ${data.errors.map(e=>`<li>Row ${bulkEscape(e.row)}: ${bulkEscape(e.error)}</li>`).join("")}
-          </ul>
-        </div>`;
+    if(rows.length>500){
+      throw new Error('एक बेर में अधिकतम 500 news upload करू।');
     }
 
-    result.innerHTML=html;
+    info.textContent=`${rows.length} news upload लेल तैयार अछि।`;
 
-    if(typeof loadNews==="function") await loadNews();
+    const response=await fetch(API + '/news?bulk=1',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json; charset=UTF-8'
+      },
+      credentials:'same-origin',
+      body:JSON.stringify({rows})
+    });
 
-  }catch(error){
-    console.error("BULK NEWS UPLOAD ERROR:",error);
-    result.innerHTML=
-      `<div style="background:#fdecec;border:1px solid #efb1b1;color:#9b1c1c;border-radius:10px;padding:12px;">
-        <b>Upload failed:</b><br>${bulkEscape(error.message || error)}
-      </div>`;
+    const d=await response.json();
+
+    if(!response.ok || d.success===false){
+      throw new Error(d.error || 'Server upload failed');
+    }
+
+    let h=`<div class="panel"><b>Upload पूरा।</b><br>कुल: ${rows.length} · सफल: ${d.imported||0} · असफल: ${d.failed||0}</div>`;
+
+    if(d.errors?.length){
+      h+=`<div class="panel"><b>Errors:</b><ul>${
+        d.errors.map(e=>`<li>Row ${e.row}: ${String(e.error||'').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</li>`).join('')
+      }</ul></div>`;
+    }
+
+    result.innerHTML=h;
+    if(typeof loadNews==='function') loadNews();
+
+  }catch(e){
+    result.innerHTML=`<div class="panel" style="color:#b91c1c">${String(e.message||e).replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</div>`;
   }finally{
-    button.disabled=false;
-    button.textContent="Upload All News";
+    btn.disabled=false;
+    btn.textContent='Upload All News';
   }
 }
 
-document.addEventListener("click",function(e){
-  const modal=document.getElementById("bulkUploadModal");
-  if(e.target===modal) closeBulkUpload();
-});
-
-
-</script>
-
-
-
-<!-- BULK NEWS UPLOAD -->
-<div id="bulkUploadModal" class="bulk-modal" aria-hidden="true">
-  <div class="bulk-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-      <h2>⬆ एक साथ समाचार Upload</h2>
-      <button type="button" class="bulk-close" onclick="closeBulkUpload()">✕</button>
-    </div>
-
-    <div class="bulk-help">
-      <b>CSV format:</b><br>
-      <code>title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description</code><br><br>
-      हर row एक अलग समाचार। <b>status</b> में <b>published</b> या <b>draft</b> रखें।
-      Category में category का नाम या slug दे सकते हैं।
-    </div>
-
-    <input id="bulkNewsFile" class="bulk-file" type="file"
-           accept=".csv,.txt,text/csv,text/plain">
-
-    <div id="bulkUploadInfo" style="margin-top:10px;font-size:13px;"></div>
-
-    <div class="bulk-actions">
-      <button type="button" class="btn" onclick="downloadBulkTemplate()">Template Download</button>
-      <button id="bulkUploadSubmit" type="button" class="btn primary"
-              onclick="uploadBulkNews()">Upload All News</button>
-    </div>
-
-    <div id="bulkUploadResult" class="bulk-result"></div>
-  </div>
-</div>
-
-</body>
-
-</html>
