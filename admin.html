@@ -13470,7 +13470,7 @@ async function uploadBulkNews(){
     button.textContent="Upload भ' रहल अछि...";
     result.innerHTML="";
 
-    const text=await file.text();
+    const text=await file.arrayBuffer();
     const rows=parseBulkCSV(text);
 
     if(!rows.length) throw new Error("File में कोनो news row नहि भेटल।");
