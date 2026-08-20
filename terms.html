@@ -81,7 +81,69 @@ main>.container{max-width:1180px}
   .category-home-summary{font-size:11px;line-height:1.45}
 }
 </style>
-</head><body><header class="top"><div class="head"><div><div class="logo">मैथिली समाचार</div><div>मैथिली भाषामे समाचार आ जानकारी</div></div><a class="home" href="/">मुख्य पृष्ठ</a></div></header><main><article class="card"><h1>नियम आ शर्त</h1><p class="intro">मैथिली समाचार वेबसाइटक उपयोग करैत समय ई सामान्य नियम आ शर्त लागू होइत अछि।</p><h2>सामग्री</h2><p>समाचार आ सामग्री जानकारीक उद्देश्य सँ प्रकाशित कएल जाइत अछि।</p><h2>बाहरी लिंक</h2><p>बाहरी वेबसाइटक सामग्री लेल मैथिली समाचार जिम्मेवार नहि अछि।</article></main><footer id="siteFooter" class="site-footer">
+
+<style id="shared-header-final">
+.brand-link{display:block;text-decoration:none;color:inherit}
+.header-main .header-inner{position:relative;min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.site-logo{max-height:46px;max-width:155px;width:auto;object-fit:contain;vertical-align:middle}
+.header-search{margin-left:auto;display:block!important}
+.nav{background:var(--brand,#7a1020)!important;color:#fff}
+.nav-inner{min-height:45px;display:flex;align-items:center;gap:3px;overflow:visible!important;position:relative;z-index:2000}
+.nav-group{position:relative;flex:0 0 auto}
+.nav-link{color:#fff!important}
+.nav-submenu{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff!important;color:#222!important;z-index:10000;border:1px solid #ddd;border-radius:0 0 9px 9px;box-shadow:0 10px 26px rgba(0,0,0,.18);padding:5px}
+.nav-submenu a{display:block!important;color:#222!important;padding:10px 13px;white-space:nowrap;text-decoration:none;border-radius:6px}
+.nav-submenu a:hover{background:#f6ecee!important;color:var(--brand,#7a1020)!important}
+.nav-group:hover>.nav-submenu,.nav-group:focus-within>.nav-submenu{display:block}
+.nav-group.open>.nav-submenu{display:block}
+@media(max-width:700px){
+ .header-main .header-inner{min-height:58px;padding:8px 12px}
+ .header-search{display:block!important;width:100%;padding:7px 12px;background:#fff;margin:0}
+ .header-search .search-box{width:100%}
+ .header-search .search-box input{flex:1;width:auto;height:40px}
+ .header-search .search-box button{height:40px;min-width:50px}
+ .header-main .header-inner{flex-wrap:wrap}
+ .nav{background:var(--brand,#7a1020)!important}
+ .mobile-menu-toggle{display:block;width:100%;border:0;background:var(--brand,#7a1020);color:#fff;text-align:left;padding:10px 12px;font-weight:800}
+ .nav-inner{display:none!important;flex-direction:column;align-items:stretch;overflow:visible!important;padding:4px 8px}
+ .nav-inner.mobile-open{display:flex!important}
+ .nav-group{width:100%}
+ .nav-group>.nav-link{width:100%;justify-content:space-between}
+ .nav-submenu{position:static;width:100%;box-shadow:none;border:0;border-radius:0;background:#5f0b18!important;padding-left:15px}
+ .nav-submenu a{color:#fff!important}
+ .nav-group:hover>.nav-submenu{display:none}
+ .nav-group.open>.nav-submenu{display:block}
+}
+@media(min-width:701px){
+ .mobile-menu-toggle{display:none}
+ .header-search .search-box input{width:220px}
+}
+</style>
+</head><body><header class="top-header">
+  <div class="header-main">
+    <div class="container header-inner">
+      <a href="/" class="brand-link" aria-label="मैथिली समाचार">
+        <div>
+          <div class="logo"><img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार" onerror="this.style.display='none'"><span id="siteLogoText">मैथिली समाचार</span></div>
+          <div class="tagline">मैथिली भाषामे ताजा आ विश्वसनीय समाचार</div>
+        </div>
+      </a>
+      <section class="search-section header-search">
+        <form class="search-box" id="searchForm">
+          <input type="search" id="searchInput" placeholder="ताकू..." autocomplete="off" aria-label="समाचार ताकू">
+          <button type="submit">ताकू</button>
+        </form>
+      </section>
+    </div>
+  </div>
+  <nav class="nav" aria-label="मुख्य मेनू">
+    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menu" aria-expanded="false">☰ मेनू</button>
+    <div class="container nav-inner" id="categoryNav">
+      <a href="/" class="nav-link active" data-category="">सभ समाचार</a>
+      <span class="nav-loading" id="categoryNavLoading">श्रेणी लोड भ' रहल अछि...</span>
+    </div>
+  </nav>
+</header><main><article class="card"><h1>नियम आ शर्त</h1><p class="intro">मैथिली समाचार वेबसाइटक उपयोग करैत समय ई सामान्य नियम आ शर्त लागू होइत अछि।</p><h2>सामग्री</h2><p>समाचार आ सामग्री जानकारीक उद्देश्य सँ प्रकाशित कएल जाइत अछि।</p><h2>बाहरी लिंक</h2><p>बाहरी वेबसाइटक सामग्री लेल मैथिली समाचार जिम्मेवार नहि अछि।</article></main><footer id="siteFooter" class="site-footer">
 <div class="footer-wrap">
 <div class="footer-col"><div class="footer-logo-wrap"><img id="footerLogo" class="footer-logo" src="" alt="मैथिली समाचार"><strong id="footerBrand">मैथिली समाचार</strong></div><h3 id="footerAboutTitle">हमर विषय मे</h3><p id="footerAboutText">मैथिली भाषामे ताजा आ विश्वसनीय समाचार।</p></div>
 <div class="footer-col"><h3>महत्वपूर्ण लिंक</h3><a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a></div>
@@ -94,4 +156,44 @@ if(s.logo_url){for(const id of ['footerLogo']){const e=document.getElementById(i
 set('footerAboutTitle',s.footer_about_title||'हमर विषय मे');set('footerAboutText',s.footer_about||'मैथिली भाषामे ताजा आ विश्वसनीय समाचार।');set('footerSocialTitle',s.footer_social_title||'सामाजिक साइट');set('footerCopyrightText',s.footer_copyright||'मैथिली समाचार');
 const box=document.getElementById('footerSocialLinks');if(box){box.innerHTML=(Array.isArray(s.social_links)?s.social_links:[]).map(x=>`<a href="${String(x.url||'')}" target="_blank" rel="noopener">${String(x.name||'')}</a>`).join('')}}
 catch(e){console.warn(e)}})();
+</script><script id="shared-category-menu">
+(function(){
+  function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+  function render(cats){
+    const nav=document.getElementById("categoryNav"); if(!nav)return;
+    nav.innerHTML='<a href="/" class="nav-link" data-category="">सभ समाचार</a>';
+    const active=(cats||[]).filter(c=>String(c.status||"active").toLowerCase()==="active" && Number(c.menu_visible??c.show_in_menu??1)===1);
+    const roots=active.filter(c=>!c.parent_id||Number(c.parent_id)===0).sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
+    roots.forEach(c=>{
+      const kids=active.filter(x=>Number(x.parent_id||0)===Number(c.id)).sort((a,b)=>Number(a.menu_order||0)-Number(b.menu_order||0));
+      const group=document.createElement("div"); group.className="nav-group";
+      const a=document.createElement("a"); a.className="nav-link"; a.href="/category/"+encodeURIComponent(c.slug); a.dataset.category=c.slug;
+      a.innerHTML="<span>"+esc(c.name||"श्रेणी")+"</span>"+(kids.length?'<span class="menu-arrow">▾</span>':"");
+      group.appendChild(a);
+      if(kids.length){
+        const sub=document.createElement("div"); sub.className="nav-submenu";
+        kids.forEach(x=>{const s=document.createElement("a");s.href="/category/"+encodeURIComponent(x.slug);s.textContent=x.name||"उप-श्रेणी";sub.appendChild(s)});
+        group.appendChild(sub);
+        a.addEventListener("click",e=>{
+          if(window.innerWidth<=700 || !group.classList.contains("open")){
+            e.preventDefault();
+            document.querySelectorAll(".nav-group.open").forEach(g=>{if(g!==group)g.classList.remove("open")});
+            group.classList.add("open");
+          }
+        });
+      }
+      nav.appendChild(group);
+    });
+    const toggle=document.getElementById("mobileMenuToggle");
+    if(toggle && !toggle.dataset.bound){
+      toggle.dataset.bound="1";
+      toggle.addEventListener("click",()=>{nav.classList.toggle("mobile-open");toggle.setAttribute("aria-expanded",nav.classList.contains("mobile-open"))});
+    }
+  }
+  async function init(){
+    try{const r=await fetch("/api/categories?status=active",{cache:"no-store"}),d=await r.json();if(d.success)render(d.categories||[])}
+    catch(e){console.warn("menu",e)}
+  }
+  document.addEventListener("DOMContentLoaded",init);
+})();
 </script></body></html>

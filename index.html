@@ -870,6 +870,73 @@ main>.container{max-width:1180px}
   .category-home-summary{font-size:11px;line-height:1.45}
 }
 </style>
+
+<style id="home-exact-layout">
+.featured-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,2fr) minmax(300px,1fr)!important;
+  gap:16px!important;
+  align-items:stretch;
+}
+.featured-main{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 4px 18px rgba(32,33,36,.07)}
+.featured-main img{width:100%;height:360px;object-fit:cover;display:block}
+.featured-main .featured-content{padding:16px}
+.featured-title{font-size:27px;line-height:1.4}
+.featured-summary{font-size:14px;line-height:1.7;color:var(--muted)}
+.featured-side{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 4px 18px rgba(32,33,36,.07)}
+.featured-side-item{display:grid;grid-template-columns:115px 1fr;gap:12px;padding:12px;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.featured-side-item:last-child{border-bottom:0}
+.featured-side-item img,.featured-side-image{width:115px;height:82px;object-fit:cover;border-radius:7px}
+.featured-side-title{font-size:15px;line-height:1.45;font-weight:750}
+.home-latest-section{margin:34px 0}
+.section-more{font-size:13px;color:var(--brand)!important;font-weight:800;text-decoration:none}
+@media(max-width:700px){
+ .featured-grid{grid-template-columns:1fr!important}
+ .featured-main img{height:220px}
+ .featured-title{font-size:21px}
+ .featured-summary{font-size:13px}
+ .featured-side-item{grid-template-columns:100px 1fr}
+ .featured-side-item img,.featured-side-image{width:100px;height:72px}
+}
+</style>
+
+<style id="shared-header-final">
+.brand-link{display:block;text-decoration:none;color:inherit}
+.header-main .header-inner{position:relative;min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.site-logo{max-height:46px;max-width:155px;width:auto;object-fit:contain;vertical-align:middle}
+.header-search{margin-left:auto;display:block!important}
+.nav{background:var(--brand,#7a1020)!important;color:#fff}
+.nav-inner{min-height:45px;display:flex;align-items:center;gap:3px;overflow:visible!important;position:relative;z-index:2000}
+.nav-group{position:relative;flex:0 0 auto}
+.nav-link{color:#fff!important}
+.nav-submenu{display:none;position:absolute;top:100%;left:0;min-width:210px;background:#fff!important;color:#222!important;z-index:10000;border:1px solid #ddd;border-radius:0 0 9px 9px;box-shadow:0 10px 26px rgba(0,0,0,.18);padding:5px}
+.nav-submenu a{display:block!important;color:#222!important;padding:10px 13px;white-space:nowrap;text-decoration:none;border-radius:6px}
+.nav-submenu a:hover{background:#f6ecee!important;color:var(--brand,#7a1020)!important}
+.nav-group:hover>.nav-submenu,.nav-group:focus-within>.nav-submenu{display:block}
+.nav-group.open>.nav-submenu{display:block}
+@media(max-width:700px){
+ .header-main .header-inner{min-height:58px;padding:8px 12px}
+ .header-search{display:block!important;width:100%;padding:7px 12px;background:#fff;margin:0}
+ .header-search .search-box{width:100%}
+ .header-search .search-box input{flex:1;width:auto;height:40px}
+ .header-search .search-box button{height:40px;min-width:50px}
+ .header-main .header-inner{flex-wrap:wrap}
+ .nav{background:var(--brand,#7a1020)!important}
+ .mobile-menu-toggle{display:block;width:100%;border:0;background:var(--brand,#7a1020);color:#fff;text-align:left;padding:10px 12px;font-weight:800}
+ .nav-inner{display:none!important;flex-direction:column;align-items:stretch;overflow:visible!important;padding:4px 8px}
+ .nav-inner.mobile-open{display:flex!important}
+ .nav-group{width:100%}
+ .nav-group>.nav-link{width:100%;justify-content:space-between}
+ .nav-submenu{position:static;width:100%;box-shadow:none;border:0;border-radius:0;background:#5f0b18!important;padding-left:15px}
+ .nav-submenu a{color:#fff!important}
+ .nav-group:hover>.nav-submenu{display:none}
+ .nav-group.open>.nav-submenu{display:block}
+}
+@media(min-width:701px){
+ .mobile-menu-toggle{display:none}
+ .header-search .search-box input{width:220px}
+}
+</style>
 </head>
 
 
@@ -986,6 +1053,15 @@ main>.container{max-width:1180px}
     </section>
 
 
+    <!-- LATEST NEWS -->
+    <section id="latestNewsSection" class="home-latest-section">
+      <div class="section-title">
+        <h1>ताजा समाचार</h1>
+        <a class="section-more" href="/category/all">सभ समाचार पढ़ू →</a>
+      </div>
+      <div id="latestNewsContainer" class="news-grid"></div>
+    </section>
+
     <!-- CATEGORY NEWS SECTIONS -->
 
     <div id="categorySections">
@@ -1076,7 +1152,7 @@ async function start(){
 
   await loadCategories();
 
-  await loadNews();
+  await Promise.all([loadFeaturedAndLatest(), loadNews()]);
 
 }
 
@@ -1551,6 +1627,29 @@ async function loadNews(){
     console.error("HOME CATEGORY NEWS ERROR:",error);
     container.innerHTML=`<div class="error" style="grid-column:1/-1">समाचार लोड नहि भ' सकल।<br>${escapeHtml(error.message||"त्रुटि भेल")}</div>`;
   }
+}
+
+
+function renderLatest(news){
+  const box=document.getElementById("latestNewsContainer");
+  if(!box) return;
+  box.innerHTML=(news||[]).slice(0,6).map(item=>{
+    const slug=item.slug||item.id;
+    const image=item.image_url
+      ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title||"समाचार")}" loading="lazy" decoding="async">`
+      : `<div class="category-home-image no-image">मैथिली समाचार</div>`;
+    return `<article class="news-card category-home-card"><a href="/news/${encodeURIComponent(slug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3>${item.summary?`<p class="category-home-summary">${escapeHtml(item.summary)}</p>`:""}<div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`;
+  }).join("");
+}
+async function loadFeaturedAndLatest(){
+  try{
+    const r=await fetch("/api/news?status=published&page=1&limit=30",{cache:"no-store"});
+    const d=await r.json();
+    if(!r.ok||!d.success) return;
+    const news=d.news||[];
+    renderFeatured(news);
+    renderLatest(news);
+  }catch(e){console.warn("featured/latest",e)}
 }
 
 /* ======================================================
