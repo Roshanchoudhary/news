@@ -656,6 +656,46 @@ main>.container{max-width:1180px}
  .header-search .search-box input{width:220px}
 }
 </style>
+
+<style id="category-mobile-final">
+.category-header{background:#fff;border:1px solid #e8e5df;border-radius:12px;padding:18px;margin-top:20px}
+.news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.news-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 3px 15px rgba(0,0,0,.06)}
+.news-card .news-image,.news-card .no-image{width:100%;height:180px;object-fit:cover;display:block}
+.news-card-body{padding:12px}
+.news-card-title{font-size:16px;line-height:1.45;margin:0 0 7px}
+.news-card-summary{font-size:12px;color:#6b7280;line-height:1.55}
+.pagination{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:25px 0}
+.pagination button,.pagination a{min-width:38px;height:38px;border:1px solid #ddd;background:#fff;border-radius:7px;color:#333;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.pagination .active{background:#7a1020;color:#fff;border-color:#7a1020}
+@media(max-width:700px){
+ .category-header{padding:13px;margin-top:12px}
+ .news-grid{grid-template-columns:1fr;gap:10px}
+ .news-card>a{display:grid;grid-template-columns:112px 1fr}
+ .news-card .news-image,.news-card .no-image{height:100%;min-height:105px}
+ .news-card-body{padding:9px}
+ .news-card-title{font-size:14px}
+ .news-card-summary{font-size:11px;line-height:1.45}
+ .pagination{gap:5px;margin:18px 0}
+ .pagination button,.pagination a{min-width:36px;height:36px}
+}
+</style>
+
+<style id="search-mobile-final">
+.header-search{max-width:285px}
+.header-search .search-box{display:flex;align-items:center;gap:6px}
+.header-search .search-box input{height:36px;width:230px;min-width:0;border:1px solid #d7dbe0;border-radius:8px;padding:0 11px;background:#fff;color:#222;outline:none}
+.header-search .search-box input:focus{border-color:#7a1020;box-shadow:0 0 0 2px rgba(122,16,32,.10)}
+.header-search .search-box button{height:36px;border:0;border-radius:8px;background:#5f0b18;color:#fff;padding:0 12px;font-weight:800;white-space:nowrap}
+@media(max-width:700px){
+ .header-search{order:3;width:100%;max-width:none;background:#fff;padding:7px 0 2px}
+ .header-search .search-box{width:100%}
+ .header-search .search-box input{height:40px;width:auto;flex:1;font-size:14px;border-radius:9px}
+ .header-search .search-box button{height:40px;width:48px;padding:0;font-size:0;border-radius:9px}
+ .header-search .search-box button:after{content:"⌕";font-size:21px}
+ .header-main .header-inner{gap:4px}
+}
+</style>
 </head>
 
 
@@ -1121,36 +1161,28 @@ async function loadCategory(){
    LOAD NEWS
 ====================================================== */
 
-async function loadNews(
-  search = ""
-){
+async function loadNews(search = ""){
   const container=document.getElementById("newsContainer");
+  const pagination=document.getElementById("pagination");
   container.innerHTML=`<div class="loading">समाचार लोड भ' रहल अछि...</div>`;
+  if(pagination) pagination.innerHTML="";
   if(!category) return;
-
   try{
-    const ids=[Number(category.id), ...(Array.isArray(category.children)?category.children.map(x=>Number(x.id)):[])].filter(Boolean);
-    const responses=await Promise.all(ids.map(id=>{
-      let u="/api/news?status=published&category_id="+encodeURIComponent(id)+"&page=1&limit=100";
-      if(search) u+="&search="+encodeURIComponent(search);
-      return fetch(u,{cache:"no-store"}).then(r=>r.json());
-    }));
-    let all=[];
-    responses.forEach(d=>{if(d.success) all=all.concat(d.news||[])});
-    const unique=new Map(all.map(n=>[n.id,n]));
-    all=[...unique.values()].sort((a,b)=>new Date(b.published_at||b.created_at)-new Date(a.published_at||a.created_at));
-
-    const pageSize=20;
-    const total=all.length;
-    const pages=Math.max(1,Math.ceil(total/pageSize));
-    if(currentPage>pages) currentPage=pages;
-    const pageNews=all.slice((currentPage-1)*pageSize,currentPage*pageSize);
-    renderNews(pageNews);
-    renderPagination({page:currentPage,pages,total});
+    const pageSize=18;
+    let u="/api/news?status=published&category_slug="+encodeURIComponent(category.slug)+"&page="+encodeURIComponent(currentPage)+"&limit="+pageSize;
+    if(search) u+="&search="+encodeURIComponent(search);
+    const response=await fetch(u,{cache:"no-store"});
+    const data=await response.json();
+    if(!response.ok||!data.success) throw new Error(data.error||"समाचार लोड नहि भ' सकल");
+    const news=data.news||[];
+    const pg=data.pagination||{page:currentPage,limit:pageSize,total:news.length,pages:1};
+    currentPage=Number(pg.page||currentPage);
+    renderNews(news);
+    renderPagination(pg);
   }catch(error){
     console.error("NEWS ERROR:",error);
     container.innerHTML=`<div class="error">${escapeHtml(error.message||"समाचार लोड नहि भ' सकल")}</div>`;
-    document.getElementById("pagination").innerHTML="";
+    if(pagination) pagination.innerHTML="";
   }
 }
 
@@ -1786,6 +1818,21 @@ catch(e){console.warn(e)}})();
   }
   document.addEventListener("DOMContentLoaded",init);
 })();
+</script><script id="global-search-handler">
+document.addEventListener("DOMContentLoaded",()=>{
+ const form=document.getElementById("searchForm");
+ const input=document.getElementById("searchInput");
+ if(form && !form.dataset.globalSearch){
+  form.dataset.globalSearch="1";
+  form.addEventListener("submit",e=>{
+   e.preventDefault();
+   const q=(input?.value||"").trim();
+   if(typeof performSearch==="function"){performSearch();return}
+   if(typeof searchNews==="function"){searchNews();return}
+   location.href="/?search="+encodeURIComponent(q);
+  });
+ }
+});
 </script></body>
 
 </html>

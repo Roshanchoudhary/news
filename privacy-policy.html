@@ -119,6 +119,22 @@ main>.container{max-width:1180px}
  .header-search .search-box input{width:220px}
 }
 </style>
+
+<style id="search-mobile-final">
+.header-search{max-width:285px}
+.header-search .search-box{display:flex;align-items:center;gap:6px}
+.header-search .search-box input{height:36px;width:230px;min-width:0;border:1px solid #d7dbe0;border-radius:8px;padding:0 11px;background:#fff;color:#222;outline:none}
+.header-search .search-box input:focus{border-color:#7a1020;box-shadow:0 0 0 2px rgba(122,16,32,.10)}
+.header-search .search-box button{height:36px;border:0;border-radius:8px;background:#5f0b18;color:#fff;padding:0 12px;font-weight:800;white-space:nowrap}
+@media(max-width:700px){
+ .header-search{order:3;width:100%;max-width:none;background:#fff;padding:7px 0 2px}
+ .header-search .search-box{width:100%}
+ .header-search .search-box input{height:40px;width:auto;flex:1;font-size:14px;border-radius:9px}
+ .header-search .search-box button{height:40px;width:48px;padding:0;font-size:0;border-radius:9px}
+ .header-search .search-box button:after{content:"⌕";font-size:21px}
+ .header-main .header-inner{gap:4px}
+}
+</style>
 </head><body><header class="top-header">
   <div class="header-main">
     <div class="container header-inner">
@@ -196,4 +212,19 @@ catch(e){console.warn(e)}})();
   }
   document.addEventListener("DOMContentLoaded",init);
 })();
+</script><script id="global-search-handler">
+document.addEventListener("DOMContentLoaded",()=>{
+ const form=document.getElementById("searchForm");
+ const input=document.getElementById("searchInput");
+ if(form && !form.dataset.globalSearch){
+  form.dataset.globalSearch="1";
+  form.addEventListener("submit",e=>{
+   e.preventDefault();
+   const q=(input?.value||"").trim();
+   if(typeof performSearch==="function"){performSearch();return}
+   if(typeof searchNews==="function"){searchNews();return}
+   location.href="/?search="+encodeURIComponent(q);
+  });
+ }
+});
 </script></body></html>

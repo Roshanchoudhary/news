@@ -937,6 +937,41 @@ main>.container{max-width:1180px}
  .header-search .search-box input{width:220px}
 }
 </style>
+
+<style id="latest-18-style">
+.home-latest-section{margin:32px 0}
+.home-latest-section .news-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.home-latest-section .news-card{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 15px rgba(0,0,0,.06)}
+.home-latest-section .news-card>a{display:block;color:inherit;text-decoration:none}
+.home-latest-section .news-card img,.home-latest-section .category-home-image{display:block;width:100%;height:175px;object-fit:cover}
+.home-latest-section .category-home-body{padding:12px}
+.home-latest-section .category-home-body h3{font-size:16px;line-height:1.45;margin:0 0 7px}
+.home-latest-section .category-home-summary{font-size:12px;color:#6b7280;line-height:1.55}
+@media(max-width:700px){
+ .home-latest-section .news-grid{grid-template-columns:1fr;gap:10px}
+ .home-latest-section .news-card>a{display:grid;grid-template-columns:110px 1fr}
+ .home-latest-section .news-card img,.home-latest-section .category-home-image{height:100%;min-height:100px}
+ .home-latest-section .category-home-body{padding:9px}
+ .home-latest-section .category-home-body h3{font-size:14px}
+ .home-latest-section .category-home-summary{font-size:11px;margin:0 0 5px}
+}
+</style>
+
+<style id="search-mobile-final">
+.header-search{max-width:285px}
+.header-search .search-box{display:flex;align-items:center;gap:6px}
+.header-search .search-box input{height:36px;width:230px;min-width:0;border:1px solid #d7dbe0;border-radius:8px;padding:0 11px;background:#fff;color:#222;outline:none}
+.header-search .search-box input:focus{border-color:#7a1020;box-shadow:0 0 0 2px rgba(122,16,32,.10)}
+.header-search .search-box button{height:36px;border:0;border-radius:8px;background:#5f0b18;color:#fff;padding:0 12px;font-weight:800;white-space:nowrap}
+@media(max-width:700px){
+ .header-search{order:3;width:100%;max-width:none;background:#fff;padding:7px 0 2px}
+ .header-search .search-box{width:100%}
+ .header-search .search-box input{height:40px;width:auto;flex:1;font-size:14px;border-radius:9px}
+ .header-search .search-box button{height:40px;width:48px;padding:0;font-size:0;border-radius:9px}
+ .header-search .search-box button:after{content:"⌕";font-size:21px}
+ .header-main .header-inner{gap:4px}
+}
+</style>
 </head>
 
 
@@ -1062,16 +1097,8 @@ main>.container{max-width:1180px}
       <div id="latestNewsContainer" class="news-grid"></div>
     </section>
 
-    <!-- CATEGORY NEWS SECTIONS -->
-
-    <div id="categorySections">
-      <div class="loading" style="grid-column:1/-1">
-        समाचार लोड भ' रहल अछि...
-      </div>
-    </div>
-
+    <!-- NO CATEGORY SECTIONS ON HOME: category pages handle category browsing -->
   </div>
-
 </main>
 
 
@@ -1153,6 +1180,12 @@ async function start(){
   await loadCategories();
 
   await Promise.all([loadFeaturedAndLatest(), loadNews()]);
+  const initialQuery=new URLSearchParams(location.search).get("search");
+  if(initialQuery){
+    const input=document.getElementById("searchInput");
+    if(input) input.value=initialQuery;
+    performSearch();
+  }
 
 }
 
@@ -1633,7 +1666,7 @@ async function loadNews(){
 function renderLatest(news){
   const box=document.getElementById("latestNewsContainer");
   if(!box) return;
-  box.innerHTML=(news||[]).slice(0,6).map(item=>{
+  box.innerHTML=(news||[]).filter(item=>Number(item.featured||0)!==1).slice(0,18).map(item=>{
     const slug=item.slug||item.id;
     const image=item.image_url
       ? `<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title||"समाचार")}" loading="lazy" decoding="async">`
@@ -1643,7 +1676,7 @@ function renderLatest(news){
 }
 async function loadFeaturedAndLatest(){
   try{
-    const r=await fetch("/api/news?status=published&page=1&limit=30",{cache:"no-store"});
+    const r=await fetch("/api/news?status=published&page=1&limit=40",{cache:"no-store"});
     const d=await r.json();
     if(!r.ok||!d.success) return;
     const news=d.news||[];
@@ -2345,6 +2378,21 @@ function escapeAttribute(
  }
  document.addEventListener('DOMContentLoaded',loadSiteChrome);
 })();
+</script><script id="global-search-handler">
+document.addEventListener("DOMContentLoaded",()=>{
+ const form=document.getElementById("searchForm");
+ const input=document.getElementById("searchInput");
+ if(form && !form.dataset.globalSearch){
+  form.dataset.globalSearch="1";
+  form.addEventListener("submit",e=>{
+   e.preventDefault();
+   const q=(input?.value||"").trim();
+   if(typeof performSearch==="function"){performSearch();return}
+   if(typeof searchNews==="function"){searchNews();return}
+   location.href="/?search="+encodeURIComponent(q);
+  });
+ }
+});
 </script></body>
 
 </html>
