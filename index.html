@@ -563,36 +563,53 @@ main{
 /* =====================================================
    CATEGORY HOME SECTIONS
 ===================================================== */
-.category-home-section{margin:28px 0 42px}
-.category-home-head{display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:3px solid #8b0000;margin-bottom:16px;padding-bottom:9px}
-.category-home-title{margin:0;font-size:24px;color:#650000}
-.category-home-all{color:#8b0000;font-weight:700;font-size:14px;white-space:nowrap}
-.category-home-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
-.category-home-card{background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08);transition:transform .2s,box-shadow .2s}
-.category-home-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
-.category-home-card img,.category-home-image{width:100%;height:145px;object-fit:cover;display:block;background:#eee}
-.category-home-body{padding:12px}.category-home-card h3{margin:6px 0 0;font-size:16px;line-height:1.45}.category-home-date{color:#888;font-size:11px;margin-top:8px}.category-home-empty{background:#fff;padding:25px;border-radius:10px;color:#777}
-@media(max-width:1000px){.category-home-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:600px){.category-home-section{margin:22px 0 30px}.category-home-head{align-items:flex-end}.category-home-title{font-size:20px}.category-home-all{font-size:12px}.category-home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.category-home-card img,.category-home-image{height:120px}.category-home-card h3{font-size:14px}.category-home-body{padding:10px}}
+.category-home-section{margin:30px 0 42px}
+.category-home-head{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:3px solid #8b0000;margin-bottom:16px;padding-bottom:10px}
+.category-home-title{margin:0;font-size:25px;color:#650000;font-weight:800}
+.category-home-desc{margin:5px 0 0;color:#777;font-size:13px;line-height:1.5}
+.category-home-all{color:#8b0000;font-weight:800;font-size:14px;white-space:nowrap}
+.category-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.category-home-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07);transition:transform .18s,box-shadow .18s}
+.category-home-card:hover{transform:translateY(-2px);box-shadow:0 7px 22px rgba(0,0,0,.12)}
+.category-home-card img,.category-home-image{width:100%;height:190px;object-fit:cover;display:block;background:#eee}
+.category-home-body{padding:14px}
+.category-home-card h3{margin:5px 0 8px;font-size:17px;line-height:1.5}
+.category-home-summary{color:#666;font-size:13px;line-height:1.65;margin:0}
+.category-home-date{color:#999;font-size:11px;margin-top:9px}
+@media(max-width:900px){
+  .category-home-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .category-home-card img,.category-home-image{height:150px}
+  .category-home-card h3{font-size:15px}
+}
+@media(max-width:600px){
+  .category-home-section{margin:22px 0 30px}
+  .category-home-head{align-items:flex-start}
+  .category-home-title{font-size:20px}
+  .category-home-all{font-size:12px}
+  .category-home-grid{grid-template-columns:1fr;gap:11px}
+  .category-home-card{display:grid;grid-template-columns:105px 1fr}
+  .category-home-card img,.category-home-image{height:95px}
+  .category-home-body{padding:9px 10px}
+  .category-home-card h3{font-size:15px;line-height:1.4;margin:0 0 5px}
+  .category-home-summary{font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .category-home-date{font-size:10px;margin-top:5px}
+}
 
 /* =====================================================
    FOOTER
 ===================================================== */
+/* =====================================================
+   FOOTER
+===================================================== */
 
-footer{
-  background:#222;
-  color:white;
-  padding:30px 0;
-  text-align:center;
-}
-
-footer p{
-  margin:6px 0;
-  color:#bbb;
-  font-size:13px;
-}
-
-
+.site-footer{background:#171717;color:#fff;margin-top:45px;text-align:left}
+.footer-wrap{width:min(1200px,94%);margin:auto;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:34px;padding:34px 0}
+.footer-col h3{margin:0 0 11px;font-size:16px}
+.footer-col p{margin:0;color:#c7c7c7;line-height:1.7;font-size:13px}
+.footer-col a{display:block;color:#ddd;margin:8px 0;font-size:13px}
+.footer-logo{max-width:150px;max-height:45px;object-fit:contain;margin-bottom:10px}
+.footer-bottom{border-top:1px solid #333;padding:13px 3%;text-align:center;color:#aaa;font-size:12px}
+@media(max-width:600px){.footer-wrap{grid-template-columns:1fr;gap:22px;padding:26px 14px}.footer-bottom{padding:12px}}
 /* =====================================================
    MOBILE
 ===================================================== */
@@ -757,25 +774,20 @@ input[type="search"]::-webkit-search-cancel-button{margin-right:6px}
 }
 img{content-visibility:auto}
 </style>
-
-<style id="header-search-pro">
-@media(min-width:701px){
-  .top-header{position:relative}
-  .top-header .search-section{position:absolute;right:3%;top:10px;width:min(360px,34%);padding:0;background:transparent;border:0;z-index:20}
-  .top-header .search-box{background:rgba(255,255,255,.12);padding:4px;border-radius:10px}
-  .top-header .search-box input{height:40px;background:#fff;border:0}
-  .top-header .search-box button{height:40px;min-width:72px;padding:0 12px}
-  .header-inner{padding-right:390px}
-}
+<style id="header-search-final">
+.search-section{padding:0;background:transparent;border:0}
+.header-main .search-section{margin-left:auto;flex:0 0 min(380px,38%)}
+.header-main .search-box{display:flex;gap:7px}
+.header-main .search-box input{height:42px;background:#fff;border:0;border-radius:9px;padding:0 13px;font-size:15px;min-width:0}
+.header-main .search-box button{height:42px;min-width:72px;border:0;background:#650000;color:#fff;border-radius:9px;font-weight:700}
 @media(max-width:700px){
-  .top-header .search-section{padding:8px 12px}
-  .top-header .search-box{display:flex;gap:7px}
-  .top-header .search-box input{height:44px;font-size:16px}
-  .top-header .search-box button{min-width:58px;width:58px;height:44px;padding:0;font-size:0}
-  .top-header .search-box button::after{content:'🔎';font-size:18px}
+  .header-main .search-section{flex:1;min-width:0;margin-left:10px}
+  .header-main .search-box button{font-size:0;min-width:44px;width:44px;padding:0}
+  .header-main .search-box button::after{content:'⌕';font-size:23px}
+  .header-main .search-box input{height:42px;font-size:16px}
+  .header-main .search-box input::placeholder{color:#777}
 }
-</style>
-</head>
+</style></head>
 
 
 <body>
@@ -793,10 +805,9 @@ img{content-visibility:auto}
 
       <div>
 
-        <a class="site-brand" href="/" aria-label="मैथिली समाचार">
-          <img id="siteLogo" class="site-logo" src="" alt="मैथिली समाचार" loading="eager" decoding="async" onerror="this.style.display='none'">
-          <span id="siteLogoText" class="logo">मैथिली समाचार</span>
-        </a>
+        <div class="logo">
+          मैथिली समाचार
+        </div>
 
         <div class="tagline">
           मैथिली भाषामे नवीनतम समाचार
@@ -813,6 +824,15 @@ img{content-visibility:auto}
       </a>
 
     </div>
+
+    <div class="container header-search-row">
+  <section class="search-section">
+    <form class="search-box" id="searchForm">
+      <input type="search" id="searchInput" placeholder="ताकू..." autocomplete="off">
+      <button type="submit">ताकू</button>
+    </form>
+  </section>
+</div>
 
   </div>
 
@@ -868,7 +888,7 @@ img{content-visibility:auto}
       <input
         type="search"
         id="searchInput"
-        placeholder="समाचार ताकू..."
+        placeholder="ताकू..."
         autocomplete="off"
       >
 
@@ -902,7 +922,7 @@ img{content-visibility:auto}
       <div class="section-title">
 
         <h1>
-          प्रमुख समाचार
+          विशेष समाचार
         </h1>
 
       </div>
@@ -932,18 +952,29 @@ img{content-visibility:auto}
      FOOTER
 ===================================================== -->
 
-<footer>
-  <div class="container">
-    <strong>मैथिली समाचार</strong>
-    <p>मैथिली भाषामे समाचार आ जानकारी।</p>
-    <nav class="footer-links" aria-label="Footer">
+<footer id="siteFooter" class="site-footer">
+  <div class="footer-wrap">
+    <div class="footer-col">
+      <div class="footer-logo-wrap">
+        <img id="footerLogo" class="footer-logo" src="" alt="मैथिली समाचार" loading="lazy" onerror="this.style.display='none'">
+        <strong id="footerBrand">मैथिली समाचार</strong>
+      </div>
+      <h3 id="footerAboutTitle">हमर विषय मे</h3>
+      <p id="footerAboutText">मैथिली भाषामे विश्वसनीय आ ताजा समाचार।</p>
+    </div>
+    <div class="footer-col">
+      <h3 id="footerLinksTitle">महत्वपूर्ण लिंक</h3>
       <a href="/about.html">हमर विषय मे</a>
       <a href="/contact.html">सम्पर्क करू</a>
       <a href="/privacy-policy.html">गोपनीयता नीति</a>
       <a href="/terms.html">नियम आ शर्त</a>
-    </nav>
-    <p>© <span id="year"></span> मैथिली समाचार</p>
+    </div>
+    <div class="footer-col">
+      <h3 id="footerSocialTitle">सामाजिक साइट</h3>
+      <div id="footerSocialLinks"></div>
+    </div>
   </div>
+  <div class="footer-bottom">© <span id="year"></span> <span id="footerCopyrightText">मैथिली समाचार</span></div>
 </footer>
 
 
@@ -1417,7 +1448,7 @@ async function loadNews(){
     if(!withNews.length){container.innerHTML='<div class="empty">एखन कोनो प्रकाशित समाचार नहि अछि।</div>';return;}
     container.innerHTML=withNews.map(({category,news})=>{
       const slug=category.slug||"";
-      return `<section class="category-home-section"><div class="category-home-head"><h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2><a class="category-home-all" href="/category/${encodeURIComponent(slug)}">एहि श्रेणीक सभ पढ़ू →</a></div><div class="category-home-grid">${news.slice(0,5).map(item=>{const nslug=item.slug||item.id;const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3><div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`}).join("")}</div></section>`;
+      return `<section class="category-home-section"><div class="category-home-head"><h2 class="category-home-title">${escapeHtml(category.name||"श्रेणी")}</h2><a class="category-home-all" href="/category/${encodeURIComponent(slug)}">एहि श्रेणीक सभ समाचार पढ़ू →</a></div><div class="category-home-grid">${news.slice(0,6).map(item=>{const nslug=item.slug||item.id;const image=item.image_url?`<img src="${escapeAttribute(item.image_url)}" alt="${escapeAttribute(item.title)}" loading="lazy">`:`<div class="category-home-image no-image">मैथिली समाचार</div>`;return `<article class="category-home-card"><a href="/news/${encodeURIComponent(nslug)}">${image}<div class="category-home-body"><h3>${escapeHtml(item.title||"समाचार")}</h3><div class="category-home-date">${formatDate(item.published_at||item.created_at)}</div></div></a></article>`}).join("")}</div></section>`;
     }).join("");
   }catch(error){console.error("HOME CATEGORY NEWS ERROR:",error);container.innerHTML=`<div class="error" style="grid-column:1/-1">समाचार लोड नहि भ' सकल।<br>${escapeHtml(error.message||"त्रुटि भेल")}</div>`;}
 }
@@ -2090,54 +2121,31 @@ function escapeAttribute(
 
 </script>
 
-
 <script>
 (function(){
-  const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  async function loadSiteChrome(){
-    try{
-      const r=await fetch('/api/settings',{cache:'no-store'});
-      const d=await r.json();
-      const s=d.settings||{};
-      if(s.logo_url){
-        const img=document.getElementById('siteLogo');
-        const text=document.getElementById('siteLogoText');
-        if(img){img.src=s.logo_url;img.style.display='block';}
-        if(text) text.style.display='none';
-      }
-      const footer=document.getElementById('siteFooter');
-      if(footer){
-        const social=Array.isArray(s.social_links)?s.social_links:[];
-        footer.innerHTML=`
-          <div class="footer-wrap">
-            <div class="footer-col"><h3>${esc(s.footer_about_title||'हमर विषय मे')}</h3><p>${esc(s.footer_about||'मैथिली भाषामे विश्वसनीय आ ताजा समाचार।')}</p></div>
-            <div class="footer-col"><h3>${esc(s.footer_links_title||'महत्वपूर्ण लिंक')}</h3>
-              <a href="/about.html">हमर विषय मे</a><a href="/contact.html">सम्पर्क करू</a><a href="/privacy-policy.html">गोपनीयता नीति</a><a href="/terms.html">नियम आ शर्त</a>
-            </div>
-            <div class="footer-col"><h3>${esc(s.footer_social_title||'सामाजिक साइट')}</h3>
-              ${social.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.name)}</a>`).join('')||'<span>सामाजिक लिंक शीघ्र जोड़ल जाएत।</span>'}
-            </div>
-          </div>
-          <div class="footer-bottom">${esc(s.footer_copyright||'© मैथिली समाचार')}</div>`;
-      }
-    }catch(e){console.warn('site settings:',e);}
-  }
-  document.addEventListener('DOMContentLoaded',loadSiteChrome);
+ async function loadSiteChrome(){
+  try{
+   const r=await fetch('/api/settings',{cache:'no-store'});
+   const d=await r.json(),s=d.settings||{};
+   const logo=s.logo_url||'';
+   ['siteLogo','footerLogo'].forEach(id=>{const e=document.getElementById(id);if(e&&logo){e.src=logo;e.style.display='block';}});
+   const lt=document.getElementById('siteLogoText'); if(lt&&logo)lt.style.display='none';
+   const ft=document.getElementById('footerBrand'); if(ft&&logo)ft.style.display='none';
+   const set=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.textContent=v;};
+   set('footerAboutTitle',s.footer_about_title||'हमर विषय मे');
+   set('footerAboutText',s.footer_about||'मैथिली भाषामे विश्वसनीय आ ताजा समाचार।');
+   set('footerLinksTitle',s.footer_links_title||'महत्वपूर्ण लिंक');
+   set('footerSocialTitle',s.footer_social_title||'सामाजिक साइट');
+   set('footerCopyrightText',s.footer_copyright||'मैथिली समाचार');
+   const box=document.getElementById('footerSocialLinks');
+   if(box){
+    const links=Array.isArray(s.social_links)?s.social_links:[];
+    box.innerHTML=links.map(x=>`<a href="${escapeAttribute(x.url)}" target="_blank" rel="noopener">${escapeHtml(x.name)}</a>`).join('')||'<span style="color:#aaa">सामाजिक लिंक नहि जोड़ल गेल अछि।</span>';
+   }
+  }catch(e){console.warn(e)}
+ }
+ document.addEventListener('DOMContentLoaded',loadSiteChrome);
 })();
-</script>
-<style>
-.site-brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
-.site-logo{max-height:52px;max-width:220px;width:auto;object-fit:contain}
-.footer-wrap{width:min(1200px,94%);margin:auto;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:28px;padding:30px 0}
-.footer-col h3{margin:0 0 10px;font-size:16px}
-.footer-col p{margin:0;color:#666;line-height:1.7}
-.footer-col a{display:block;margin:7px 0;color:inherit}
-.footer-bottom{border-top:1px solid #ddd;padding:14px 3%;text-align:center;color:#777;font-size:13px}
-@media(max-width:600px){
-  .site-logo{max-width:150px;max-height:42px}
-  .footer-wrap{grid-template-columns:1fr;gap:18px;padding:24px 12px}
-}
-</style>
-</body>
+</script></body>
 
 </html>
