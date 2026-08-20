@@ -1487,6 +1487,32 @@ body > .search-section{
   display:none !important;
 }
 </style>
+
+<style id="admin-tab-scope-final">
+#tab-settings #siteAppearanceSettings,
+#tab-categories #categoryOrderManager{
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  margin:18px 0!important;
+}
+#tab-settings #siteAppearanceSettings .card-body{max-width:100%}
+#tab-categories #categoryOrderManager{overflow:hidden}
+@media(max-width:700px){
+  #tab-settings #siteAppearanceSettings,
+  #tab-categories #categoryOrderManager{
+    width:100%!important;
+    margin:12px 0!important;
+    padding:14px!important;
+  }
+  #tab-settings #socialLinksEditor>div{
+    grid-template-columns:1fr!important;
+  }
+  #tab-categories #categoryOrderRows>div{
+    min-width:0!important;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -2353,7 +2379,41 @@ body > .search-section{
 
       </div>
 
-    </section>
+    
+<section id="categoryOrderManager" style="margin:20px 0;padding:18px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;">
+  <h3 style="margin:0 0 6px;">श्रेणी क्रम व्यवस्था</h3>
+  <p style="margin:0 0 14px;color:#777;font-size:12px;">Header/Menu क्रम आ Home Page क्रम अलग-अलग तय करू। Main category आ sub-category दुनू एतय दिखत।</p>
+  <div id="categoryOrderRows"></div>
+  <button type="button" id="saveCategoryOrders" style="margin-top:12px;padding:10px 16px;border:0;border-radius:8px;background:#8b0000;color:#fff;font-weight:700;cursor:pointer;">क्रम Save करू</button>
+  <span id="categoryOrderMsg" style="margin-left:10px;font-size:12px;"></span>
+</section>
+<script>
+(function(){
+async function loadOrders(){
+ try{
+  const r=await fetch('/api/categories?status=all',{credentials:'same-origin',cache:'no-store'}),d=await r.json();
+  const rows=(d.categories||[]).sort((a,b)=>Number(a.home_order??a.menu_order??0)-Number(b.home_order??b.menu_order??0));
+  const box=document.getElementById('categoryOrderRows');
+  box.innerHTML=rows.map(c=>`<div data-id="${c.id}" style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0;padding:8px;background:${c.parent_id?'#fafafa':'#f3f3f3'};border-radius:8px"><div style="padding-left:${c.parent_id?'22px':'0'};font-weight:${c.parent_id?'500':'800'}">${c.parent_id?'↳ ':''}${String(c.name||'')}</div><label style="font-size:10px;color:#777;">Menu क्रम<input class="ord-menu" type="number" min="0" value="${Number(c.menu_order||0)}" title="Menu Order"></label><label style="font-size:10px;color:#777;">Home क्रम<input class="ord-home" type="number" min="0" value="${Number(c.home_order??c.menu_order??0)}" title="Home Order"></label></div>`).join('');
+ }catch(e){document.getElementById('categoryOrderMsg').textContent='Load failed';}
+}
+document.addEventListener('DOMContentLoaded',loadOrders);
+document.addEventListener('click',async e=>{
+ if(e.target.id!=='saveCategoryOrders')return;
+ const rows=[...document.querySelectorAll('#categoryOrderRows>[data-id]')];
+ const msg=document.getElementById('categoryOrderMsg'); msg.textContent='Saving...';
+ try{
+  for(const r of rows){
+   const body={id:Number(r.dataset.id),menu_order:Number(r.querySelector('.ord-menu').value||0),home_order:Number(r.querySelector('.ord-home').value||0)};
+   const resp=await fetch('/api/categories?id='+encodeURIComponent(body.id),{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
+   const data=await resp.json(); if(!resp.ok||!data.success) throw new Error(data.error||'Save failed');
+  }
+  msg.textContent='✓ क्रम save भ’ गेल';
+ }catch(e){msg.textContent='✕ '+e.message}
+});
+})();
+</script>
+</section>
 
 
     <!-- =================================================
@@ -3807,6 +3867,36 @@ body > .search-section{
 
   </div>
 
+
+<section id="siteAppearanceSettings" class="card" style="margin:18px">
+  <div class="card-header"><h2>वेबसाइट Header / Footer</h2></div>
+  <div class="card-body">
+    <p style="color:#70757a">Logo, Footer आ Social Link एतय सँ manage करू।</p>
+    <label>Logo Image URL <input id="siteLogoUrl" class="input" type="url" placeholder="https://.../logo.png"></label>
+    <label>Footer About <textarea id="footerAbout" class="input" rows="3"></textarea></label>
+    <label>Copyright <input id="footerCopyright" class="input"></label>
+    <div><b>Social Links</b><div id="socialLinksEditor"></div><button type="button" class="btn btn-light" id="addSocialLink">+ लिंक जोड़ू</button></div>
+    <button type="button" class="btn btn-primary" id="saveSiteAppearance">Save</button>
+    <span id="siteAppearanceMsg"></span>
+  </div>
+</section>
+<script>
+(function(){
+let links=[];
+function render(){const e=document.getElementById('socialLinksEditor');if(!e)return;e.innerHTML=links.map((x,i)=>`<div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;margin:8px 0"><input class="input sn" data-i="${i}" value="${(x.name||'').replace(/"/g,'&quot;')}" placeholder="Facebook"><input class="input su" data-i="${i}" value="${(x.url||'').replace(/"/g,'&quot;')}" placeholder="https://..."><button type="button" class="btn btn-light sr" data-i="${i}">हटाउ</button></div>`).join('')}
+async function load(){try{const r=await fetch('/api/settings',{credentials:'same-origin'}),d=await r.json(),s=d.settings||{};document.getElementById('siteLogoUrl').value=s.logo_url||'';document.getElementById('footerAbout').value=s.footer_about||'';document.getElementById('footerCopyright').value=s.footer_copyright||'';links=Array.isArray(s.social_links)?s.social_links:[];render()}catch(e){}}
+document.addEventListener('click',async e=>{
+ if(e.target.id==='addSocialLink'){links.push({name:'',url:''});render()}
+ if(e.target.classList.contains('sr')){links.splice(+e.target.dataset.i,1);render()}
+ if(e.target.id==='saveSiteAppearance'){
+  links=[...document.querySelectorAll('#socialLinksEditor>div')].map(r=>({name:r.querySelector('.sn').value.trim(),url:r.querySelector('.su').value.trim()})).filter(x=>x.name&&x.url);
+  const payload={logo_url:document.getElementById('siteLogoUrl').value.trim(),footer_about:document.getElementById('footerAbout').value.trim(),footer_copyright:document.getElementById('footerCopyright').value.trim(),social_links:links};
+  const r=await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)}),d=await r.json();document.getElementById('siteAppearanceMsg').textContent=d.success?'✓ Saved':'✕ '+(d.error||'Error');
+ }
+});
+document.addEventListener('DOMContentLoaded',load);
+})();
+</script>
 </section>
 
 
@@ -13883,67 +13973,7 @@ window.addEventListener('click',function(event){
 
 
 
-<section id="siteAppearanceSettings" class="card" style="margin:18px">
-  <div class="card-header"><h2>वेबसाइट Header / Footer</h2></div>
-  <div class="card-body">
-    <p style="color:#70757a">Logo, Footer आ Social Link एतय सँ manage करू।</p>
-    <label>Logo Image URL <input id="siteLogoUrl" class="input" type="url" placeholder="https://.../logo.png"></label>
-    <label>Footer About <textarea id="footerAbout" class="input" rows="3"></textarea></label>
-    <label>Copyright <input id="footerCopyright" class="input"></label>
-    <div><b>Social Links</b><div id="socialLinksEditor"></div><button type="button" class="btn btn-light" id="addSocialLink">+ लिंक जोड़ू</button></div>
-    <button type="button" class="btn btn-primary" id="saveSiteAppearance">Save</button>
-    <span id="siteAppearanceMsg"></span>
-  </div>
-</section>
-<script>
-(function(){
-let links=[];
-function render(){const e=document.getElementById('socialLinksEditor');if(!e)return;e.innerHTML=links.map((x,i)=>`<div style="display:grid;grid-template-columns:1fr 2fr auto;gap:8px;margin:8px 0"><input class="input sn" data-i="${i}" value="${(x.name||'').replace(/"/g,'&quot;')}" placeholder="Facebook"><input class="input su" data-i="${i}" value="${(x.url||'').replace(/"/g,'&quot;')}" placeholder="https://..."><button type="button" class="btn btn-light sr" data-i="${i}">हटाउ</button></div>`).join('')}
-async function load(){try{const r=await fetch('/api/settings',{credentials:'same-origin'}),d=await r.json(),s=d.settings||{};document.getElementById('siteLogoUrl').value=s.logo_url||'';document.getElementById('footerAbout').value=s.footer_about||'';document.getElementById('footerCopyright').value=s.footer_copyright||'';links=Array.isArray(s.social_links)?s.social_links:[];render()}catch(e){}}
-document.addEventListener('click',async e=>{
- if(e.target.id==='addSocialLink'){links.push({name:'',url:''});render()}
- if(e.target.classList.contains('sr')){links.splice(+e.target.dataset.i,1);render()}
- if(e.target.id==='saveSiteAppearance'){
-  links=[...document.querySelectorAll('#socialLinksEditor>div')].map(r=>({name:r.querySelector('.sn').value.trim(),url:r.querySelector('.su').value.trim()})).filter(x=>x.name&&x.url);
-  const payload={logo_url:document.getElementById('siteLogoUrl').value.trim(),footer_about:document.getElementById('footerAbout').value.trim(),footer_copyright:document.getElementById('footerCopyright').value.trim(),social_links:links};
-  const r=await fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)}),d=await r.json();document.getElementById('siteAppearanceMsg').textContent=d.success?'✓ Saved':'✕ '+(d.error||'Error');
- }
-});
-document.addEventListener('DOMContentLoaded',load);
-})();
-</script>
-<section id="categoryOrderManager" style="margin:20px 0;padding:18px;border:1px solid #e5e5e5;border-radius:12px;background:#fff;">
-  <h3 style="margin:0 0 6px;">श्रेणी क्रम व्यवस्था</h3>
-  <p style="margin:0 0 14px;color:#777;font-size:12px;">Header/Menu क्रम आ Home Page क्रम अलग-अलग तय करू। Main category आ sub-category दुनू एतय दिखत।</p>
-  <div id="categoryOrderRows"></div>
-  <button type="button" id="saveCategoryOrders" style="margin-top:12px;padding:10px 16px;border:0;border-radius:8px;background:#8b0000;color:#fff;font-weight:700;cursor:pointer;">क्रम Save करू</button>
-  <span id="categoryOrderMsg" style="margin-left:10px;font-size:12px;"></span>
-</section>
-<script>
-(function(){
-async function loadOrders(){
- try{
-  const r=await fetch('/api/categories?status=all',{credentials:'same-origin',cache:'no-store'}),d=await r.json();
-  const rows=(d.categories||[]).sort((a,b)=>Number(a.home_order??a.menu_order??0)-Number(b.home_order??b.menu_order??0));
-  const box=document.getElementById('categoryOrderRows');
-  box.innerHTML=rows.map(c=>`<div data-id="${c.id}" style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0;padding:8px;background:${c.parent_id?'#fafafa':'#f3f3f3'};border-radius:8px"><div style="padding-left:${c.parent_id?'22px':'0'};font-weight:${c.parent_id?'500':'800'}">${c.parent_id?'↳ ':''}${String(c.name||'')}</div><label style="font-size:10px;color:#777;">Menu क्रम<input class="ord-menu" type="number" min="0" value="${Number(c.menu_order||0)}" title="Menu Order"></label><label style="font-size:10px;color:#777;">Home क्रम<input class="ord-home" type="number" min="0" value="${Number(c.home_order??c.menu_order??0)}" title="Home Order"></label></div>`).join('');
- }catch(e){document.getElementById('categoryOrderMsg').textContent='Load failed';}
-}
-document.addEventListener('DOMContentLoaded',loadOrders);
-document.addEventListener('click',async e=>{
- if(e.target.id!=='saveCategoryOrders')return;
- const rows=[...document.querySelectorAll('#categoryOrderRows>[data-id]')];
- const msg=document.getElementById('categoryOrderMsg'); msg.textContent='Saving...';
- try{
-  for(const r of rows){
-   const body={id:Number(r.dataset.id),menu_order:Number(r.querySelector('.ord-menu').value||0),home_order:Number(r.querySelector('.ord-home').value||0)};
-   const resp=await fetch('/api/categories?id='+encodeURIComponent(body.id),{method:'PUT',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)});
-   const data=await resp.json(); if(!resp.ok||!data.success) throw new Error(data.error||'Save failed');
-  }
-  msg.textContent='✓ क्रम save भ’ गेल';
- }catch(e){msg.textContent='✕ '+e.message}
-});
-})();
-</script></body>
+
+</body>
 
 </html>
