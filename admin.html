@@ -1312,6 +1312,181 @@ tr:hover td{
 <style>
 @media(max-width:800px){#tab-analytics .card-body>div[style*="grid-template-columns:repeat(2"]{grid-template-columns:1fr !important;} #analyticsSummary{grid-template-columns:1fr !important;}}
 </style>
+
+<style id="admin-responsive-final">
+/* =========================================================
+   ADMIN RESPONSIVE / CLEAN UI
+   ========================================================= */
+#siteAppearanceSettings,
+#categoryOrderManager{
+  width:100%;
+  max-width:1100px;
+  margin:20px auto !important;
+  box-sizing:border-box;
+}
+#siteAppearanceSettings{
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:20px;
+  box-shadow:0 3px 14px rgba(0,0,0,.05);
+}
+#siteAppearanceSettings .card-header{
+  padding:0 0 14px;
+  margin:0 0 14px;
+  border-bottom:1px solid #eee;
+}
+#siteAppearanceSettings .card-header h2{
+  margin:0;
+  font-size:19px;
+}
+#siteAppearanceSettings .card-body{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px 18px;
+}
+#siteAppearanceSettings .card-body > p,
+#siteAppearanceSettings .card-body > div,
+#siteAppearanceSettings .card-body > button,
+#siteAppearanceSettings .card-body > span{
+  grid-column:1/-1;
+}
+#siteAppearanceSettings label{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  font-size:12px;
+  font-weight:700;
+}
+#siteAppearanceSettings .input{
+  width:100%;
+  min-height:40px;
+  box-sizing:border-box;
+  border:1px solid #d9dde3;
+  border-radius:8px;
+  padding:9px 11px;
+  font-size:13px;
+  background:#fff;
+}
+#siteAppearanceSettings textarea.input{min-height:90px;resize:vertical}
+#socialLinksEditor > div{
+  display:grid !important;
+  grid-template-columns:minmax(100px,.7fr) minmax(180px,1.5fr) auto !important;
+  gap:8px !important;
+  align-items:center;
+}
+#siteAppearanceSettings .btn{
+  min-height:38px;
+  border-radius:8px;
+  padding:0 14px;
+  border:0;
+  cursor:pointer;
+  font-weight:700;
+}
+#siteAppearanceSettings .btn-primary{background:#8b0000;color:#fff}
+#siteAppearanceSettings .btn-light{background:#f1f3f5;color:#333;border:1px solid #ddd}
+
+/* Category order */
+#categoryOrderManager{
+  background:#fff !important;
+  border:1px solid #e5e7eb !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.05);
+  padding:20px !important;
+}
+#categoryOrderManager h3{font-size:19px;margin:0 0 6px}
+#categoryOrderManager p{font-size:12px;color:#777}
+#categoryOrderRows{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#categoryOrderRows > [data-id]{
+  min-width:520px;
+}
+#categoryOrderRows > [data-id] input{
+  width:100%;
+  min-height:38px;
+  box-sizing:border-box;
+  border:1px solid #d9dde3;
+  border-radius:7px;
+  padding:0 9px;
+}
+#saveCategoryOrders{
+  min-height:40px;
+  border:0;
+  border-radius:8px;
+  padding:0 16px;
+  background:#8b0000;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
+
+/* Hide accidental old appearance/order duplicate blocks if classed */
+.admin-login-link,
+.admin-login-button{display:none !important}
+
+@media(max-width:700px){
+  #siteAppearanceSettings,
+  #categoryOrderManager{
+    width:calc(100% - 20px);
+    margin:12px 10px !important;
+    padding:14px !important;
+    border-radius:11px;
+  }
+  #siteAppearanceSettings .card-body{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  #siteAppearanceSettings .card-header h2,
+  #categoryOrderManager h3{font-size:17px}
+  #socialLinksEditor > div{
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    padding:9px;
+    border:1px solid #eee;
+    border-radius:8px;
+    background:#fafafa;
+  }
+  #socialLinksEditor > div button{
+    width:100%;
+  }
+  #categoryOrderRows{
+    overflow:visible;
+  }
+  #categoryOrderRows > [data-id]{
+    min-width:0 !important;
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:7px !important;
+    padding:10px !important;
+    margin:7px 0 !important;
+  }
+  #categoryOrderRows > [data-id] > div{
+    grid-column:1/-1;
+    font-size:13px;
+    padding:0 !important;
+  }
+  #categoryOrderRows > [data-id] input{
+    min-height:40px;
+  }
+  #categoryOrderManager:after{
+    content:"पहिलका बॉक्स = Menu क्रम • दोसरका = Home क्रम";
+    display:block;
+    color:#888;
+    font-size:10px;
+    margin-top:7px;
+  }
+  #saveCategoryOrders{
+    width:100%;
+  }
+}
+
+/* Remove duplicate header search outside header */
+body > .search-section{
+  display:none !important;
+}
+</style>
 </head>
 
 <body>
@@ -13751,7 +13926,7 @@ async function loadOrders(){
   const r=await fetch('/api/categories?status=all',{credentials:'same-origin',cache:'no-store'}),d=await r.json();
   const rows=(d.categories||[]).sort((a,b)=>Number(a.home_order??a.menu_order??0)-Number(b.home_order??b.menu_order??0));
   const box=document.getElementById('categoryOrderRows');
-  box.innerHTML=rows.map(c=>`<div data-id="${c.id}" style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0;padding:8px;background:${c.parent_id?'#fafafa':'#f3f3f3'};border-radius:8px"><div style="padding-left:${c.parent_id?'22px':'0'};font-weight:${c.parent_id?'500':'800'}">${c.parent_id?'↳ ':''}${String(c.name||'')}</div><input class="ord-menu" type="number" min="0" value="${Number(c.menu_order||0)}" title="Menu Order"><input class="ord-home" type="number" min="0" value="${Number(c.home_order??c.menu_order??0)}" title="Home Order"></div>`).join('');
+  box.innerHTML=rows.map(c=>`<div data-id="${c.id}" style="display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:8px;align-items:center;margin:7px 0;padding:8px;background:${c.parent_id?'#fafafa':'#f3f3f3'};border-radius:8px"><div style="padding-left:${c.parent_id?'22px':'0'};font-weight:${c.parent_id?'500':'800'}">${c.parent_id?'↳ ':''}${String(c.name||'')}</div><label style="font-size:10px;color:#777;">Menu क्रम<input class="ord-menu" type="number" min="0" value="${Number(c.menu_order||0)}" title="Menu Order"></label><label style="font-size:10px;color:#777;">Home क्रम<input class="ord-home" type="number" min="0" value="${Number(c.home_order??c.menu_order??0)}" title="Home Order"></label></div>`).join('');
  }catch(e){document.getElementById('categoryOrderMsg').textContent='Load failed';}
 }
 document.addEventListener('DOMContentLoaded',loadOrders);
