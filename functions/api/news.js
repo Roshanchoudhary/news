@@ -765,13 +765,13 @@ export async function onRequestGet(context) {
 // BULK NEWS IMPORT
 // ============================================================
 
-async function bulkSaveNews(context, user) {
+async function bulkSaveNews(context, user, parsedBody = null) {
 
   const { request, env } = context;
 
   try {
 
-    const body = await request.json();
+    const body = parsedBody || await request.json();
     const rows = Array.isArray(body.rows) ? body.rows : [];
 
     if (!rows.length) {
@@ -1109,14 +1109,17 @@ export async function onRequestPost(
     }
 
 
-    // Bulk CSV import
-    if (new URL(request.url).searchParams.get("bulk") === "1") {
-      return await bulkSaveNews(context, user);
+    // Bulk CSV import.
+    // Detect both ?bulk=1 and a JSON body containing rows so mobile/browser
+    // requests remain robust even if the query string is altered.
+    const requestUrl = new URL(request.url);
+    const isBulkQuery = requestUrl.searchParams.get("bulk") === "1";
+
+    const body = await request.json();
+
+    if (isBulkQuery || Array.isArray(body.rows)) {
+      return await bulkSaveNews(context, user, body);
     }
-
-
-    const body =
-      await request.json();
 
 
     const title =
