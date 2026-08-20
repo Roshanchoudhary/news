@@ -13277,9 +13277,100 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+
+function openBulkUpload(){
+  const f=document.getElementById('bulkFile'); if(f) f.value='';
+  const i=document.getElementById('bulkInfo'); if(i) i.textContent='';
+  const r=document.getElementById('bulkResult'); if(r) r.innerHTML='';
+  const m=document.getElementById('bulkModal'); if(m) m.classList.add('show');
+}
+function closeBulkUpload(){
+  const m=document.getElementById('bulkModal'); if(m) m.classList.remove('show');
+}
+function parseBulkCSV(text){
+  text=String(text||'').replace(/^\uFEFF/,'');
+  const rows=[]; let row=[], cell='', quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i], nx=text[i+1];
+    if(quoted){
+      if(ch==='"' && nx==='"'){cell+='"';i++;}
+      else if(ch==='"') quoted=false;
+      else cell+=ch;
+    }else{
+      if(ch==='"' && cell==='') quoted=true;
+      else if(ch===','){row.push(cell);cell='';}
+      else if(ch==='\r'){if(nx==='\n')i++;row.push(cell);cell='';if(row.some(v=>v.trim()))rows.push(row);row=[];}
+      else if(ch==='\n'){row.push(cell);cell='';if(row.some(v=>v.trim()))rows.push(row);row=[];}
+      else if(ch==='\t'){row.push(cell);cell='';}
+      else cell+=ch;
+    }
+  }
+  row.push(cell); if(row.some(v=>v.trim())) rows.push(row);
+  if(!rows.length) return [];
+  const headers=rows[0].map(v=>v.trim().toLowerCase());
+  return rows.slice(1).map((r,idx)=>{
+    const o={}; headers.forEach((h,j)=>o[h]=(r[j]??'').trim()); o._row=idx+2; return o;
+  });
+}
+function bulkCsvCell(v){
+  v=String(v??''); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+}
+function downloadBulkTemplate(){
+  const h='title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([h+'\r\nपहिल समाचार,first-news,छोट summary,पूरा समाचार content,देश,published,,0,,\r\nदोसर समाचार,second-news,Draft summary,दोसर समाचारक content,मिथिला,draft,,0,,'],{type:'text/csv;charset=utf-8'}));
+  a.download='news-upload-template.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+async function uploadBulkNews(){
+  const file=document.getElementById('bulkFile')?.files[0];
+  if(!file){alert('पहिने CSV अथवा TXT file चुनू।');return;}
+  const btn=document.getElementById('bulkUploadBtn'); btn.disabled=true; btn.textContent='Upload भ\' रहल अछि...';
+  try{
+    const rows=parseBulkCSV(await file.text());
+    if(!rows.length) throw Error('File में कोनो news row नहि भेटल।');
+    if(rows.length>500) throw Error('एक बेर में अधिकतम 500 news upload करू।');
+    const d=await api('/news?bulk=1',{method:'POST',body:JSON.stringify({rows})});
+    document.getElementById('bulkInfo').textContent=`${rows.length} news upload लेल तैयार अछि।`;
+    let h=`<div class="panel"><b>Upload पूरा।</b><br>कुल: ${rows.length} · सफल: ${d.imported||0} · असफल: ${d.failed||0}</div>`;
+    if(d.errors?.length) h+=`<div class="panel"><b>Errors:</b><ul>${d.errors.map(e=>`<li>Row ${e.row}: ${String(e.error).replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</li>`).join('')}</ul></div>`;
+    document.getElementById('bulkResult').innerHTML=h;
+    if(typeof loadNews==='function') loadNews();
+  }catch(e){
+    document.getElementById('bulkResult').innerHTML=`<div class="panel" style="color:#b91c1c">${String(e.message||e)}</div>`;
+  }finally{btn.disabled=false;btn.textContent='Upload All News';}
+}
+
 </script>
 
 
+
+<div id="bulkModal" class="modal">
+  <div class="modal-box">
+    <div class="actions between">
+      <h2>एक साथ समाचार Upload</h2>
+      <button class="btn btn-light" onclick="closeBulkUpload()">✕</button>
+    </div>
+    <p class="muted">
+      CSV अथवा Notepad (.txt) file upload करू। प्रत्येक row एक अलग समाचार होय।
+      Status में <b>published</b>, <b>draft</b>, <b>review</b> अथवा <b>archived</b> लिखि सकैत छी।
+    </p>
+    <div class="panel" style="margin:12px 0">
+      <b>CSV Header:</b><br>
+      <code>title,slug,summary,content,category,status,image_url,featured,seo_title,seo_description</code>
+      <p class="muted" style="margin-bottom:0">
+        title और content जरूरी अछि। slug खाली छोड़लासँ system slug बना देत।
+      </p>
+    </div>
+    <input id="bulkFile" class="input" type="file" accept=".csv,.txt,text/csv,text/plain">
+    <div id="bulkInfo" class="muted" style="margin-top:10px"></div>
+    <div class="actions" style="margin-top:14px">
+      <button class="btn btn-light" onclick="downloadBulkTemplate()">Template Download</button>
+      <button id="bulkUploadBtn" class="btn btn-primary" onclick="uploadBulkNews()">Upload All News</button>
+    </div>
+    <div id="bulkResult" style="margin-top:14px"></div>
+  </div>
+</div>
 </body>
 
 </html>
