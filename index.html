@@ -1759,6 +1759,31 @@ function renderPagination(){
 }
 
 /* ======================================================
+   NEWS FALLBACK LABEL
+====================================================== */
+
+function getNewsFallbackLabel(item){
+  return String(
+    item?.subcategory_name ||
+    item?.subcategory ||
+    item?.category_name ||
+    item?.category ||
+    "समाचार"
+  ).trim() || "समाचार";
+}
+
+function getNewsFallbackMarkup(item, extraClass = ""){
+  const label = getNewsFallbackLabel(item);
+  return `
+    <div class="no-image ${extraClass}" style="height:330px">
+      <strong>${escapeHtml(label)}</strong>
+      <span>${escapeHtml(item?.title || "समाचार")}</span>
+      <b>${escapeHtml(label)} केँ समाचार पढ़ू</b>
+    </div>
+  `;
+}
+
+/* ======================================================
    FEATURED NEWS
 ====================================================== */
 
@@ -1832,19 +1857,14 @@ function renderFeatured(
               alt="${escapeAttribute(
                 main.title
               )}"
+              data-fallback-label="${escapeAttribute(getNewsFallbackLabel(main))}"
+              data-fallback-title="${escapeAttribute(main.title || "समाचार")}"
               loading="lazy"
             >
           `
 
           : `
-            <div
-              class="no-image featured-fallback"
-              style="height:330px"
-            >
-              <strong>${escapeHtml(main.subcategory_name || main.subcategory || main.category_name || "समाचार")}</strong>
-              <span>${escapeHtml(main.title || "समाचार")}</span>
-              <b>मिथिला केँ समाचार पढ़ू</b>
-            </div>
+            ${getNewsFallbackMarkup(main, "featured-fallback")}
           `
         }
 
@@ -2174,19 +2194,14 @@ function createNewsCard(
         alt="${escapeAttribute(
           news.title
         )}"
+        data-fallback-label="${escapeAttribute(getNewsFallbackLabel(news))}"
+        data-fallback-title="${escapeAttribute(news.title || "समाचार")}"
         loading="lazy"
-        onerror="
-          this.outerHTML =
-          '<div class=&quot;no-image&quot;><strong>${escapeHtml(news.category_name || 'समाचार')}</strong><span>' + (this.alt || 'समाचार') + '</span><b>मिथिला केँ समाचार पढ़ू</b></div>'
-        "
       >
     `
 
     : `
-      <div class="no-image">
-        <strong>${escapeHtml(news.category_name || "समाचार")}</strong>
-        <span>समाचार पढ़ू</span>
-      </div>
+      ${getNewsFallbackMarkup(news)}
     `;
 
 
@@ -2383,6 +2398,29 @@ function formatDate(
   }
 
 }
+
+
+/* ======================================================
+   BROKEN IMAGE FALLBACK
+====================================================== */
+
+window.addEventListener("error", function(event){
+  const img = event.target;
+  if (!(img instanceof HTMLImageElement)) return;
+  if (!img.matches("img[data-fallback-label]")) return;
+
+  const label = img.getAttribute("data-fallback-label") || "समाचार";
+  const title = img.getAttribute("data-fallback-title") || img.alt || "समाचार";
+
+  const fallback = document.createElement("div");
+  fallback.className = "no-image";
+  fallback.innerHTML =
+    `<strong>${escapeHtml(label)}</strong>` +
+    `<span>${escapeHtml(title)}</span>` +
+    `<b>${escapeHtml(label)} केँ समाचार पढ़ू</b>`;
+
+  img.replaceWith(fallback);
+}, true);
 
 
 /* ======================================================
