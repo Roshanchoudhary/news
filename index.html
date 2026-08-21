@@ -542,6 +542,66 @@ main{
 
 
 /* =====================================================
+   PAGINATION
+===================================================== */
+
+.pagination{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:30px;
+}
+
+.pagination button{
+  min-width:40px;
+  height:40px;
+  padding:0 12px;
+  border:1px solid #ddd;
+  background:#fff;
+  color:#333;
+  border-radius:7px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.pagination button:hover:not(:disabled){
+  background:#8b0000;
+  color:#fff;
+  border-color:#8b0000;
+}
+
+.pagination button.active{
+  background:#8b0000;
+  color:#fff;
+  border-color:#8b0000;
+}
+
+.pagination button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+.pagination .page-info{
+  color:#777;
+  font-size:13px;
+  margin:0 5px;
+}
+
+@media(max-width:600px){
+  .pagination{
+    gap:5px;
+  }
+
+  .pagination button{
+    min-width:38px;
+    height:38px;
+    padding:0 9px;
+  }
+}
+
+/* =====================================================
    STATES
 ===================================================== */
 
@@ -974,6 +1034,8 @@ footer p{
 
     </div>
 
+    <div id="pagination" class="pagination" aria-label="समाचार पृष्ठ"></div>
+
   </div>
 
 </main>
@@ -1026,6 +1088,10 @@ let allNews = [];
 let categories = [];
 
 let currentCategorySlug = "";
+
+let currentPage = 1;
+const NEWS_PER_PAGE = 18;
+let totalPages = 1;
 
 
 /* ======================================================
@@ -1467,13 +1533,14 @@ function setActiveCategory(){
    LOAD NEWS
 ====================================================== */
 
-async function loadNews(){
+async function loadNews(page = 1){
 
   const container =
     document.getElementById(
       "newsContainer"
     );
 
+  currentPage = Math.max(1, Number(page) || 1);
 
   container.innerHTML =
     `
@@ -1485,47 +1552,63 @@ async function loadNews(){
       </div>
     `;
 
-
   try{
 
-    const response =
-      await fetch(
-        "/api/news?status=published&limit=50",
-        {
-          cache:"no-store"
-        }
-      );
+    const [featuredResponse, newsResponse] =
+      await Promise.all([
 
+        fetch(
+          "/api/news?status=published&limit=4&featured=1",
+          { cache:"no-store" }
+        ),
+
+        fetch(
+          `/api/news?status=published&limit=${NEWS_PER_PAGE}&page=${currentPage}&exclude_featured=1`,
+          { cache:"no-store" }
+        )
+
+      ]);
+
+    const featuredData =
+      await featuredResponse.json();
 
     const data =
-      await response.json();
+      await newsResponse.json();
 
+    if(!featuredData.success){
+      throw new Error(
+        featuredData.error ||
+        "प्रमुख समाचार लोड नहि भ' सकल"
+      );
+    }
 
-    if(
-      !data.success
-    ){
-
+    if(!data.success){
       throw new Error(
         data.error ||
         "समाचार लोड नहि भ' सकल"
       );
-
     }
 
+    const featuredNews =
+      featuredData.news || [];
 
     allNews =
       data.news || [];
 
+    totalPages =
+      Number(
+        data.pagination?.pages || 1
+      );
 
     renderFeatured(
-      allNews
+      featuredNews
     );
-
 
     renderNews(
       allNews
     );
 
+    renderPagination();
 
   }catch(error){
 
@@ -1533,7 +1616,6 @@ async function loadNews(){
       "NEWS ERROR:",
       error
     );
-
 
     container.innerHTML =
       `
@@ -1549,10 +1631,134 @@ async function loadNews(){
         </div>
       `;
 
+    document.getElementById("pagination").innerHTML = "";
+
   }
 
 }
 
+function goToPage(page){
+
+  const target =
+    Math.max(
+      1,
+      Math.min(
+        totalPages,
+        Number(page) || 1
+      )
+    );
+
+  if(target === currentPage){
+    return;
+  }
+
+  loadNews(target);
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
+}
+
+function renderPagination(){
+
+  const pagination =
+    document.getElementById(
+      "pagination"
+    );
+
+  if(!pagination){
+    return;
+  }
+
+  if(totalPages <= 1){
+    pagination.innerHTML = "";
+    return;
+  }
+
+  const buttons = [];
+
+  buttons.push(`
+    <button
+      type="button"
+      ${currentPage === 1 ? "disabled" : ""}
+      onclick="goToPage(${currentPage - 1})"
+      aria-label="पिछला पृष्ठ"
+    >
+      ‹
+    </button>
+  `);
+
+  let startPage =
+    Math.max(
+      1,
+      currentPage - 2
+    );
+
+  let endPage =
+    Math.min(
+      totalPages,
+      currentPage + 2
+    );
+
+  if(startPage > 1){
+    buttons.push(`
+      <button type="button" onclick="goToPage(1)">1</button>
+    `);
+
+    if(startPage > 2){
+      buttons.push(
+        `<span class="page-info">…</span>`
+      );
+    }
+  }
+
+  for(let page = startPage; page <= endPage; page++){
+
+    buttons.push(`
+      <button
+        type="button"
+        class="${page === currentPage ? "active" : ""}"
+        onclick="goToPage(${page})"
+        ${page === currentPage ? 'aria-current="page"' : ""}
+      >
+        ${page}
+      </button>
+    `);
+
+  }
+
+  if(endPage < totalPages){
+
+    if(endPage < totalPages - 1){
+      buttons.push(
+        `<span class="page-info">…</span>`
+      );
+    }
+
+    buttons.push(`
+      <button type="button" onclick="goToPage(${totalPages})">
+        ${totalPages}
+      </button>
+    `);
+
+  }
+
+  buttons.push(`
+    <button
+      type="button"
+      ${currentPage === totalPages ? "disabled" : ""}
+      onclick="goToPage(${currentPage + 1})"
+      aria-label="अगिला पृष्ठ"
+    >
+      ›
+    </button>
+  `);
+
+  pagination.innerHTML =
+    buttons.join("");
+}
 
 /* ======================================================
    FEATURED NEWS
@@ -1876,6 +2082,13 @@ function performSearch(){
   renderNews(
     filtered
   );
+
+  const pagination =
+    document.getElementById("pagination");
+
+  if(pagination){
+    pagination.style.display = query ? "none" : "";
+  }
 
 }
 
