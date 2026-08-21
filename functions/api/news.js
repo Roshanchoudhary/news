@@ -155,6 +155,12 @@ export async function onRequestGet(context) {
     url.searchParams.get("search") ||
     url.searchParams.get("q");
 
+  const featuredParam =
+    url.searchParams.get("featured");
+
+  const excludeFeatured =
+    url.searchParams.get("exclude_featured") === "1";
+
   const page =
     Math.max(
       1,
@@ -394,6 +400,16 @@ export async function onRequestGet(context) {
         status
       );
 
+    }
+
+    // --------------------------------------------------------
+    // FEATURED FILTER
+    // --------------------------------------------------------
+
+    if(featuredParam === "1"){
+      conditions.push("n.featured = 1");
+    }else if(excludeFeatured){
+      conditions.push("(n.featured IS NULL OR n.featured = 0)");
     }
 
 
