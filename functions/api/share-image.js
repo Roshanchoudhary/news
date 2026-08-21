@@ -35,9 +35,8 @@ export async function onRequest(context) {
   const category = url.searchParams.get("category") || "समाचार";
   const subcategory = url.searchParams.get("subcategory") || "";
 
-  const label = subcategory && subcategory !== category
-    ? `${category} • ${subcategory}`
-    : category;
+  const label = (subcategory || category || "समाचार").trim() || "समाचार";
+  const cta = `${label} केँ समाचार पढ़ू`;
 
   const lines = wrapText(title, 34, 3);
   const titleSvg = lines.map((line, i) =>
@@ -57,7 +56,7 @@ export async function onRequest(context) {
   <rect x="80" y="85" width="1040" height="90" rx="18" fill="#f97316"/>
   <text x="110" y="145" fill="#ffffff" font-family="Noto Sans Devanagari, Noto Sans, sans-serif" font-size="38" font-weight="700">${esc(label)}</text>
   ${titleSvg}
-  <text x="80" y="535" fill="#c2410c" font-family="Noto Sans Devanagari, Noto Sans, sans-serif" font-size="34" font-weight="700">मिथिला केँ समाचार पढ़ू</text>
+  <text x="80" y="535" fill="#8b0000" font-family="Noto Sans Devanagari, Noto Sans, sans-serif" font-size="34" font-weight="700">${esc(cta)}</text>
   <text x="80" y="570" fill="#78716c" font-family="Noto Sans, sans-serif" font-size="22">Maithili News</text>
 </svg>`;
 
