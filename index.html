@@ -443,6 +443,9 @@ main{
   gap:20px;
 }
 
+.no-image{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:190px;padding:20px;text-align:center;background:#8b0000;color:#ffffff;border-radius:10px;font-weight:800}
+.no-image strong{font-size:20px}.no-image span{font-size:14px;color:#fff;font-weight:700}.no-image b{font-size:16px;color:#fff}.featured-fallback span{font-size:25px;line-height:1.4;max-width:85%;font-weight:800}.featured-side-fallback{gap:4px;padding:8px;font-size:11px}.featured-side-fallback strong{font-size:12px}.featured-side-fallback span{font-size:10px}.no-image strong{font-size:20px}.no-image span{font-size:14px;color:#78716c;font-weight:700}
+
 .news-card{
   background:white;
   border-radius:10px;
@@ -478,16 +481,11 @@ main{
 }
 
 .no-image{
-  background:
-    linear-gradient(
-      135deg,
-      #eee,
-      #ddd
-    );
+  background:#8b0000;
   display:flex;
   align-items:center;
   justify-content:center;
-  color:#888;
+  color:#fff;
 }
 
 .news-body{
@@ -1840,10 +1838,12 @@ function renderFeatured(
 
           : `
             <div
-              class="no-image"
+              class="no-image featured-fallback"
               style="height:330px"
             >
-              मैथिली समाचार
+              <strong>${escapeHtml(main.subcategory_name || main.subcategory || main.category_name || "समाचार")}</strong>
+              <span>${escapeHtml(main.title || "समाचार")}</span>
+              <b>मिथिला केँ समाचार पढ़ू</b>
             </div>
           `
         }
@@ -2177,14 +2177,15 @@ function createNewsCard(
         loading="lazy"
         onerror="
           this.outerHTML =
-          '<div class=&quot;no-image&quot;>मैथिली समाचार</div>'
+          '<div class=&quot;no-image&quot;><strong>${escapeHtml(news.category_name || 'समाचार')}</strong><span>' + (this.alt || 'समाचार') + '</span><b>मिथिला केँ समाचार पढ़ू</b></div>'
         "
       >
     `
 
     : `
       <div class="no-image">
-        मैथिली समाचार
+        <strong>${escapeHtml(news.category_name || "समाचार")}</strong>
+        <span>समाचार पढ़ू</span>
       </div>
     `;
 
