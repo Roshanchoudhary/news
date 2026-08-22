@@ -313,20 +313,16 @@ main{
 
 .no-image{
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  width:100%;
-  height:200px;
-  padding:18px;
-  text-align:center;
-  background:#8b0000;
-  color:#fff;
+  background:
+    linear-gradient(
+      135deg,
+      #eee,
+      #ddd
+    );
+  color:#888;
 }
-.no-image strong{font-size:18px;font-weight:800}
-.no-image span{font-size:14px;font-weight:700;line-height:1.4}
-.no-image b{font-size:13px;font-weight:700}
 
 .news-body{
   padding:16px;
@@ -1385,20 +1381,8 @@ function createNewsCard(
     `
 
     : `
-      <div class="no-image category-fallback">
-        <strong>${escapeHtml(
-          news.subcategory_name ||
-          news.category_name ||
-          category.name ||
-          "समाचार"
-        )}</strong>
-        <span>${escapeHtml(news.title || "समाचार")}</span>
-        <b>${escapeHtml(
-          news.subcategory_name ||
-          news.category_name ||
-          category.name ||
-          "समाचार"
-        )} केँ समाचार पढ़ू</b>
+      <div class="no-image">
+        मैथिली समाचार
       </div>
     `;
 
@@ -1893,41 +1877,6 @@ function escapeAttribute(
   );
 
 }
-
-
-/* ======================================================
-   CATEGORY PAGE IMAGE FALLBACK
-   Same fallback style as homepage
-====================================================== */
-
-window.addEventListener("error", function(event){
-  const img = event.target;
-  if (!(img instanceof HTMLImageElement)) return;
-  if (!img.classList.contains("news-image")) return;
-  if (img.dataset.fallbackDone === "1") return;
-
-  img.dataset.fallbackDone = "1";
-
-  const card = img.closest(".news-card");
-  const categoryLabel =
-    (card && card.querySelector(".news-category")?.textContent.trim()) ||
-    category.name ||
-    "समाचार";
-
-  const title =
-    img.alt ||
-    card?.querySelector(".news-title")?.textContent.trim() ||
-    "समाचार";
-
-  const fallback = document.createElement("div");
-  fallback.className = "no-image category-fallback";
-  fallback.innerHTML =
-    `<strong>${escapeHtml(categoryLabel)}</strong>` +
-    `<span>${escapeHtml(title)}</span>` +
-    `<b>${escapeHtml(categoryLabel)} केँ समाचार पढ़ू</b>`;
-
-  img.replaceWith(fallback);
-}, true);
 
 </script>
 
